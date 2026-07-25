@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Cucina Hub</title>
+  <desc id="desc">Icona verde con pentola e foglia</desc>
+  <rect width="512" height="512" rx="112" fill="#2f6b4f"/>
+  <path d="M135 224h242v48c0 89-53 145-121 145s-121-56-121-145v-48Z" fill="#fff"/>
+  <path d="M111 202h290a22 22 0 0 1 0 44H111a22 22 0 0 1 0-44Z" fill="#f5f3ed"/>
+  <path d="M198 176c15-55 64-89 118-80-7 54-47 91-103 95" fill="none" stroke="#d8e9dd" stroke-width="25" stroke-linecap="round"/>
+  <circle cx="256" cy="290" r="18" fill="#2f6b4f"/>
+</svg>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6b4f">
+  <meta name="description" content="Cucina Hub: ricette, elettrodomestici, manuali e appunti pratici del progetto Cucina.">
+  <title>Cucina Hub</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Vai al contenuto</a>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">🍳</div>
+      <div>
+        <p class="eyebrow">Progetto personale</p>
+        <h1>Cucina Hub</h1>
+      </div>
+    </div>
+    <button id="menuButton" class="icon-button menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Apri menu">☰</button>
+  </header>
+
+  <div class="app-shell">
+    <aside id="sidebar" class="sidebar" aria-label="Navigazione principale">
+      <nav id="mainNav" class="nav-list">
+        <button class="nav-item is-active" data-view="dashboard" type="button"><span>🏠</span> Dashboard</button>
+        <button class="nav-item" data-view="recipes" type="button"><span>📖</span> Ricette</button>
+        <button class="nav-item" data-view="hurom" type="button"><span>🥤</span> Hurom</button>
+        <button class="nav-item" data-view="ninja" type="button"><span>🥣</span> Ninja</button>
+        <button class="nav-item" data-view="pizza" type="button"><span>🍕</span> Pizza e impasti</button>
+        <button class="nav-item" data-view="appliances" type="button"><span>🔌</span> Elettrodomestici</button>
+        <button class="nav-item" data-view="changelog" type="button"><span>🧾</span> Aggiornamenti</button>
+      </nav>
+      <div class="sidebar-footer">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>Web Edition <strong id="appVersion">1.0</strong></span>
+      </div>
+    </aside>
+
+    <main id="main-content" class="main-content" tabindex="-1">
+      <section id="loadingState" class="loading-state" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Caricamento di Cucina Hub…</p>
+      </section>
+      <section id="errorState" class="error-state" hidden aria-live="assertive"></section>
+      <div id="viewRoot" hidden></div>
+    </main>
+  </div>
+
+  <dialog id="recipeDialog" class="recipe-dialog">
+    <article id="recipeDialogContent"></article>
+    <form method="dialog" class="dialog-actions">
+      <button class="button secondary" type="submit">Chiudi</button>
+    </form>
+  </dialog>
+
+  <template id="emptyTemplate">
+    <div class="empty-state">
+      <span aria-hidden="true">🗂️</span>
+      <h2>Nessun contenuto</h2>
+      <p>Questa sezione è pronta per i prossimi aggiornamenti.</p>
+    </div>
+  </template>
+
+  <script src="js/app.js" defer></script>
+</body>
+</html>
