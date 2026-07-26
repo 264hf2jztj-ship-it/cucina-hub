@@ -1,10 +1,10 @@
 "use strict";
 
 const DATA_FILES = {
-  recipes: "data/ricette.json",
-  appliances: "data/elettrodomestici.json",
-  categories: "data/categorie.json",
-  changelog: "data/changelog.json"
+  recipes: "ricette.json",
+  appliances: "elettrodomestici.json",
+  categories: "categorie.json",
+  changelog: "changelog.json"
 };
 
 const state = {
