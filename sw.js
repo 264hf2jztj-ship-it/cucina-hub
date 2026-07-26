@@ -1,10 +1,11 @@
-const CACHE_NAME = "cucina-hub-v2";
+const CACHE_NAME = "cucina-hub-v3";
 
 const APP_SHELL = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
+  "./supabase-config.js",
   "./manifest.json",
   "./icon.svg",
   "./ricette.json",
@@ -12,6 +13,10 @@ const APP_SHELL = [
   "./categorie.json",
   "./changelog.json"
 ];
+
+const APP_SHELL_PATHS = new Set(
+  APP_SHELL.map(path => new URL(path, self.location.href).pathname)
+);
 
 self.addEventListener("install", event => {
   event.waitUntil(
@@ -23,38 +28,59 @@ self.addEventListener("install", event => {
 
 self.addEventListener("activate", event => {
   event.waitUntil(
-    caches
-      .keys()
-      .then(keys =>
-        Promise.all(
-          keys
-            .filter(key => key !== CACHE_NAME)
-            .map(key => caches.delete(key))
-        )
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
       )
+    )
   );
 
   self.clients.claim();
 });
 
 self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
+  const request = event.request;
+
+  if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+
+  // Non intercetta Supabase, CDN, URL firmati o altre origini.
+  if (url.origin !== self.location.origin) return;
+
+  const isNavigation = request.mode === "navigate";
+  const isAppShellAsset = APP_SHELL_PATHS.has(url.pathname);
+
+  // Memorizza soltanto la struttura statica dell'app.
+  if (!isNavigation && !isAppShellAsset) return;
 
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then(response => {
-        const copy = response.clone();
+        if (response.ok) {
+          const copy = response.clone();
 
-        caches
-          .open(CACHE_NAME)
-          .then(cache => cache.put(event.request, copy));
+          caches
+            .open(CACHE_NAME)
+            .then(cache => cache.put(request, copy));
+        }
 
         return response;
       })
-      .catch(() =>
-        caches
-          .match(event.request)
-          .then(cached => cached || caches.match("./index.html"))
-      )
+      .catch(async () => {
+        if (isNavigation) {
+          return (
+            (await caches.match("./index.html")) ??
+            Response.error()
+          );
+        }
+
+        return (
+          (await caches.match(request)) ??
+          Response.error()
+        );
+      })
   );
 });
