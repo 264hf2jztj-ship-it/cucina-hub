@@ -17,6 +17,64 @@
 </head>
 <body>
   <a class="skip-link" href="#main-content">Vai al contenuto</a>
+  
+  <section
+  id="authView"
+  class="auth-view"
+  hidden
+  aria-labelledby="authTitle"
+>
+  <div class="auth-card">
+    <div class="auth-brand" aria-hidden="true">🍳</div>
+
+    <p class="eyebrow">Area privata</p>
+    <h1 id="authTitle">Accedi a Cucina Hub</h1>
+
+    <p class="auth-description">
+      Inserisci le credenziali del tuo account amministratore.
+    </p>
+
+    <form id="loginForm" class="auth-form">
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input
+          id="loginEmail"
+          name="email"
+          type="email"
+          autocomplete="email"
+          inputmode="email"
+          required
+        >
+      </div>
+
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <input
+          id="loginPassword"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+        >
+      </div>
+
+      <button
+        id="loginButton"
+        class="button auth-submit"
+        type="submit"
+      >
+        Accedi
+      </button>
+
+      <p
+        id="authMessage"
+        class="auth-message"
+        hidden
+        aria-live="polite"
+      ></p>
+    </form>
+  </div>
+</section>
 
   <header class="topbar">
     <div class="brand">
@@ -76,9 +134,9 @@
   defer
 ></script>
 
-<script src="supabase-config.js?v=7" defer></script>
-<script src="supabase-client.js?v=7" defer></script>
-<script src="app.js?v=7" defer></script>
-  </script>
+<script src="supabase-config.js?v=8" defer></script>
+<script src="supabase-client.js?v=8" defer></script>
+<script src="auth.js?v=8" defer></script>
+<script src="app.js?v=8" defer></script>
 </body>
 </html>
