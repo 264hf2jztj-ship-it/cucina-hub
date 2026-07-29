@@ -44,6 +44,17 @@ async function ensureAdministrator(client) {
   return user.id;
 }
 
+function asJsonArray(value, objectMapper = null) {
+  if (Array.isArray(value)) return value;
+  if (value == null) return [];
+  if (typeof value === "object") {
+    return Object.entries(value).map(([key, item]) =>
+      objectMapper ? objectMapper(key, item) : { type: key, text: item }
+    );
+  }
+  return [value];
+}
+
 function recipeDbRow(row, ownerUserId) {
   return {
     owner_user_id: ownerUserId,
@@ -53,13 +64,16 @@ function recipeDbRow(row, ownerUserId) {
     description: row.description,
     method_summary: row.method_summary,
     yield_text: row.yield_text,
-    instructions: row.instructions,
-    preparation_requirements: row.preparation_requirements,
-    practical_signals: row.practical_signals,
-    tips: row.tips,
-    variations: row.variations,
-    substitutions: row.substitutions,
-    meal_moments: row.meal_moments,
+    instructions: asJsonArray(row.instructions),
+    preparation_requirements: asJsonArray(
+      row.preparation_requirements,
+      (type, text) => ({ type, text })
+    ),
+    practical_signals: asJsonArray(row.practical_signals),
+    tips: asJsonArray(row.tips),
+    variations: asJsonArray(row.variations),
+    substitutions: asJsonArray(row.substitutions),
+    meal_moments: Array.isArray(row.meal_moments) ? row.meal_moments : [],
     nutrition_notes: row.nutrition_notes,
     personal_notes: row.personal_notes,
     source_type: row.source_type,
