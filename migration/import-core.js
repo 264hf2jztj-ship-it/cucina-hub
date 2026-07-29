@@ -96,7 +96,14 @@ export async function importCoreArchive({ client, recipesData, appliancesData, c
       owner_user_id: ownerUserId,
       normalized_name: ingredient.normalized_name
     });
-    const row = { ...ingredient, owner_user_id: ownerUserId };
+    const row = {
+      owner_user_id: ownerUserId,
+      name: ingredient.name,
+      default_unit: ingredient.default_unit,
+      aliases: ingredient.aliases,
+      notes: ingredient.notes,
+      is_pantry_staple: ingredient.is_pantry_staple
+    };
     const saved = existing
       ? await updateOne(client, "ingredients", existing.id, row)
       : await insertOne(client, "ingredients", row);
