@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Test login Supabase</title>
+  <style>
+    body{font-family:system-ui,sans-serif;margin:0;padding:24px;background:#f5f3ed;color:#1f2a24}
+    main{max-width:560px;margin:0 auto}
+    form{display:grid;gap:14px;padding:20px;background:#fff;border:1px solid #d8ddd9;border-radius:16px}
+    label{display:grid;gap:6px;font-weight:600}
+    input,button{font:inherit;padding:12px;border-radius:10px;border:1px solid #c8d0cb}
+    button{background:#2f6b4f;color:#fff;border:0;font-weight:700}
+    pre{white-space:pre-wrap;word-break:break-word;padding:16px;background:#111;color:#eee;border-radius:12px;min-height:120px}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Test login Supabase</h1>
+  <p>Questa pagina prova il login direttamente via REST, senza supabase-js e senza il codice di Cucina Hub.</p>
+  <form id="testForm">
+    <label>Email<input id="email" type="email" autocomplete="email" required></label>
+    <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+    <button type="submit">Esegui test</button>
+  </form>
+  <h2>Risultato</h2>
+  <pre id="output">In attesa del test…</pre>
+</main>
+<script src="supabase-config.js"></script>
+<script>
+const form=document.querySelector("#testForm");
+const output=document.querySelector("#output");
+form.addEventListener("submit",async event=>{
+  event.preventDefault();
+  const config=window.CUCINA_HUB_CONFIG;
+  const email=document.querySelector("#email").value.trim();
+  const password=document.querySelector("#password").value;
+  output.textContent="Invio richiesta…";
+  try{
+    const response=await fetch(`${config.supabaseUrl}/auth/v1/token?grant_type=password`,{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        apikey:config.supabasePublishableKey,
+        Authorization:`Bearer ${config.supabasePublishableKey}`
+      },
+      body:JSON.stringify({email,password})
+    });
+    const text=await response.text();
+    let body;
+    try{body=JSON.parse(text)}catch{body=text}
+    if(body&&typeof body==="object"){
+      delete body.access_token;
+      delete body.refresh_token;
+    }
+    output.textContent=JSON.stringify({
+      ok:response.ok,
+      status:response.status,
+      statusText:response.statusText,
+      body
+    },null,2);
+  }catch(error){
+    output.textContent=JSON.stringify({
+      name:error?.name,
+      message:error?.message,
+      stack:error?.stack
+    },null,2);
+  }
+});
+</script>
+</body>
+</html>
