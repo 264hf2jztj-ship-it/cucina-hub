@@ -8,7 +8,7 @@
   <title>Cucina Hub</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=12">
   <style>
     [hidden] {
       display: none !important;
@@ -75,7 +75,7 @@
     </div>
   </section>
 
-  <header class="topbar">
+  <header id="appHeader" class="topbar" hidden>
     <div class="brand">
       <div class="brand-mark" aria-hidden="true">🍳</div>
       <div>
@@ -83,10 +83,13 @@
         <h1>Cucina Hub</h1>
       </div>
     </div>
-    <button id="menuButton" class="icon-button menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Apri menu">☰</button>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button id="logoutButton" class="button secondary" type="button">Esci</button>
+      <button id="menuButton" class="icon-button menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Apri menu">☰</button>
+    </div>
   </header>
 
-  <div class="app-shell">
+  <div id="appShell" class="app-shell" hidden>
     <aside id="sidebar" class="sidebar" aria-label="Navigazione principale">
       <nav id="mainNav" class="nav-list">
         <button class="nav-item is-active" data-view="dashboard" type="button"><span>🏠</span> Dashboard</button>
@@ -129,7 +132,7 @@
   </template>
 
   <!-- Avvia subito la dashboard statica senza attendere librerie esterne. -->
-  <script src="app.js?v=11"></script>
+  <script src="app.js?v=12"></script>
   <script>
     document.querySelector("#loginForm").addEventListener(
       "submit",
@@ -147,8 +150,8 @@
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
     defer
   ></script>
-  <script src="supabase-config.js?v=11" defer></script>
-  <script src="supabase-client.js?v=11" defer></script>
-  <script src="auth.js?v=11" defer></script>
+  <script src="supabase-config.js?v=12" defer></script>
+  <script src="supabase-client.js?v=12" defer></script>
+  <script src="auth.js?v=12" defer></script>
 </body>
 </html>

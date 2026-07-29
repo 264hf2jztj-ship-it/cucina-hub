@@ -1,4 +1,4 @@
-const CACHE_NAME = "cucina-hub-v10";
+const CACHE_NAME = "cucina-hub-v12";
 
 const APP_SHELL = [
   "./",
@@ -9,11 +9,7 @@ const APP_SHELL = [
   "./supabase-client.js",
   "./auth.js",
   "./manifest.json",
-  "./icon.svg",
-  "./ricette.json",
-  "./elettrodomestici.json",
-  "./categorie.json",
-  "./changelog.json"
+  "./icon.svg"
 ];
 
 const APP_SHELL_PATHS = new Set(
@@ -55,7 +51,8 @@ self.addEventListener("fetch", event => {
   const isNavigation = request.mode === "navigate";
   const isAppShellAsset = APP_SHELL_PATHS.has(url.pathname);
 
-  // Memorizza soltanto la struttura statica dell'app.
+  // Memorizza soltanto la struttura pubblica e statica dell'app.
+  // JSON personali, token, sessioni e risposte Supabase non vengono salvati.
   if (!isNavigation && !isAppShellAsset) return;
 
   event.respondWith(
