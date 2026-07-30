@@ -157,12 +157,11 @@ export async function importCoreArchive({
     onProgress(`Categoria: ${category.name}`);
     const existing = await findOne(client, "categories", {
       owner_user_id: ownerUserId,
-      slug: category.slug
+      name: category.name
     });
     const row = {
       owner_user_id: ownerUserId,
-      name: category.name,
-      slug: category.slug
+      name: category.name
     };
     if (existing) await updateOne(client, "categories", existing.id, row);
     else await insertOne(client, "categories", row);
