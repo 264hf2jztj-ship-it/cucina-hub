@@ -16,14 +16,14 @@
 <body>
 <main>
   <h1>Import core JSON → Supabase</h1>
-  <p>Importa le tabelle verificate: <strong>ingredients</strong>, <strong>categories</strong>, <strong>recipes</strong>, <strong>recipe_ingredients</strong> e <strong>tasting_notes</strong>.</p>
+  <p>Importa le tabelle verificate: <strong>ingredients</strong>, <strong>categories</strong>, <strong>tags</strong>, <strong>recipes</strong>, <strong>recipe_ingredients</strong> e <strong>tasting_notes</strong>.</p>
 
   <section class="panel">
     <p class="warning"><strong>Operazione reale:</strong> questa pagina modifica Supabase usando la sessione amministratore attiva. Può essere rilanciata: le righe esistenti vengono aggiornate invece di essere duplicate.</p>
-    <p class="muted">Tag, elettrodomestici e relative tabelle di collegamento non vengono ancora importati.</p>
+    <p class="muted">Elettrodomestici e relative tabelle di collegamento non vengono ancora importati.</p>
     <label for="confirmation">Scrivi IMPORTA per abilitare il pulsante</label>
     <input id="confirmation" autocomplete="off" placeholder="IMPORTA">
-    <button id="runButton" type="button" disabled>Importa archivio core + categorie</button>
+    <button id="runButton" type="button" disabled>Importa archivio core + categorie + tag</button>
     <p id="status" aria-live="polite"></p>
   </section>
 
@@ -37,7 +37,7 @@
 <script src="../supabase-config.js?v=12"></script>
 <script src="../supabase-client.js?v=12"></script>
 <script type="module">
-  import { importCoreArchive } from "./import-core.js?v=12";
+  import { importCoreArchive } from "./import-core.js?v=13";
 
   const confirmation = document.querySelector("#confirmation");
   const runButton = document.querySelector("#runButton");
@@ -92,7 +92,7 @@
 
       log.textContent += `\n\nREPORT FINALE\n${JSON.stringify(result, null, 2)}`;
       status.className = "ok";
-      status.textContent = "Importazione core e categorie completata. Controlla il report e la tabella categories.";
+      status.textContent = "Importazione core, categorie e tag completata. Controlla il report e la tabella tags.";
       confirmation.value = "";
     } catch (error) {
       console.error(error);
