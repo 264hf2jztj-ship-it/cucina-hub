@@ -3,24 +3,21 @@
 import { buildImportPreview } from "./import-preview.js";
 
 const ALLOWED_RECIPE_SOURCE_TYPES = new Set([
-  "personal",
-  "chatgpt",
-  "manual",
-  "course",
-  "book",
-  "website",
-  "other"
+  "personal", "chatgpt", "manual", "course", "book", "website", "other"
 ]);
 
 function assertOk(error, context) {
-  if (error) throw new Error(`${context}: ${error.message}`);
+  if (!error) return;
+  const wrapped = new Error(`${context}: ${error.message}`);
+  wrapped.code = error.code;
+  wrapped.details = error.details;
+  wrapped.hint = error.hint;
+  throw wrapped;
 }
 
 async function findOne(client, table, filters) {
   let query = client.from(table).select("*").limit(1);
-  for (const [column, value] of Object.entries(filters)) {
-    query = query.eq(column, value);
-  }
+  for (const [column, value] of Object.entries(filters)) query = query.eq(column, value);
   const { data, error } = await query.maybeSingle();
   assertOk(error, `Lettura ${table}`);
   return data;
@@ -45,10 +42,7 @@ async function ensureAdministrator(client) {
   if (!user) throw new Error("Accedi prima a Cucina Hub con l’account amministratore.");
 
   const { data: profile, error: profileError } = await client
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
+    .from("profiles").select("role").eq("id", user.id).maybeSingle();
   assertOk(profileError, "Verifica profilo");
   if (profile?.role !== "admin") throw new Error("L’account non ha ruolo amministratore.");
   return user.id;
@@ -101,7 +95,13 @@ function dbNormalizedIngredientName(name) {
   return String(name ?? "").trim().toLocaleLowerCase("it-IT");
 }
 
-export async function importCoreArchive({ client, recipesData, appliancesData, categoriesData, onProgress = () => {} }) {
+export async function importCoreArchive({
+  client,
+  recipesData,
+  appliancesData,
+  categoriesData,
+  onProgress = () => {}
+}) {
   if (!client) throw new Error("Client Supabase non disponibile.");
   const ownerUserId = await ensureAdministrator(client);
   const preview = buildImportPreview({ recipesData, appliancesData, categoriesData });
@@ -161,7 +161,9 @@ export async function importCoreArchive({ client, recipesData, appliancesData, c
   for (const link of preview.payload.recipe_ingredients) {
     const recipeId = recipeByCode.get(link.recipe_code);
     const ingredientId = ingredientByNormalizedName.get(link.ingredient_normalized_name);
-    if (!recipeId || !ingredientId) throw new Error(`Relazione ingrediente incompleta per ${link.recipe_code}.`);
+    if (!recipeId || !ingredientId) {
+      throw new Error(`Relazione ingrediente incompleta per ${link.recipe_code}.`);
+    }
 
     onProgress(`Collegamento ingredienti: ${link.recipe_code}`);
     const existing = await findOne(client, "recipe_ingredients", {
@@ -171,7 +173,7 @@ export async function importCoreArchive({ client, recipesData, appliancesData, c
     const row = {
       recipe_id: recipeId,
       ingredient_id: ingredientId,
-      section_name: null,
+      section_name: link.section_name?.trim() || "Ingredienti",
       sort_order: link.sort_order,
       quantity: null,
       quantity_max: null,
