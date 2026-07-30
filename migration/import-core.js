@@ -83,6 +83,10 @@ function recipeDbRow(row, ownerUserId) {
   };
 }
 
+function dbNormalizedIngredientName(name) {
+  return String(name ?? "").trim().toLocaleLowerCase("it-IT");
+}
+
 export async function importCoreArchive({ client, recipesData, appliancesData, categoriesData, onProgress = () => {} }) {
   if (!client) throw new Error("Client Supabase non disponibile.");
   const ownerUserId = await ensureAdministrator(client);
@@ -108,7 +112,7 @@ export async function importCoreArchive({ client, recipesData, appliancesData, c
     onProgress(`Ingrediente: ${ingredient.name}`);
     const existing = await findOne(client, "ingredients", {
       owner_user_id: ownerUserId,
-      normalized_name: ingredient.normalized_name
+      normalized_name: dbNormalizedIngredientName(ingredient.name)
     });
     const row = {
       owner_user_id: ownerUserId,
