@@ -124,10 +124,11 @@ export async function importCoreArchive({
 
   const report = {
     ingredients: { created: 0, updated: 0 },
+    categories: { created: 0, updated: 0 },
     recipes: { created: 0, updated: 0 },
     recipe_ingredients: { created: 0, updated: 0 },
     tasting_notes: { created: 0, updated: 0 },
-    skipped_relations: ["categories", "tags", "appliances"]
+    skipped_relations: ["tags", "appliances"]
   };
 
   const ingredientByNormalizedName = new Map();
@@ -150,6 +151,22 @@ export async function importCoreArchive({
       : await insertOne(client, "ingredients", row);
     report.ingredients[existing ? "updated" : "created"] += 1;
     ingredientByNormalizedName.set(ingredient.normalized_name, saved.id);
+  }
+
+  for (const category of preview.payload.categories) {
+    onProgress(`Categoria: ${category.name}`);
+    const existing = await findOne(client, "categories", {
+      owner_user_id: ownerUserId,
+      slug: category.slug
+    });
+    const row = {
+      owner_user_id: ownerUserId,
+      name: category.name,
+      slug: category.slug
+    };
+    if (existing) await updateOne(client, "categories", existing.id, row);
+    else await insertOne(client, "categories", row);
+    report.categories[existing ? "updated" : "created"] += 1;
   }
 
   const recipeByCode = new Map();
