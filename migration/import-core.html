@@ -37,7 +37,7 @@
 <script src="../supabase-config.js?v=12"></script>
 <script src="../supabase-client.js?v=12"></script>
 <script type="module">
-  import { importCoreArchive } from "./import-core.js?v=7";
+  import { importCoreArchive } from "./import-core.js?v=8";
 
   const confirmation = document.querySelector("#confirmation");
   const runButton = document.querySelector("#runButton");
@@ -55,14 +55,13 @@
   }
 
   function formatError(error) {
-    const lines = [
+    return [
       error?.message ? `MESSAGGIO: ${error.message}` : null,
       error?.code ? `CODICE: ${error.code}` : null,
       error?.details ? `DETTAGLIO: ${error.details}` : null,
       error?.hint ? `SUGGERIMENTO: ${error.hint}` : null,
       error?.stack ? `STACK:\n${error.stack}` : null
-    ].filter(Boolean);
-    return lines.join("\n");
+    ].filter(Boolean).join("\n");
   }
 
   runButton.addEventListener("click", async () => {
@@ -97,8 +96,7 @@
       confirmation.value = "";
     } catch (error) {
       console.error(error);
-      const formatted = formatError(error);
-      log.textContent += `\n\nERRORE COMPLETO\n${formatted}`;
+      log.textContent += `\n\nERRORE COMPLETO\n${formatError(error)}`;
       log.scrollTop = log.scrollHeight;
       status.className = "error";
       status.textContent = error?.message || "Errore durante l’importazione.";
