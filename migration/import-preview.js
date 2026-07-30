@@ -38,7 +38,7 @@ function buildRecipeRow(recipe) {
     legacy_id: recipe.id,
     code: recipe.codice,
     title: recipe.titolo,
-    status: recipe.stato === "certificata" ? "approved" : "testing",
+    status: recipe.stato === "certificata" ? "certified" : "experiment",
     description: recipe.categoria ?? null,
     method_summary: recipe.perche_funziona ?? null,
     yield_text: recipe.resa ?? null,
