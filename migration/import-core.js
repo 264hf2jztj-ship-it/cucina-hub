@@ -6,6 +6,10 @@ const ALLOWED_RECIPE_SOURCE_TYPES = new Set([
   "personal", "chatgpt", "manual", "course", "book", "website", "other"
 ]);
 
+const ALLOWED_TASTING_OUTCOMES = new Set([
+  "pending", "repeat_as_is", "repeat_with_changes", "discard", "certified"
+]);
+
 function assertOk(error, context) {
   if (!error) return;
   const wrapped = new Error(`${context}: ${error.message}`);
@@ -57,6 +61,11 @@ function asJsonArray(value, objectMapper = null) {
     );
   }
   return [value];
+}
+
+function asJsonObject(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value;
+  return {};
 }
 
 function recipeDbRow(row, ownerUserId) {
@@ -198,19 +207,25 @@ export async function importCoreArchive({
       owner_user_id: ownerUserId,
       version_label: note.version_label
     });
+    const outcome = ALLOWED_TASTING_OUTCOMES.has(note.outcome)
+      ? note.outcome
+      : note.is_certification_test
+        ? "certified"
+        : "repeat_with_changes";
+
     const row = {
       recipe_id: recipeId,
       owner_user_id: ownerUserId,
       tasted_at: note.tested_at ? `${note.tested_at}T12:00:00Z` : new Date().toISOString(),
-      version_label: note.version_label,
-      outcome: note.outcome,
+      version_label: note.version_label?.trim() || null,
+      outcome,
       overall_rating: note.overall_rating,
       flavor_rating: null,
       texture_rating: null,
       appearance_rating: null,
       aroma_rating: null,
       would_make_again: note.would_make_again,
-      is_certification_test: note.is_certification_test,
+      is_certification_test: Boolean(note.is_certification_test),
       general_notes: note.general_notes,
       flavor_notes: null,
       texture_notes: null,
@@ -218,9 +233,9 @@ export async function importCoreArchive({
       aroma_notes: null,
       family_feedback: null,
       child_feedback: null,
-      changes_made: note.changes_made,
-      next_adjustments: note.next_adjustments,
-      recipe_snapshot: note.recipe_snapshot
+      changes_made: asJsonArray(note.changes_made),
+      next_adjustments: asJsonArray(note.next_adjustments),
+      recipe_snapshot: asJsonObject(note.recipe_snapshot)
     };
     if (existing) await updateOne(client, "tasting_notes", existing.id, row);
     else await insertOne(client, "tasting_notes", row);
