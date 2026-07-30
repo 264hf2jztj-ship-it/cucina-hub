@@ -126,10 +126,11 @@ export async function importCoreArchive({
     ingredients: { created: 0, updated: 0 },
     categories: { created: 0, updated: 0 },
     tags: { created: 0, updated: 0 },
+    appliances: { created: 0, updated: 0 },
     recipes: { created: 0, updated: 0 },
     recipe_ingredients: { created: 0, updated: 0 },
     tasting_notes: { created: 0, updated: 0 },
-    skipped_relations: ["appliances"]
+    skipped_relations: []
   };
 
   const ingredientByNormalizedName = new Map();
@@ -182,6 +183,21 @@ export async function importCoreArchive({
     if (existing) await updateOne(client, "tags", existing.id, row);
     else await insertOne(client, "tags", row);
     report.tags[existing ? "updated" : "created"] += 1;
+  }
+
+  for (const appliance of preview.payload.appliances) {
+    onProgress(`Elettrodomestico: ${appliance.name}`);
+    const existing = await findOne(client, "appliances", {
+      owner_user_id: ownerUserId,
+      name: appliance.name
+    });
+    const row = {
+      owner_user_id: ownerUserId,
+      name: appliance.name
+    };
+    if (existing) await updateOne(client, "appliances", existing.id, row);
+    else await insertOne(client, "appliances", row);
+    report.appliances[existing ? "updated" : "created"] += 1;
   }
 
   const recipeByCode = new Map();
