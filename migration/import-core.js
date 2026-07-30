@@ -201,7 +201,7 @@ export async function importCoreArchive({
     const row = {
       recipe_id: recipeId,
       owner_user_id: ownerUserId,
-      tested_at: note.tested_at ? `${note.tested_at}T12:00:00Z` : new Date().toISOString(),
+      tasted_at: note.tested_at ? `${note.tested_at}T12:00:00Z` : new Date().toISOString(),
       version_label: note.version_label,
       outcome: note.outcome,
       overall_rating: note.overall_rating,
