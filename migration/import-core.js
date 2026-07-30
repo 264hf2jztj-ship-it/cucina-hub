@@ -129,8 +129,9 @@ export async function importCoreArchive({
     appliances: { created: 0, updated: 0 },
     recipes: { created: 0, updated: 0 },
     recipe_ingredients: { created: 0, updated: 0 },
+    recipe_categories: { created: 0, updated: 0 },
     tasting_notes: { created: 0, updated: 0 },
-    skipped_relations: []
+    skipped_relations: ["recipe_tags", "recipe_appliances"]
   };
 
   const ingredientByNormalizedName = new Map();
@@ -155,6 +156,7 @@ export async function importCoreArchive({
     ingredientByNormalizedName.set(ingredient.normalized_name, saved.id);
   }
 
+  const categoryBySlug = new Map();
   for (const category of preview.payload.categories) {
     onProgress(`Categoria: ${category.name}`);
     const existing = await findOne(client, "categories", {
@@ -165,9 +167,11 @@ export async function importCoreArchive({
       owner_user_id: ownerUserId,
       name: category.name
     };
-    if (existing) await updateOne(client, "categories", existing.id, row);
-    else await insertOne(client, "categories", row);
+    const saved = existing
+      ? await updateOne(client, "categories", existing.id, row)
+      : await insertOne(client, "categories", row);
     report.categories[existing ? "updated" : "created"] += 1;
+    categoryBySlug.set(category.slug, saved.id);
   }
 
   for (const tag of preview.payload.tags) {
@@ -213,6 +217,27 @@ export async function importCoreArchive({
       : await insertOne(client, "recipes", row);
     report.recipes[existing ? "updated" : "created"] += 1;
     recipeByCode.set(recipe.code, saved.id);
+  }
+
+  for (const link of preview.payload.recipe_categories) {
+    const recipeId = recipeByCode.get(link.recipe_code);
+    const categoryId = categoryBySlug.get(link.category_slug);
+    if (!recipeId || !categoryId) {
+      throw new Error(`Relazione categoria incompleta per ${link.recipe_code}.`);
+    }
+
+    onProgress(`Collegamento categorie: ${link.recipe_code}`);
+    const existing = await findOne(client, "recipe_categories", {
+      recipe_id: recipeId,
+      category_id: categoryId
+    });
+    const row = {
+      recipe_id: recipeId,
+      category_id: categoryId
+    };
+    if (existing) await updateOne(client, "recipe_categories", existing.id, row);
+    else await insertOne(client, "recipe_categories", row);
+    report.recipe_categories[existing ? "updated" : "created"] += 1;
   }
 
   for (const link of preview.payload.recipe_ingredients) {
