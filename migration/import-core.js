@@ -2,6 +2,16 @@
 
 import { buildImportPreview } from "./import-preview.js";
 
+const ALLOWED_RECIPE_SOURCE_TYPES = new Set([
+  "personal",
+  "chatgpt",
+  "manual",
+  "course",
+  "book",
+  "website",
+  "other"
+]);
+
 function assertOk(error, context) {
   if (error) throw new Error(`${context}: ${error.message}`);
 }
@@ -56,6 +66,10 @@ function asJsonArray(value, objectMapper = null) {
 }
 
 function recipeDbRow(row, ownerUserId) {
+  const sourceType = ALLOWED_RECIPE_SOURCE_TYPES.has(row.source_type)
+    ? row.source_type
+    : "chatgpt";
+
   return {
     owner_user_id: ownerUserId,
     code: row.code,
@@ -76,7 +90,7 @@ function recipeDbRow(row, ownerUserId) {
     meal_moments: Array.isArray(row.meal_moments) ? row.meal_moments : [],
     nutrition_notes: row.nutrition_notes,
     personal_notes: row.personal_notes,
-    source_type: row.source_type,
+    source_type: sourceType,
     source_reference: JSON.stringify(row.source_reference),
     is_favorite: row.is_favorite,
     last_cooked_at: row.last_cooked_at
