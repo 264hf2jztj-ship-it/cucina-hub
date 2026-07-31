@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Test convenzioni Storage — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}
+    main{max-width:900px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:16px;padding:18px;margin-bottom:16px}
+    button{border:0;border-radius:10px;padding:11px 16px;background:#365d44;color:#fff;font-weight:700}
+    pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#211f1c;color:#f7f2e8;border-radius:12px;padding:16px;max-height:520px;overflow:auto}
+    .ok{color:#1b6b36}.error{color:#a62424}.muted{color:#6d655c}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Test convenzioni Storage</h1>
+  <p>Genera e valida percorsi di esempio senza leggere o modificare Supabase.</p>
+  <section class="panel">
+    <p class="muted">Test locale e sicuro: nessun file viene caricato.</p>
+    <button id="runButton" type="button">Esegui test</button>
+    <p id="status" aria-live="polite"></p>
+  </section>
+  <section class="panel">
+    <h2>Registro</h2>
+    <pre id="log">In attesa.</pre>
+  </section>
+</main>
+<script type="module">
+  import {
+    buildRecipeImagePath,
+    buildApplianceImagePath,
+    buildManualPath,
+    buildCourseAssetPath,
+    slugifyStorageName,
+    validatePrivateStoragePath
+  } from "./storage-paths.js?v=1";
+
+  const ownerUserId = "7d38398e-e29b-430b-8238-43836f0b6ada";
+  const recipeId = "11111111-1111-4111-8111-111111111111";
+  const applianceId = "22222222-2222-4222-8222-222222222222";
+  const manualId = "33333333-3333-4333-8333-333333333333";
+  const courseId = "44444444-4444-4444-8444-444444444444";
+  const lessonId = "55555555-5555-4555-8555-555555555555";
+  const fileId = "66666666-6666-4666-8666-666666666666";
+
+  const button = document.querySelector("#runButton");
+  const status = document.querySelector("#status");
+  const log = document.querySelector("#log");
+
+  button.addEventListener("click", () => {
+    try {
+      const paths = {
+        recipe_image: buildRecipeImagePath({ ownerUserId, recipeId, role: "cover", fileId, label: "Recovery Fresh Run", extension: ".WEBP" }),
+        appliance_image: buildApplianceImagePath({ ownerUserId, applianceId, role: "control-panel", fileId, label: "Forno Samsung — pannello", extension: "jpg" }),
+        manual: buildManualPath({ ownerUserId, applianceId, manualId, fileId, label: "Manuale Forno Samsung NV75N5641RS/ET" }),
+        course_asset: buildCourseAssetPath({ ownerUserId, courseId, scope: "lesson", scopeId: lessonId, fileId, label: "Lezione 1: temperature", extension: "pdf" })
+      };
+
+      Object.values(paths).forEach(path => validatePrivateStoragePath(path, ownerUserId));
+
+      const checks = {
+        slug_accents: slugifyStorageName("Crème brûlée & Cottura") === "creme-brulee-cottura",
+        owner_first_segment: Object.values(paths).every(path => path.startsWith(`${ownerUserId}/`)),
+        lowercase_extensions: Object.values(paths).every(path => /\.[a-z0-9]+$/.test(path)),
+        no_spaces: Object.values(paths).every(path => !path.includes(" ")),
+        manual_pdf: paths.manual.endsWith(".pdf")
+      };
+
+      const pass = Object.values(checks).every(Boolean);
+      const report = { pass, checks, paths };
+      log.textContent = `REPORT FINALE\n${JSON.stringify(report, null, 2)}`;
+      status.className = pass ? "ok" : "error";
+      status.textContent = pass ? "Test superato: convenzioni e percorsi coerenti." : "Test non superato: controlla il report.";
+    } catch (error) {
+      console.error(error);
+      log.textContent = `ERRORE COMPLETO\n${error.stack || error.message}`;
+      status.className = "error";
+      status.textContent = error.message;
+    }
+  });
+</script>
+</body>
+</html>
