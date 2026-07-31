@@ -1,98 +1,25 @@
 <!doctype html>
 <html lang="it">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Import changelog — Cucina Hub</title>
-  <style>
-    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}
-    main{max-width:860px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:16px;padding:18px;margin-bottom:16px}
-    label{display:block;font-weight:700;margin-bottom:8px}input{width:100%;box-sizing:border-box;border:1px solid #bdb4a8;border-radius:10px;padding:11px;font-size:1rem}
-    button{border:0;border-radius:10px;padding:11px 16px;background:#365d44;color:#fff;font-weight:700;margin-top:12px}button:disabled{opacity:.5}
-    pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#211f1c;color:#f7f2e8;border-radius:12px;padding:16px;max-height:440px;overflow:auto}
-    .ok{color:#1b6b36}.warning{color:#9b5b00}.error{color:#a62424}.muted{color:#6d655c}
-  </style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Import changelog — Cucina Hub</title>
+<style>body{font-family:system-ui,sans-serif;background:#f6f3ee;color:#26221d;margin:0}main{max-width:860px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:16px;padding:18px;margin:16px 0}input{width:100%;box-sizing:border-box;padding:11px;font-size:1rem}button{padding:11px 16px;margin-top:12px}pre{white-space:pre-wrap;background:#211f1c;color:#f7f2e8;padding:16px;border-radius:12px;max-height:440px;overflow:auto}.ok{color:#1b6b36}.error{color:#a62424}</style>
 </head>
-<body>
-<main>
-  <h1>Import changelog JSON → Supabase</h1>
-  <p>Importa in modo idempotente <strong>changelog.json</strong> nella tabella <strong>changelog_entries</strong>.</p>
-
-  <section class="panel">
-    <p class="warning"><strong>Operazione reale:</strong> questa pagina modifica Supabase usando la sessione amministratore attiva.</p>
-    <p class="muted">Il test è separato dall’importatore core già verificato.</p>
-    <label for="confirmation">Scrivi IMPORTA per abilitare il pulsante</label>
-    <input id="confirmation" autocomplete="off" placeholder="IMPORTA">
-    <button id="runButton" type="button" disabled>Importa changelog</button>
-    <p id="status" aria-live="polite"></p>
-  </section>
-
-  <section class="panel">
-    <h2>Registro</h2>
-    <pre id="log">In attesa.</pre>
-  </section>
+<body><main>
+<h1>Import changelog JSON → Supabase</h1>
+<p>L’importatore rileva i nomi reali delle colonne di <strong>changelog_entries</strong>.</p>
+<section class="panel">
+<label for="confirmation"><strong>Scrivi IMPORTA per abilitare il pulsante</strong></label>
+<input id="confirmation" placeholder="IMPORTA"><button id="runButton" disabled>Importa changelog</button><p id="status"></p>
+</section>
+<section class="panel"><h2>Registro</h2><pre id="log">In attesa.</pre></section>
 </main>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../supabase-config.js?v=12"></script>
-<script src="../supabase-client.js?v=12"></script>
+<script src="../supabase-config.js?v=12"></script><script src="../supabase-client.js?v=12"></script>
 <script type="module">
-  import { importChangelogEntries } from "./import-changelog.js?v=20";
-
-  const confirmation = document.querySelector("#confirmation");
-  const runButton = document.querySelector("#runButton");
-  const status = document.querySelector("#status");
-  const log = document.querySelector("#log");
-
-  confirmation.addEventListener("input", () => {
-    runButton.disabled = confirmation.value.trim() !== "IMPORTA";
-  });
-
-  function formatError(error) {
-    return [
-      error?.message ? `MESSAGGIO: ${error.message}` : null,
-      error?.code ? `CODICE: ${error.code}` : null,
-      error?.details ? `DETTAGLIO: ${error.details}` : null,
-      error?.hint ? `SUGGERIMENTO: ${error.hint}` : null,
-      error?.stack ? `STACK:\n${error.stack}` : null
-    ].filter(Boolean).join("\n");
-  }
-
-  runButton.addEventListener("click", async () => {
-    if (confirmation.value.trim() !== "IMPORTA") return;
-    runButton.disabled = true;
-    confirmation.disabled = true;
-    status.className = "";
-    status.textContent = "Importazione in corso…";
-    log.textContent = "Avvio…";
-
-    try {
-      const response = await fetch("../changelog.json", { cache: "no-store" });
-      if (!response.ok) throw new Error("Impossibile caricare changelog.json");
-      const changelogData = await response.json();
-
-      const result = await importChangelogEntries({
-        client: window.cucinaHubSupabase,
-        changelogData,
-        onProgress(message) {
-          log.textContent += `\n${message}`;
-        }
-      });
-
-      log.textContent += `\n\nREPORT FINALE\n${JSON.stringify(result, null, 2)}`;
-      status.className = "ok";
-      status.textContent = "Importazione changelog completata. Controlla il report e la tabella changelog_entries.";
-      confirmation.value = "";
-    } catch (error) {
-      console.error(error);
-      log.textContent += `\n\nERRORE COMPLETO\n${formatError(error)}`;
-      status.className = "error";
-      status.textContent = error?.message || "Errore durante l’importazione.";
-    } finally {
-      confirmation.disabled = false;
-      runButton.disabled = true;
-    }
-  });
-</script>
-</body>
-</html>
+import { importChangelogEntries } from "./import-changelog.js?v=21";
+const confirmation=document.querySelector("#confirmation"),runButton=document.querySelector("#runButton"),status=document.querySelector("#status"),log=document.querySelector("#log");
+confirmation.addEventListener("input",()=>{runButton.disabled=confirmation.value.trim()!=="IMPORTA"});
+function formatError(e){return [e?.message&&`MESSAGGIO: ${e.message}`,e?.code&&`CODICE: ${e.code}`,e?.details&&`DETTAGLIO: ${e.details}`,e?.hint&&`SUGGERIMENTO: ${e.hint}`,e?.stack&&`STACK:\n${e.stack}`].filter(Boolean).join("\n")}
+runButton.addEventListener("click",async()=>{runButton.disabled=true;confirmation.disabled=true;status.className="";status.textContent="Importazione in corso…";log.textContent="Avvio…";try{const response=await fetch("../changelog.json",{cache:"no-store"});if(!response.ok)throw new Error("Impossibile caricare changelog.json");const result=await importChangelogEntries({client:window.cucinaHubSupabase,changelogData:await response.json(),onProgress(message){log.textContent+=`\n${message}`;log.scrollTop=log.scrollHeight}});log.textContent+=`\n\nREPORT FINALE\n${JSON.stringify(result,null,2)}`;status.className="ok";status.textContent="Importazione changelog completata.";confirmation.value=""}catch(error){console.error(error);log.textContent+=`\n\nERRORE COMPLETO\n${formatError(error)}`;log.scrollTop=log.scrollHeight;status.className="error";status.textContent=error?.message||"Errore durante l’importazione."}finally{confirmation.disabled=false;runButton.disabled=true}});
+</script></body></html>
