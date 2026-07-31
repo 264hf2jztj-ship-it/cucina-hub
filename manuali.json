@@ -1,0 +1,52 @@
+{
+  "manuali": [
+    {
+      "legacy_key": "samsung-nv75n5641rs-et-official",
+      "title": "Manuale forno Samsung NV75N5641RS/ET",
+      "appliance_name": "Forno Samsung NV75N5641RS/ET",
+      "manufacturer": "Samsung",
+      "model": "NV75N5641RS/ET",
+      "language": "it",
+      "document_type": "instruction_manual",
+      "version_label": "DG68-01057J-00",
+      "source_filename": "Forno NV75N5641RS_ET_DG68-01057J-00_IT.pdf",
+      "notes": "Manuale ufficiale italiano. Il PDF sarà caricato nel bucket privato manuals nel Macrostep 6."
+    },
+    {
+      "legacy_key": "hurom-e30st-official-europe-v01",
+      "title": "Manuale ufficiale Hurom E30ST — Europa",
+      "appliance_name": "Estrattore Hurom E30ST",
+      "manufacturer": "Hurom",
+      "model": "E30ST",
+      "language": "en",
+      "document_type": "instruction_manual",
+      "version_label": "V.01",
+      "source_filename": "E30ST Instruction Manual [Europe]_V.01.pdf",
+      "notes": "Manuale ufficiale europeo. Il PDF sarà caricato nel bucket privato manuals nel Macrostep 6."
+    },
+    {
+      "legacy_key": "hurom-e30st-personal-v30",
+      "title": "Manuale personale Hurom E30ST",
+      "appliance_name": "Estrattore Hurom E30ST",
+      "manufacturer": "Hurom",
+      "model": "E30ST",
+      "language": "it",
+      "document_type": "personal_guide",
+      "version_label": "3.0",
+      "source_filename": "manuale_personale_hurom_e30st_v3_0(1).pdf",
+      "notes": "Guida personale d'uso. Il PDF sarà caricato nel bucket privato manuals nel Macrostep 6."
+    },
+    {
+      "legacy_key": "ninja-tb401eu-official",
+      "title": "Manuale frullatore Ninja TB401EU",
+      "appliance_name": "Frullatore Ninja TB401EU",
+      "manufacturer": "Ninja",
+      "model": "TB401EU",
+      "language": "multi",
+      "document_type": "instruction_manual",
+      "version_label": null,
+      "source_filename": "TB401EU_IB_MP (1) (1).pdf",
+      "notes": "Manuale ufficiale. Il PDF sarà caricato nel bucket privato manuals nel Macrostep 6."
+    }
+  ]
+}
