@@ -129,7 +129,7 @@ export async function importCoreArchive({
     appliances: { created: 0, updated: 0 },
     recipes: { created: 0, updated: 0 },
     recipe_ingredients: { created: 0, updated: 0 },
-    recipe_categories: { created: 0, updated: 0 },
+    recipe_categories: { created: 0, existing: 0 },
     tasting_notes: { created: 0, updated: 0 },
     skipped_relations: ["recipe_tags", "recipe_appliances"]
   };
@@ -231,13 +231,15 @@ export async function importCoreArchive({
       recipe_id: recipeId,
       category_id: categoryId
     });
-    const row = {
+    if (existing) {
+      report.recipe_categories.existing += 1;
+      continue;
+    }
+    await insertOne(client, "recipe_categories", {
       recipe_id: recipeId,
       category_id: categoryId
-    };
-    if (existing) await updateOne(client, "recipe_categories", existing.id, row);
-    else await insertOne(client, "recipe_categories", row);
-    report.recipe_categories[existing ? "updated" : "created"] += 1;
+    });
+    report.recipe_categories.created += 1;
   }
 
   for (const link of preview.payload.recipe_ingredients) {
