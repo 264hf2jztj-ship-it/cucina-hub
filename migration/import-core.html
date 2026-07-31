@@ -16,14 +16,14 @@
 <body>
 <main>
   <h1>Import core JSON → Supabase</h1>
-  <p>Importa le tabelle verificate: <strong>ingredients</strong>, <strong>categories</strong>, <strong>tags</strong>, <strong>appliances</strong>, <strong>recipes</strong>, <strong>recipe_ingredients</strong>, <strong>recipe_categories</strong>, <strong>recipe_tags</strong> e <strong>tasting_notes</strong>.</p>
+  <p>Importa tutte le tabelle verificate: <strong>ingredients</strong>, <strong>categories</strong>, <strong>tags</strong>, <strong>appliances</strong>, <strong>recipes</strong>, <strong>recipe_ingredients</strong>, <strong>recipe_categories</strong>, <strong>recipe_tags</strong>, <strong>recipe_appliances</strong> e <strong>tasting_notes</strong>.</p>
 
   <section class="panel">
     <p class="warning"><strong>Operazione reale:</strong> questa pagina modifica Supabase usando la sessione amministratore attiva. Può essere rilanciata: le righe esistenti vengono aggiornate invece di essere duplicate.</p>
-    <p class="muted">La tabella di collegamento degli elettrodomestici non viene ancora importata.</p>
+    <p class="muted">Il core e tutte le tabelle di collegamento previste dal Macrostep 5 vengono importati.</p>
     <label for="confirmation">Scrivi IMPORTA per abilitare il pulsante</label>
     <input id="confirmation" autocomplete="off" placeholder="IMPORTA">
-    <button id="runButton" type="button" disabled>Importa core + categorie + tag ricette</button>
+    <button id="runButton" type="button" disabled>Importa archivio completo</button>
     <p id="status" aria-live="polite"></p>
   </section>
 
@@ -39,6 +39,7 @@
 <script type="module">
   import { importCoreArchive } from "./import-core.js?v=17";
   import { importRecipeTags } from "./import-recipe-tags.js?v=16";
+  import { importRecipeAppliances } from "./import-recipe-appliances.js?v=18";
 
   const confirmation = document.querySelector("#confirmation");
   const runButton = document.querySelector("#runButton");
@@ -103,11 +104,24 @@
         }
       });
 
+      const recipeAppliances = await importRecipeAppliances({
+        client: window.cucinaHubSupabase,
+        recipesData,
+        appliancesData,
+        categoriesData,
+        ownerUserId: result.owner_user_id,
+        onProgress(message) {
+          log.textContent += `\n${message}`;
+          log.scrollTop = log.scrollHeight;
+        }
+      });
+
       result.report.recipe_tags = recipeTags;
-      result.report.skipped_relations = ["recipe_appliances"];
+      result.report.recipe_appliances = recipeAppliances;
+      result.report.skipped_relations = [];
       log.textContent += `\n\nREPORT FINALE\n${JSON.stringify(result, null, 2)}`;
       status.className = "ok";
-      status.textContent = "Importazione core e collegamenti categoria/tag completata. Controlla il report e la tabella recipe_tags.";
+      status.textContent = "Importazione completa terminata. Controlla il report e la tabella recipe_appliances.";
       confirmation.value = "";
     } catch (error) {
       console.error(error);
