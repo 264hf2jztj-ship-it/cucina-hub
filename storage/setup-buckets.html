@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configura bucket privati — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}
+    main{max-width:920px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:16px;padding:20px;margin-bottom:16px}
+    button{border:0;border-radius:10px;padding:11px 16px;background:#365d44;color:#fff;font-weight:700}
+    pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#211f1c;color:#f7f2e8;border-radius:12px;padding:16px;max-height:520px;overflow:auto}
+    .ok{color:#1b6b36}.warning{color:#9b5b00}.muted{color:#6d655c}
+    code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Macrostep 6.2 — Bucket privati</h1>
+  <p>Questa pagina mostra lo script SQL idempotente da eseguire nel Supabase SQL Editor.</p>
+
+  <section class="panel">
+    <p class="warning"><strong>Operazione amministrativa:</strong> la creazione dei bucket richiede privilegi SQL e non viene eseguita dal browser con la chiave anonima.</p>
+    <ol>
+      <li>Premi <strong>Copia SQL</strong>.</li>
+      <li>Apri Supabase → SQL Editor → New query.</li>
+      <li>Incolla ed esegui.</li>
+      <li>Controlla che il risultato mostri quattro righe e <code>public = false</code> per tutte.</li>
+    </ol>
+    <button id="copyButton" type="button">Copia SQL</button>
+    <p id="status" class="muted" aria-live="polite">Caricamento script…</p>
+  </section>
+
+  <section class="panel">
+    <h2>Script</h2>
+    <pre id="sql">Caricamento…</pre>
+  </section>
+</main>
+<script>
+  const sql = document.querySelector('#sql');
+  const status = document.querySelector('#status');
+  const copyButton = document.querySelector('#copyButton');
+  let script = '';
+
+  async function loadSql(){
+    try{
+      const response = await fetch('../supabase/06_create_private_storage_buckets.sql', {cache:'no-store'});
+      if(!response.ok) throw new Error('Impossibile caricare lo script SQL.');
+      script = await response.text();
+      sql.textContent = script;
+      status.textContent = 'Script pronto.';
+    }catch(error){
+      sql.textContent = error.message;
+      status.textContent = 'Errore nel caricamento dello script.';
+    }
+  }
+
+  copyButton.addEventListener('click', async () => {
+    if(!script) return;
+    try{
+      await navigator.clipboard.writeText(script);
+      status.className = 'ok';
+      status.textContent = 'SQL copiato. Incollalo ora nel Supabase SQL Editor.';
+    }catch{
+      status.className = 'warning';
+      status.textContent = 'Copia automatica non riuscita: seleziona il testo nel riquadro e copialo manualmente.';
+    }
+  });
+
+  loadSql();
+</script>
+</body>
+</html>
