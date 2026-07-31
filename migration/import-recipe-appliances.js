@@ -24,13 +24,6 @@ async function insertOne(client, table, row) {
   assertOk(error, `Inserimento ${table}`);
 }
 
-async function updateRelation(client, table, filters, row) {
-  let query = client.from(table).update(row);
-  for (const [column, value] of Object.entries(filters)) query = query.eq(column, value);
-  const { error } = await query;
-  assertOk(error, `Aggiornamento ${table}`);
-}
-
 export async function importRecipeAppliances({
   client,
   recipesData,
@@ -61,7 +54,7 @@ export async function importRecipeAppliances({
     applianceBySlug.set(appliance.slug, existing.id);
   }
 
-  const report = { created: 0, updated: 0 };
+  const report = { created: 0, existing: 0 };
   for (const link of preview.payload.recipe_appliances) {
     const recipeId = recipeByCode.get(link.recipe_code);
     const applianceId = applianceBySlug.get(link.appliance_slug);
@@ -73,21 +66,16 @@ export async function importRecipeAppliances({
       recipe_id: recipeId,
       appliance_id: applianceId
     };
-    const row = {
-      recipe_id: recipeId,
-      appliance_id: applianceId,
-      is_primary: Boolean(link.is_primary)
-    };
 
     onProgress(`Collegamento elettrodomestico: ${link.recipe_code}`);
     const existing = await findOne(client, "recipe_appliances", filters);
     if (existing) {
-      await updateRelation(client, "recipe_appliances", filters, row);
-      report.updated += 1;
-    } else {
-      await insertOne(client, "recipe_appliances", row);
-      report.created += 1;
+      report.existing += 1;
+      continue;
     }
+
+    await insertOne(client, "recipe_appliances", filters);
+    report.created += 1;
   }
 
   return report;
