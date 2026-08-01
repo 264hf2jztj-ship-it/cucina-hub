@@ -41,7 +41,7 @@ function add(value){log.textContent+=`\n${value}`;log.scrollTop=log.scrollHeight
 function check(error,context){if(error)throw new Error(`${context}: ${error.message}`)}
 function normalize(value){return String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\(1\)/g,'').replace(/[^a-z0-9]+/g,'')}
 function allowedType(value){return value==='personal_guide'?'other':value}
-function relationRole(entry){return entry.document_type==='personal_guide'?'secondary':'primary'}
+function relationRole(entry){return entry.document_type==='personal_guide'?'supplementary':'primary'}
 async function requireAdmin(){
   const {data,error}=await client.auth.getSession();check(error,'Sessione');
   const user=data.session?.user;if(!user)throw new Error('Accedi con l’account amministratore.');
