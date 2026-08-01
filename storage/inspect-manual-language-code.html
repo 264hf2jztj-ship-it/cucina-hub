@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Verifica lingue manuali — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}
+    main{max-width:900px;margin:auto;padding:24px}
+    .panel{background:#fff;border:1px solid #ddd5ca;border-radius:16px;padding:18px;margin-bottom:16px}
+    button{padding:11px 16px;border:0;border-radius:10px;background:#365d44;color:#fff;font-weight:700}
+    pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#211f1c;color:#f7f2e8;border-radius:12px;padding:16px}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Verifica valori lingua dei manuali</h1>
+  <p>Questa pagina copia una query diagnostica in sola lettura per mostrare la definizione reale del vincolo <code>manuals_language_code_valid</code>.</p>
+  <section class="panel">
+    <button id="copy">Copia SQL</button>
+    <p id="status"></p>
+  </section>
+  <section class="panel"><h2>SQL</h2><pre id="sql">select
+  con.conname as constraint_name,
+  pg_get_constraintdef(con.oid) as constraint_definition
+from pg_constraint con
+join pg_class rel on rel.oid = con.conrelid
+join pg_namespace nsp on nsp.oid = rel.relnamespace
+where nsp.nspname = 'public'
+  and rel.relname = 'manuals'
+  and con.conname = 'manuals_language_code_valid';</pre></section>
+</main>
+<script>
+const sql=document.querySelector('#sql').textContent;
+document.querySelector('#copy').addEventListener('click',async()=>{
+  await navigator.clipboard.writeText(sql);
+  document.querySelector('#status').textContent='SQL copiato.';
+});
+</script>
+</body>
+</html>
