@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verifica ruoli manuali — Cucina Hub</title><style>body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}main{max-width:900px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:16px;padding:18px;margin-bottom:16px}button{padding:11px 16px;border:0;border-radius:10px;background:#365d44;color:#fff;font-weight:700}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#211f1c;color:#f7f2e8;border-radius:12px;padding:16px}</style></head><body><main><h1>Verifica valori ammessi per relation_role</h1><p>Questa pagina non modifica Supabase. Copia una query che mostra la definizione reale del vincolo <strong>appliance_manuals_role_allowed</strong>.</p><section class="panel"><button id="copy">Copia SQL</button><p id="status"></p></section><section class="panel"><pre id="sql">select
+  con.conname as constraint_name,
+  pg_get_constraintdef(con.oid, true) as constraint_definition
+from pg_constraint con
+join pg_class rel on rel.oid = con.conrelid
+join pg_namespace nsp on nsp.oid = rel.relnamespace
+where nsp.nspname = 'public'
+  and rel.relname = 'appliance_manuals'
+  and con.conname = 'appliance_manuals_role_allowed';</pre></section></main><script>const b=document.querySelector('#copy'),s=document.querySelector('#status'),q=document.querySelector('#sql').textContent;b.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(q);s.textContent='SQL copiato.'}catch{const t=document.createElement('textarea');t.value=q;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();s.textContent='SQL copiato.'}});</script></body></html>
