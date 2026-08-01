@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Configura policy Storage — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;max-width:980px;margin:40px auto;padding:0 20px;background:#f7f4ee;color:#292621}
+    .card{background:#fff;border:1px solid #ddd4c8;border-radius:18px;padding:24px;margin:20px 0}
+    button{background:#416b4a;color:#fff;border:0;border-radius:12px;padding:12px 18px;font-weight:700}
+    pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#1f1e1b;color:#f5f3ef;padding:18px;border-radius:14px;max-height:520px;overflow:auto}
+    .status{margin-top:12px;color:#416b4a;font-weight:700}
+  </style>
+</head>
+<body>
+  <h1>Policy Storage/RLS</h1>
+  <p>Questo passaggio configura l’accesso ai quattro bucket privati. Ogni utente autenticato può operare soltanto sugli oggetti il cui percorso inizia con il proprio <strong>auth.uid()</strong>.</p>
+
+  <section class="card">
+    <p><strong>Operazione manuale:</strong> copia lo script, eseguilo nel Supabase SQL Editor e controlla che il risultato contenga quattro policy.</p>
+    <button id="copy" type="button">Copia SQL</button>
+    <div id="status" class="status" aria-live="polite"></div>
+  </section>
+
+  <section class="card">
+    <h2>Script SQL</h2>
+    <pre id="sql">Caricamento…</pre>
+  </section>
+
+  <script>
+    const sqlEl = document.getElementById('sql');
+    const statusEl = document.getElementById('status');
+    let sqlText = '';
+
+    fetch('../supabase/07_storage_object_policies.sql?v=1', { cache: 'no-store' })
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.text();
+      })
+      .then(text => {
+        sqlText = text;
+        sqlEl.textContent = text;
+      })
+      .catch(error => {
+        sqlEl.textContent = `Errore caricamento script: ${error.message}`;
+      });
+
+    document.getElementById('copy').addEventListener('click', async () => {
+      if (!sqlText) {
+        statusEl.textContent = 'Lo script non è ancora disponibile.';
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(sqlText);
+        statusEl.textContent = 'SQL copiato. Incollalo nel Supabase SQL Editor.';
+      } catch {
+        statusEl.textContent = 'Copia automatica non disponibile: seleziona il testo manualmente.';
+      }
+    });
+  </script>
+</body>
+</html>
