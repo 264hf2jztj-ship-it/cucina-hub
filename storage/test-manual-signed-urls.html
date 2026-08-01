@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Test URL firmati manuali — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}
+    main{max-width:900px;margin:auto;padding:24px}
+    .panel{background:#fff;border:1px solid #ddd5ca;border-radius:16px;padding:18px;margin-bottom:16px}
+    button,.open-link{display:inline-block;padding:11px 16px;border:0;border-radius:10px;background:#365d44;color:#fff;font-weight:700;text-decoration:none;cursor:pointer}
+    button:disabled{opacity:.5;cursor:default}
+    .manual{padding:14px 0;border-bottom:1px solid #e6dfd5}.manual:last-child{border-bottom:0}
+    .meta{color:#6d655b;font-size:.92rem;margin:6px 0 12px}
+    pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#211f1c;color:#f7f2e8;border-radius:12px;padding:16px;max-height:520px;overflow:auto}
+    .ok{color:#1b6b36}.error{color:#a62424}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Test URL firmati dei manuali</h1>
+  <p>Genera collegamenti temporanei di 120 secondi per i PDF nel bucket privato <strong>manuals</strong>. La pagina legge soltanto Supabase e non modifica dati o file.</p>
+  <section class="panel">
+    <button id="run">Genera URL firmati</button>
+    <p id="status"></p>
+  </section>
+  <section class="panel">
+    <h2>Manuali disponibili</h2>
+    <div id="manuals">Premi il pulsante per generare i collegamenti.</div>
+  </section>
+  <section class="panel"><h2>Registro</h2><pre id="log">In attesa.</pre></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script>
+<script type="module">
+const client=window.cucinaHubSupabase;
+const run=document.querySelector('#run');
+const status=document.querySelector('#status');
+const manualsBox=document.querySelector('#manuals');
+const log=document.querySelector('#log');
+function check(error,context){if(error)throw new Error(`${context}: ${error.message}`)}
+function escapeHtml(value){return String(value??'').replace(/[&<>"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[char]))}
+async function requireUser(){
+  const {data,error}=await client.auth.getSession();check(error,'Sessione');
+  const user=data.session?.user;if(!user)throw new Error('Accedi prima di eseguire il test.');
+  return user;
+}
+run.addEventListener('click',async()=>{
+  run.disabled=true;status.textContent='Generazione in corso…';status.className='';manualsBox.textContent='Caricamento…';log.textContent='Avvio…';
+  try{
+    const user=await requireUser();
+    const {data:manualRows,error:manualError}=await client.from('manuals').select('id,title,storage_file_id,language_code,manual_type').eq('owner_user_id',user.id).order('title');
+    check(manualError,'Lettura manuals');
+    const fileIds=[...new Set((manualRows||[]).map(row=>row.storage_file_id).filter(Boolean))];
+    const {data:fileRows,error:fileError}=fileIds.length
+      ? await client.from('storage_files').select('id,bucket_name,object_path,original_filename').eq('owner_user_id',user.id).in('id',fileIds)
+      : {data:[],error:null};
+    check(fileError,'Lettura storage_files');
+    const filesById=new Map((fileRows||[]).map(row=>[row.id,row]));
+    const results=[];
+    for(const manual of manualRows||[]){
+      const file=filesById.get(manual.storage_file_id);
+      if(!file)throw new Error(`Record storage_files mancante per: ${manual.title}`);
+      if(file.bucket_name!=='manuals')throw new Error(`Bucket inatteso per: ${manual.title}`);
+      const {data,error}=await client.storage.from(file.bucket_name).createSignedUrl(file.object_path,120,{download:file.original_filename||undefined});
+      check(error,`URL firmato ${manual.title}`);
+      if(!data?.signedUrl)throw new Error(`URL firmato vuoto per: ${manual.title}`);
+      results.push({title:manual.title,filename:file.original_filename,url:data.signedUrl,expires_in_seconds:120});
+    }
+    manualsBox.innerHTML=results.map(item=>`<article class="manual"><strong>${escapeHtml(item.title)}</strong><div class="meta">${escapeHtml(item.filename)} · link valido per 120 secondi</div><a class="open-link" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">Apri PDF</a></article>`).join('');
+    const report={pass:results.length===4,owner_user_id:user.id,manual_count:(manualRows||[]).length,signed_url_count:results.length,expires_in_seconds:120,bucket_private_expected:true};
+    log.textContent=`REPORT FINALE\n${JSON.stringify(report,null,2)}`;
+    if(!report.pass)throw new Error(`Attesi 4 URL firmati, generati ${results.length}.`);
+    status.className='ok';status.textContent='Test superato: quattro URL firmati generati. Apri almeno un PDF entro 120 secondi.';
+  }catch(error){
+    console.error(error);log.textContent+=`\n\nERRORE COMPLETO\n${error.stack||error.message}`;status.className='error';status.textContent=error.message;manualsBox.textContent='Test non completato.';
+  }finally{run.disabled=false}
+});
+</script>
+</body>
+</html>
