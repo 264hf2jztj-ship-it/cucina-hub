@@ -41,6 +41,7 @@ function add(value){log.textContent+=`\n${value}`;log.scrollTop=log.scrollHeight
 function check(error,context){if(error)throw new Error(`${context}: ${error.message}`)}
 function normalize(value){return String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\(1\)/g,'').replace(/[^a-z0-9]+/g,'')}
 function allowedType(value){return value==='personal_guide'?'other':value}
+function allowedLanguage(value){return value==='multi'?null:(value??null)}
 function relationRole(entry){return entry.document_type==='personal_guide'?'supplementary':'primary'}
 async function requireAdmin(){
   const {data,error}=await client.auth.getSession();check(error,'Sessione');
@@ -71,7 +72,7 @@ run.addEventListener('click',async()=>{
       const {data:appliance,error:applianceError}=await client.from('appliances').select('id').eq('owner_user_id',owner).eq('name',entry.appliance_name).maybeSingle();check(applianceError,'Lettura appliances');
       if(!appliance)throw new Error(`Elettrodomestico non trovato: ${entry.appliance_name}`);
       const {data:existingManual,error:manualReadError}=await client.from('manuals').select('*').eq('owner_user_id',owner).eq('title',entry.title).maybeSingle();check(manualReadError,'Lettura manuals');
-      const manualRow={owner_user_id:owner,title:entry.title,storage_file_id:file.id,manufacturer:entry.manufacturer??null,language_code:entry.language??null,manual_type:allowedType(entry.document_type??null),version_label:entry.version_label??null,notes:entry.notes??null};
+      const manualRow={owner_user_id:owner,title:entry.title,storage_file_id:file.id,manufacturer:entry.manufacturer??null,language_code:allowedLanguage(entry.language),manual_type:allowedType(entry.document_type??null),version_label:entry.version_label??null,notes:entry.notes??null};
       let manual;
       if(existingManual){const {data,error}=await client.from('manuals').update(manualRow).eq('id',existingManual.id).select('*').single();check(error,'Aggiornamento manuals');manual=data;report.manuals.updated++}
       else{const {data,error}=await client.from('manuals').insert(manualRow).select('*').single();check(error,'Inserimento manuals');manual=data;report.manuals.created++}
