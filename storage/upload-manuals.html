@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Upload manuali — Cucina Hub</title>
+<style>body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}main{max-width:900px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:16px;padding:18px;margin-bottom:16px}label{display:block;font-weight:700;margin:12px 0 6px}input{width:100%;box-sizing:border-box;border:1px solid #bdb4a8;border-radius:10px;padding:10px}button{border:0;border-radius:10px;padding:11px 16px;background:#365d44;color:#fff;font-weight:700;margin-top:14px}button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#211f1c;color:#f7f2e8;border-radius:12px;padding:16px;max-height:520px;overflow:auto}.ok{color:#1b6b36}.error{color:#a62424}.muted{color:#6d655c}</style>
+</head><body><main>
+<h1>Upload manuali PDF → Supabase Storage</h1>
+<p>Carica i quattro PDF nel bucket privato <strong>manuals</strong> e crea i record corrispondenti in <strong>storage_files</strong>.</p>
+<section class="panel">
+<p class="muted">I PDF restano fuori dal repository. Seleziona esattamente i quattro file indicati.</p>
+<div id="inputs"></div>
+<label for="confirmation">Scrivi CARICA per abilitare il pulsante</label><input id="confirmation" placeholder="CARICA" autocomplete="off">
+<button id="runButton" disabled>Carica e registra manuali</button><p id="status"></p>
+</section><section class="panel"><h2>Registro</h2><pre id="log">In attesa.</pre></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script><script src="../supabase-client.js?v=12"></script>
+<script type="module">
+const expected=[
+{key:'samsung',name:'Forno NV75N5641RS_ET_DG68-01057J-00_IT.pdf',slug:'forno-samsung-nv75n5641rs-et'},
+{key:'hurom-official',name:'E30ST Instruction Manual [Europe]_V.01.pdf',slug:'hurom-e30st-manuale-europa-v01'},
+{key:'hurom-personal',name:'manuale_personale_hurom_e30st_v3_0(1).pdf',slug:'hurom-e30st-manuale-personale-v3-0'},
+{key:'ninja',name:'TB401EU_IB_MP (1) (1).pdf',slug:'ninja-tb401eu-manuale'}];
+const inputs=document.querySelector('#inputs');
+for(const item of expected){const label=document.createElement('label');label.textContent=item.name;const input=document.createElement('input');input.type='file';input.accept='application/pdf,.pdf';input.dataset.key=item.key;label.appendChild(input);inputs.appendChild(label)}
+const confirmation=document.querySelector('#confirmation'),runButton=document.querySelector('#runButton'),status=document.querySelector('#status'),log=document.querySelector('#log');
+confirmation.addEventListener('input',()=>runButton.disabled=confirmation.value.trim()!=='CARICA');
+function append(x){log.textContent+=`\n${x}`;log.scrollTop=log.scrollHeight}function err(e,c){if(e)throw new Error(`${c}: ${e.message}`)}
+async function admin(){const c=window.cucinaHubSupabase;const{data,error}=await c.auth.getSession();err(error,'Sessione');const u=data.session?.user;if(!u)throw new Error('Accedi prima con l’account amministratore.');const{data:p,error:pe}=await c.from('profiles').select('role').eq('id',u.id).maybeSingle();err(pe,'Profilo');if(p?.role!=='admin')throw new Error('Ruolo amministratore richiesto.');return u.id}
+async function col(table,names,required=false){const c=window.cucinaHubSupabase;for(const n of names){const{error}=await c.from(table).select(n).limit(1);if(!error)return n;const t=(error.message||'').toLowerCase();if(!(error.code==='42703'||t.includes('column')))throw error}if(required)throw new Error(`Colonna non trovata in ${table}: ${names.join(', ')}`);return null}
+async function schema(){return{id:await col('storage_files',['id'],true),owner:await col('storage_files',['owner_user_id','user_id'],true),bucket:await col('storage_files',['bucket_id','bucket_name','bucket'],true),path:await col('storage_files',['object_path','storage_path','path'],true),filename:await col('storage_files',['original_filename','file_name','filename']),mime:await col('storage_files',['mime_type','content_type']),size:await col('storage_files',['size_bytes','file_size','bytes'])}}
+runButton.addEventListener('click',async()=>{runButton.disabled=true;confirmation.disabled=true;status.textContent='Caricamento in corso…';status.className='';log.textContent='Avvio…';try{const owner=await admin(),s=await schema(),report={uploaded:0,registered:0,existing:0},files=[];append(`Schema: ${JSON.stringify(s)}`);for(let i=0;i<expected.length;i++){const item=expected[i],input=document.querySelector(`input[data-key="${item.key}"]`),file=input.files[0];if(!file)throw new Error(`Seleziona: ${item.name}`);if(file.name!==item.name)throw new Error(`Nome file inatteso. Richiesto: ${item.name}`);if(file.type&&file.type!=='application/pdf')throw new Error(`${file.name} non è un PDF.`);const objectPath=`${owner}/appliances/manuals/${String(i+1).padStart(2,'0')}-${item.slug}.pdf`;append(`Upload: ${item.name}`);let{data:record,error:re}=await window.cucinaHubSupabase.from('storage_files').select('*').eq(s.owner,owner).eq(s.bucket,'manuals').eq(s.path,objectPath).limit(1).maybeSingle();err(re,'Lettura storage_files');if(!record){const{error:ue}=await window.cucinaHubSupabase.storage.from('manuals').upload(objectPath,file,{contentType:'application/pdf',cacheControl:'3600',upsert:false});if(ue&&!String(ue.message).toLowerCase().includes('already exists'))err(ue,'Upload');if(ue)report.existing++;else report.uploaded++;const row={[s.owner]:owner,[s.bucket]:'manuals',[s.path]:objectPath};if(s.filename)row[s.filename]=item.name;if(s.mime)row[s.mime]='application/pdf';if(s.size)row[s.size]=file.size;const{data:ins,error:ie}=await window.cucinaHubSupabase.from('storage_files').insert(row).select('*').single();err(ie,'Registrazione storage_files');record=ins;report.registered++}else report.existing++;files.push({source_filename:item.name,storage_file_id:record[s.id],object_path:objectPath})}const result={owner_user_id:owner,report,files};append(`\nREPORT FINALE\n${JSON.stringify(result,null,2)}`);status.className='ok';status.textContent='Upload e registrazione completati.'}catch(e){console.error(e);append(`\nERRORE COMPLETO\n${e.stack||e.message}`);status.className='error';status.textContent=e.message}finally{confirmation.disabled=false;runButton.disabled=true;confirmation.value=''}});
+</script></body></html>
