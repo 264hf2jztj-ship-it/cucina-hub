@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Collega manuali v2 — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}
+    main{max-width:900px;margin:auto;padding:24px}
+    .panel{background:#fff;border:1px solid #ddd5ca;border-radius:16px;padding:18px;margin-bottom:16px}
+    input{width:100%;box-sizing:border-box;padding:11px;border:1px solid #bdb4a8;border-radius:10px}
+    button{margin-top:12px;padding:11px 16px;border:0;border-radius:10px;background:#365d44;color:#fff;font-weight:700}
+    button:disabled{opacity:.5}
+    pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#211f1c;color:#f7f2e8;border-radius:12px;padding:16px;max-height:600px;overflow:auto}
+    .ok{color:#1b6b36}.error{color:#a62424}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Collega manuali caricati — v2</h1>
+  <p>Collega i record <strong>manuals</strong> ai file in <strong>storage_files</strong> e crea o aggiorna <strong>appliance_manuals</strong> usando <code>relation_role</code>.</p>
+  <section class="panel">
+    <label for="confirmation">Scrivi COLLEGA</label>
+    <input id="confirmation" placeholder="COLLEGA" autocomplete="off">
+    <button id="run" disabled>Collega metadati e manuali</button>
+    <p id="status"></p>
+  </section>
+  <section class="panel"><h2>Registro</h2><pre id="log">In attesa.</pre></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script>
+<script type="module">
+const client=window.cucinaHubSupabase;
+const confirmation=document.querySelector('#confirmation');
+const run=document.querySelector('#run');
+const status=document.querySelector('#status');
+const log=document.querySelector('#log');
+confirmation.addEventListener('input',()=>run.disabled=confirmation.value.trim()!=='COLLEGA');
+function add(value){log.textContent+=`\n${value}`;log.scrollTop=log.scrollHeight}
+function check(error,context){if(error)throw new Error(`${context}: ${error.message}`)}
+function normalize(value){return String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\(1\)/g,'').replace(/[^a-z0-9]+/g,'')}
+function allowedType(value){return value==='personal_guide'?'other':value}
+function relationRole(entry){return entry.document_type==='personal_guide'?'secondary':'primary'}
+async function requireAdmin(){
+  const {data,error}=await client.auth.getSession();check(error,'Sessione');
+  const user=data.session?.user;if(!user)throw new Error('Accedi con l’account amministratore.');
+  const {data:profile,error:profileError}=await client.from('profiles').select('role').eq('id',user.id).maybeSingle();check(profileError,'Profilo');
+  if(profile?.role!=='admin')throw new Error('Ruolo amministratore richiesto.');
+  return user.id;
+}
+function findStoredFile(files,entry){
+  const keys=[entry.source_filename,entry.legacy_key,entry.model,entry.title].map(normalize).filter(x=>x.length>5);
+  let found=files.find(file=>{const text=normalize(`${file.original_filename||''} ${file.object_path||''}`);return keys.some(key=>text.includes(key.slice(0,Math.min(key.length,18))))});
+  if(found)return found;
+  const hints=entry.legacy_key.includes('samsung')?['samsung','nv75']:
+    entry.legacy_key.includes('hurom-e30st-personal')?['hurom','personale']:
+    entry.legacy_key.includes('hurom')?['hurom','europa']:['ninja','tb401'];
+  return files.find(file=>hints.every(h=>normalize(`${file.original_filename||''} ${file.object_path||''}`).includes(normalize(h))));
+}
+run.addEventListener('click',async()=>{
+  run.disabled=true;confirmation.disabled=true;status.textContent='Collegamento in corso…';status.className='';log.textContent='Avvio…';
+  try{
+    const owner=await requireAdmin();
+    const response=await fetch('../manuali.json',{cache:'no-store'});if(!response.ok)throw new Error('Impossibile caricare manuali.json');
+    const entries=(await response.json()).manuali||[];
+    const {data:files,error:filesError}=await client.from('storage_files').select('*').eq('owner_user_id',owner).eq('bucket_name','manuals');check(filesError,'Lettura storage_files');
+    const report={manuals:{created:0,updated:0},appliance_manuals:{created:0,updated:0,existing:0},matched_files:0};
+    for(const entry of entries){
+      const file=findStoredFile(files||[],entry);if(!file)throw new Error(`File storage non trovato per: ${entry.title}`);report.matched_files++;
+      const {data:appliance,error:applianceError}=await client.from('appliances').select('id').eq('owner_user_id',owner).eq('name',entry.appliance_name).maybeSingle();check(applianceError,'Lettura appliances');
+      if(!appliance)throw new Error(`Elettrodomestico non trovato: ${entry.appliance_name}`);
+      const {data:existingManual,error:manualReadError}=await client.from('manuals').select('*').eq('owner_user_id',owner).eq('title',entry.title).maybeSingle();check(manualReadError,'Lettura manuals');
+      const manualRow={owner_user_id:owner,title:entry.title,storage_file_id:file.id,manufacturer:entry.manufacturer??null,language_code:entry.language??null,manual_type:allowedType(entry.document_type??null),version_label:entry.version_label??null,notes:entry.notes??null};
+      let manual;
+      if(existingManual){const {data,error}=await client.from('manuals').update(manualRow).eq('id',existingManual.id).select('*').single();check(error,'Aggiornamento manuals');manual=data;report.manuals.updated++}
+      else{const {data,error}=await client.from('manuals').insert(manualRow).select('*').single();check(error,'Inserimento manuals');manual=data;report.manuals.created++}
+      const role=relationRole(entry);
+      const {data:existingLink,error:linkReadError}=await client.from('appliance_manuals').select('*').eq('appliance_id',appliance.id).eq('manual_id',manual.id).maybeSingle();check(linkReadError,'Lettura appliance_manuals');
+      if(existingLink){
+        if(existingLink.relation_role!==role){const {error}=await client.from('appliance_manuals').update({relation_role:role}).eq('appliance_id',appliance.id).eq('manual_id',manual.id);check(error,'Aggiornamento appliance_manuals');report.appliance_manuals.updated++}
+        else report.appliance_manuals.existing++;
+      }else{
+        const {error}=await client.from('appliance_manuals').insert({appliance_id:appliance.id,manual_id:manual.id,relation_role:role});check(error,'Inserimento appliance_manuals');report.appliance_manuals.created++;
+      }
+      add(`Collegato: ${entry.title} [${role}]`);
+    }
+    add(`\nREPORT FINALE\n${JSON.stringify({owner_user_id:owner,source_count:entries.length,report},null,2)}`);
+    status.className='ok';status.textContent='Collegamento completato.';
+  }catch(error){console.error(error);add(`\nERRORE COMPLETO\n${error.stack||error.message}`);status.className='error';status.textContent=error.message}
+  finally{confirmation.disabled=false;confirmation.value='';run.disabled=true}
+});
+</script>
+</body>
+</html>
