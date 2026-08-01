@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Diagnosi appliance_manuals — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}
+    main{max-width:900px;margin:auto;padding:24px}
+    .panel{background:#fff;border:1px solid #ddd5ca;border-radius:16px;padding:18px;margin-bottom:16px}
+    button{padding:11px 16px;border:0;border-radius:10px;background:#365d44;color:#fff;font-weight:700}
+    pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#211f1c;color:#f7f2e8;border-radius:12px;padding:16px}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Diagnosi appliance_manuals</h1>
+  <p>Questa pagina non modifica il database. Copia una query SQL che mostra le colonne reali della tabella e la definizione dell’indice <strong>appliance_manuals_one_primary_idx</strong>.</p>
+  <section class="panel">
+    <button id="copy">Copia SQL</button>
+    <p id="status"></p>
+  </section>
+  <section class="panel"><pre id="sql">select
+  c.column_name,
+  c.data_type,
+  c.is_nullable,
+  c.column_default
+from information_schema.columns c
+where c.table_schema = 'public'
+  and c.table_name = 'appliance_manuals'
+order by c.ordinal_position;
+
+select
+  schemaname,
+  tablename,
+  indexname,
+  indexdef
+from pg_indexes
+where schemaname = 'public'
+  and tablename = 'appliance_manuals'
+  and indexname = 'appliance_manuals_one_primary_idx';</pre></section>
+</main>
+<script>
+const sql=document.querySelector('#sql').textContent;
+document.querySelector('#copy').addEventListener('click',async()=>{
+  await navigator.clipboard.writeText(sql);
+  document.querySelector('#status').textContent='SQL copiato. Incollalo nel Supabase SQL Editor ed eseguilo.';
+});
+</script>
+</body>
+</html>
