@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Diagnostica tipo manuali — Cucina Hub</title>
+<style>body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}main{max-width:860px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:16px;padding:18px;margin-bottom:16px}button{border:0;border-radius:10px;padding:11px 16px;background:#365d44;color:#fff;font-weight:700}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#211f1c;color:#f7f2e8;border-radius:12px;padding:16px}.ok{color:#1b6b36}.muted{color:#6d655c}</style>
+</head><body><main>
+<h1>Diagnostica vincolo tipo manuali</h1>
+<p>Questa pagina non modifica Supabase. Copia una query in sola lettura per mostrare la definizione reale del vincolo <strong>manuals_type_allowed</strong>.</p>
+<section class="panel">
+<pre id="sql">select
+  c.conname as constraint_name,
+  pg_get_constraintdef(c.oid) as constraint_definition
+from pg_constraint c
+join pg_class t on t.oid = c.conrelid
+join pg_namespace n on n.oid = t.relnamespace
+where n.nspname = 'public'
+  and t.relname = 'manuals'
+  and c.conname = 'manuals_type_allowed';</pre>
+<button id="copy">Copia SQL</button>
+<p id="status" class="muted">Esegui la query nel Supabase SQL Editor e inviami il risultato.</p>
+</section>
+</main><script>document.querySelector('#copy').addEventListener('click',async()=>{await navigator.clipboard.writeText(document.querySelector('#sql').textContent);const s=document.querySelector('#status');s.className='ok';s.textContent='SQL copiato.';});</script></body></html>
