@@ -7,17 +7,29 @@
   <style>
     html,body{margin:0;min-height:100%;background:#f6f3ee}
     iframe{display:block;width:100%;height:100vh;border:0;background:#f6f3ee}
-    #message{position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:2;background:#fff;border:1px solid #ddd5ca;border-radius:12px;padding:10px 14px;font:600 14px system-ui,-apple-system,sans-serif;color:#26221d;box-shadow:0 8px 30px #0002}
+    #message{position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:3;background:#fff;border:1px solid #ddd5ca;border-radius:12px;padding:10px 14px;font:600 14px system-ui,-apple-system,sans-serif;color:#26221d;box-shadow:0 8px 30px #0002}
+    #backButton{position:fixed;left:16px;top:16px;z-index:4;border:0;border-radius:12px;padding:11px 14px;background:#365d44;color:#fff;font:700 14px system-ui,-apple-system,sans-serif;box-shadow:0 8px 30px #0002;cursor:pointer}
+    #backButton:focus-visible{outline:3px solid #fff;outline-offset:2px}
     .error{color:#a62424}
   </style>
 </head>
 <body>
+  <button id="backButton" type="button" aria-label="Torna alla pagina precedente">← Torna agli elettrodomestici</button>
   <div id="message">Apertura della scheda…</div>
   <iframe id="detail" src="detail.html?v=21" title="Scheda elettrodomestico"></iframe>
   <script>
     const requestedName = new URLSearchParams(location.search).get("name")?.trim();
     const frame = document.querySelector("#detail");
     const message = document.querySelector("#message");
+    const backButton = document.querySelector("#backButton");
+
+    backButton.addEventListener("click", () => {
+      if (history.length > 1) {
+        history.back();
+      } else {
+        location.href = "../?v=23";
+      }
+    });
 
     frame.addEventListener("load", () => {
       if (!requestedName) {
