@@ -1,96 +1,44 @@
 <!doctype html>
 <html lang="it">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Import Center — Cucina Hub</title>
-  <style>
-    :root{color-scheme:light;--bg:#f6f3ee;--panel:#fff;--line:#ddd5ca;--text:#26221d;--muted:#6d655c;--accent:#365d44;--warn:#9a5a00;--bad:#a62424}
-    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif}main{max-width:1050px;margin:auto;padding:24px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:18px}h1,h2,h3{margin-top:0}.lead{color:var(--muted)}input,button{font:inherit}input[type=file]{width:100%;padding:14px;border:1px dashed #a99f92;border-radius:12px;background:#fbfaf7}button{width:100%;margin-top:12px;padding:13px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:800}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}.metric{padding:14px;border:1px solid var(--line);border-radius:14px;background:#fbfaf7}.metric strong{display:block;font-size:1.6rem}.tree{display:grid;gap:12px}.section{border:1px solid var(--line);border-radius:14px;padding:14px}.file{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid #eee8df}.file:last-child{border:0}.tag{font-size:.78rem;font-weight:800;padding:4px 8px;border-radius:999px;background:#eee7dd}.path{overflow-wrap:anywhere}.muted{color:var(--muted)}.warning{color:var(--warn)}.error{color:var(--bad)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#211f1c;color:#f7f2e8;border-radius:12px;padding:16px}details{margin-top:12px}.hidden{display:none}
-  </style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Import Center — Cucina Hub</title>
+<style>
+:root{--bg:#f6f3ee;--panel:#fff;--line:#ddd5ca;--text:#26221d;--muted:#6d655c;--accent:#365d44;--warn:#9a5a00;--bad:#a62424}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif}main{max-width:1050px;margin:auto;padding:24px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:18px}h1,h2,h3{margin-top:0}.lead,.muted{color:var(--muted)}input,button{font:inherit}input[type=file]{width:100%;padding:14px;border:1px dashed #a99f92;border-radius:12px;background:#fbfaf7}button{width:100%;margin-top:12px;padding:13px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:800}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}.metric{padding:14px;border:1px solid var(--line);border-radius:14px;background:#fbfaf7}.metric strong{display:block;font-size:1.6rem}.tree{display:grid;gap:12px}.category{border:1px solid var(--line);border-radius:14px;padding:14px}.content{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid #eee8df}.content:last-child{border:0}.tag{font-size:.78rem;font-weight:800;padding:4px 8px;border-radius:999px;background:#eee7dd}.path{overflow-wrap:anywhere}.warning{color:var(--warn)}.error{color:var(--bad)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#211f1c;color:#f7f2e8;border-radius:12px;padding:16px}.hidden{display:none}details{margin-top:12px}
+</style>
 </head>
-<body>
-<main>
-  <h1>Import Center</h1>
-  <p class="lead">Primo modulo: analisi locale di un corso ZIP. In questa fase nessun file viene caricato su Supabase.</p>
-
-  <section class="panel">
-    <h2>1. Scegli il corso ZIP</h2>
-    <input id="zipFile" type="file" accept=".zip,application/zip">
-    <button id="analyze" type="button">Analizza ZIP</button>
-    <p id="status" class="muted">In attesa di un file.</p>
-  </section>
-
-  <section id="summaryPanel" class="panel hidden">
-    <h2>2. Simulazione</h2>
-    <div id="metrics" class="grid"></div>
-    <details><summary>Regole applicate</summary><p class="muted">La prima cartella è trattata come nome del corso. Le cartelle successive diventano sezioni. I prefissi numerici determinano l’ordine. Video, PDF e immagini sono riconosciuti automaticamente. I file con lo stesso prefisso nella stessa sezione sono segnalati come possibili materiali della stessa lezione.</p></details>
-  </section>
-
-  <section id="treePanel" class="panel hidden">
-    <h2>3. Anteprima struttura</h2>
-    <div id="tree" class="tree"></div>
-  </section>
-
-  <section id="issuesPanel" class="panel hidden">
-    <h2>4. Controlli</h2>
-    <div id="issues"></div>
-  </section>
-
-  <section class="panel">
-    <h2>Registro</h2>
-    <pre id="log">In attesa.</pre>
-  </section>
+<body><main>
+<h1>Import Center</h1>
+<p class="lead">Analisi locale di un corso ZIP secondo il modello <strong>Categorie → Contenuti</strong>. Nessun file viene caricato su Supabase.</p>
+<section class="panel"><h2>1. Scegli il corso ZIP</h2><input id="zipFile" type="file" accept=".zip,application/zip"><button id="analyze" type="button">Analizza ZIP</button><p id="status" class="muted">In attesa di un file.</p></section>
+<section id="summaryPanel" class="panel hidden"><h2>2. Simulazione</h2><div id="metrics" class="grid"></div><details><summary>Regole applicate</summary><p class="muted">Le cartelle come Dispense, Video lezioni, Video pillole ed Extra diventano categorie. Ogni file è un contenuto autonomo. I nomi originali vengono mantenuti e non è richiesta alcuna numerazione progressiva. File con titoli molto simili sono solo segnalati come possibili collegamenti futuri.</p></details></section>
+<section id="treePanel" class="panel hidden"><h2>3. Anteprima categorie e contenuti</h2><div id="tree" class="tree"></div></section>
+<section id="issuesPanel" class="panel hidden"><h2>4. Controlli</h2><div id="issues"></div></section>
+<section class="panel"><h2>Registro</h2><pre id="log">In attesa.</pre></section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
 "use strict";
-const $ = s => document.querySelector(s);
-const input = $("#zipFile"), button = $("#analyze"), status = $("#status"), log = $("#log");
-const summaryPanel = $("#summaryPanel"), treePanel = $("#treePanel"), issuesPanel = $("#issuesPanel");
-const metrics = $("#metrics"), tree = $("#tree"), issues = $("#issues");
-const videoExt = new Set(["mp4","mov","m4v","webm","avi","mkv"]);
-const pdfExt = new Set(["pdf"]);
-const imageExt = new Set(["jpg","jpeg","png","webp","heic"]);
-const esc = value => String(value ?? "").replace(/[&<>\"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
-const cleanLabel = value => value.replace(/^\s*\d+[\s._-]*/, "").replace(/[_-]+/g," ").trim();
-const orderOf = value => Number((value.match(/^\s*(\d+)/)||[])[1] ?? 999999);
-function classify(name){const ext=(name.split(".").pop()||"").toLowerCase();if(videoExt.has(ext))return "video";if(pdfExt.has(ext))return "pdf";if(imageExt.has(ext))return "image";return "other"}
-function lessonKey(name){const base=name.split("/").pop().replace(/\.[^.]+$/,"");const match=base.match(/^\s*(\d+)/);return match?match[1].padStart(6,"0"):null}
-function metric(label,value){return `<div class="metric"><span class="muted">${esc(label)}</span><strong>${value}</strong></div>`}
-button.addEventListener("click", async () => {
-  summaryPanel.classList.add("hidden");treePanel.classList.add("hidden");issuesPanel.classList.add("hidden");
-  const file=input.files?.[0];if(!file){status.className="error";status.textContent="Seleziona un file ZIP.";return}
-  status.className="muted";status.textContent="Analisi in corso…";log.textContent="Lettura archivio…";
-  try{
-    const zip=await JSZip.loadAsync(file);
-    const raw=Object.values(zip.files).filter(entry=>!entry.dir && !entry.name.includes("__MACOSX") && !entry.name.split("/").pop().startsWith("."));
-    const rootCandidates=raw.map(entry=>entry.name.split("/").filter(Boolean)[0]).filter(Boolean);
-    const root=rootCandidates.length?rootCandidates.sort((a,b)=>rootCandidates.filter(x=>x===b).length-rootCandidates.filter(x=>x===a).length)[0]:file.name.replace(/\.zip$/i,"");
-    const records=raw.map(entry=>{
-      const parts=entry.name.split("/").filter(Boolean);if(parts[0]===root)parts.shift();
-      const filename=parts.pop()||entry.name;const sectionRaw=parts.length?parts.join(" / "):"Materiali generali";
-      return {path:entry.name,filename,sectionRaw,section:cleanLabel(sectionRaw),sectionOrder:orderOf(sectionRaw),fileOrder:orderOf(filename),type:classify(filename),lessonKey:lessonKey(filename),size:entry._data?.uncompressedSize||0};
-    });
-    const groups=new Map();for(const rec of records){if(!groups.has(rec.sectionRaw))groups.set(rec.sectionRaw,[]);groups.get(rec.sectionRaw).push(rec)}
-    const sections=[...groups.entries()].sort((a,b)=>orderOf(a[0])-orderOf(b[0])||a[0].localeCompare(b[0],"it"));
-    const counts={video:0,pdf:0,image:0,other:0};records.forEach(r=>counts[r.type]++);
-    const possiblePairs=[];const duplicatePaths=[];const seen=new Set();
-    for(const r of records){const key=r.path.toLowerCase();if(seen.has(key))duplicatePaths.push(r.path);seen.add(key)}
-    for(const [sectionName,list] of sections){const byLesson=new Map();for(const r of list){if(!r.lessonKey)continue;if(!byLesson.has(r.lessonKey))byLesson.set(r.lessonKey,[]);byLesson.get(r.lessonKey).push(r)}for(const [key,items] of byLesson){if(items.length>1)possiblePairs.push({section:cleanLabel(sectionName),key,files:items.map(x=>x.filename)})}}
-    metrics.innerHTML=[metric("Corso",esc(cleanLabel(root))),metric("Sezioni",sections.length),metric("Video",counts.video),metric("PDF",counts.pdf),metric("Immagini",counts.image),metric("Non riconosciuti",counts.other)].join("");
-    tree.innerHTML=sections.map(([sectionName,list])=>`<article class="section"><h3>${esc(cleanLabel(sectionName))}</h3>${list.sort((a,b)=>a.fileOrder-b.fileOrder||a.filename.localeCompare(b.filename,"it")).map(r=>`<div class="file"><span class="tag">${esc(r.type.toUpperCase())}</span><span class="path">${esc(r.filename)}<br><small class="muted">${esc(r.path)}</small></span><small class="muted">${r.fileOrder===999999?"—":r.fileOrder}</small></div>`).join("")}</article>`).join("");
-    const issueBlocks=[];
-    if(counts.other)issueBlocks.push(`<p class="warning"><strong>${counts.other} file non riconosciuti:</strong> saranno esclusi dall’import finché non verrà scelta una regola.</p>`);
-    if(duplicatePaths.length)issueBlocks.push(`<p class="error"><strong>Percorsi duplicati:</strong> ${duplicatePaths.map(esc).join(", ")}</p>`);
-    if(possiblePairs.length)issueBlocks.push(`<p><strong>Possibili collegamenti automatici video/PDF:</strong></p><ul>${possiblePairs.map(p=>`<li>${esc(p.section)} · prefisso ${esc(p.key)}: ${p.files.map(esc).join(" + ")}</li>`).join("")}</ul>`);
-    if(!issueBlocks.length)issueBlocks.push('<p class="muted">Nessuna anomalia rilevata.</p>');
-    issues.innerHTML=issueBlocks.join("");
-    summaryPanel.classList.remove("hidden");treePanel.classList.remove("hidden");issuesPanel.classList.remove("hidden");
-    const report={pass:true,mode:"preview_only",zip_name:file.name,course_name:cleanLabel(root),section_count:sections.length,file_count:records.length,video_count:counts.video,pdf_count:counts.pdf,image_count:counts.image,unknown_count:counts.other,potential_auto_links:possiblePairs.length,duplicate_path_count:duplicatePaths.length,writes_performed:0};
-    log.textContent=`REPORT FINALE\n${JSON.stringify(report,null,2)}`;status.className="";status.textContent="Anteprima completata. Nessun file è stato caricato.";
-  }catch(error){status.className="error";status.textContent=error.message;log.textContent=`ERRORE COMPLETO\n${error.stack||error.message}`}
-});
-</script>
-</body>
-</html>
+const $=s=>document.querySelector(s),input=$("#zipFile"),button=$("#analyze"),status=$("#status"),log=$("#log"),summaryPanel=$("#summaryPanel"),treePanel=$("#treePanel"),issuesPanel=$("#issuesPanel"),metrics=$("#metrics"),tree=$("#tree"),issues=$("#issues");
+const videoExt=new Set(["mp4","mov","m4v","webm","avi","mkv"]),pdfExt=new Set(["pdf"]),imageExt=new Set(["jpg","jpeg","png","webp","heic"]);
+const esc=v=>String(v??"").replace(/[&<>\"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+const clean=v=>String(v||"").replace(/^\s*\d+[\s._-]*/,"").replace(/[_-]+/g," ").trim();
+const classify=name=>{const ext=(name.split(".").pop()||"").toLowerCase();if(videoExt.has(ext))return"video";if(pdfExt.has(ext))return"pdf";if(imageExt.has(ext))return"image";return"other"};
+const titleOf=name=>clean(name.replace(/\.[^.]+$/,"")).trim();
+const normalize=v=>titleOf(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\b(video|videolezione|video lezione|pillola|dispensa|pdf|lezione)\b/g,"").replace(/[^a-z0-9]+/g," ").trim();
+const categoryName=(parts,type)=>{const joined=parts.join(" ").toLowerCase();if(joined.includes("pillol"))return"Video pillole";if(joined.includes("video"))return"Video lezioni";if(joined.includes("dispens")||type==="pdf")return"Dispense";if(joined.includes("extra")||joined.includes("material"))return"Extra";if(type==="image")return"Immagini";return parts.length?clean(parts[0]):"Materiali generali"};
+const metric=(label,value)=>`<div class="metric"><span class="muted">${esc(label)}</span><strong>${esc(value)}</strong></div>`;
+button.addEventListener("click",async()=>{summaryPanel.classList.add("hidden");treePanel.classList.add("hidden");issuesPanel.classList.add("hidden");const file=input.files?.[0];if(!file){status.className="error";status.textContent="Seleziona un file ZIP.";return}status.className="muted";status.textContent="Analisi in corso…";log.textContent="Lettura archivio…";try{
+const zip=await JSZip.loadAsync(file);const raw=Object.values(zip.files).filter(e=>!e.dir&&!e.name.includes("__MACOSX")&&!e.name.split("/").pop().startsWith("."));
+const roots=raw.map(e=>e.name.split("/").filter(Boolean)[0]).filter(Boolean),root=roots.length?roots.sort((a,b)=>roots.filter(x=>x===b).length-roots.filter(x=>x===a).length)[0]:file.name.replace(/\.zip$/i,"");
+const records=raw.map(entry=>{const parts=entry.name.split("/").filter(Boolean);if(parts[0]===root)parts.shift();const filename=parts.pop()||entry.name,type=classify(filename);return{path:entry.name,filename,title:titleOf(filename),normalizedTitle:normalize(filename),type,category:categoryName(parts,type),size:entry._data?.uncompressedSize||0}});
+const groups=new Map();for(const r of records){if(!groups.has(r.category))groups.set(r.category,[]);groups.get(r.category).push(r)}
+const categories=[...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0],"it"));const counts={video:0,pdf:0,image:0,other:0};records.forEach(r=>counts[r.type]++);
+const duplicatePaths=[],seen=new Set();for(const r of records){const k=r.path.toLowerCase();if(seen.has(k))duplicatePaths.push(r.path);seen.add(k)}
+const linkGroups=[];const byTitle=new Map();for(const r of records){if(!r.normalizedTitle)continue;if(!byTitle.has(r.normalizedTitle))byTitle.set(r.normalizedTitle,[]);byTitle.get(r.normalizedTitle).push(r)}for(const [key,items] of byTitle){const types=new Set(items.map(x=>x.type));if(items.length>1&&types.size>1)linkGroups.push({key,files:items.map(x=>x.filename)})}
+metrics.innerHTML=[metric("Corso",clean(root)),metric("Categorie",categories.length),metric("Contenuti",records.length),metric("Video",counts.video),metric("PDF",counts.pdf),metric("Immagini",counts.image),metric("Non riconosciuti",counts.other)].join("");
+tree.innerHTML=categories.map(([name,list])=>`<article class="category"><h3>${esc(name)} <span class="muted">(${list.length})</span></h3>${list.sort((a,b)=>a.title.localeCompare(b.title,"it")).map(r=>`<div class="content"><span class="tag">${esc(r.type.toUpperCase())}</span><span class="path"><strong>${esc(r.title)}</strong><br><small class="muted">${esc(r.path)}</small></span></div>`).join("")}</article>`).join("");
+const blocks=[];if(counts.other)blocks.push(`<p class="warning"><strong>${counts.other} file non riconosciuti:</strong> saranno esclusi dall’import.</p>`);if(duplicatePaths.length)blocks.push(`<p class="error"><strong>Percorsi duplicati:</strong> ${duplicatePaths.map(esc).join(", ")}</p>`);if(linkGroups.length)blocks.push(`<p><strong>Possibili collegamenti futuri tra contenuti:</strong></p><ul>${linkGroups.map(g=>`<li>${g.files.map(esc).join(" + ")}</li>`).join("")}</ul>`);if(!blocks.length)blocks.push('<p class="muted">Nessuna anomalia rilevata.</p>');issues.innerHTML=blocks.join("");summaryPanel.classList.remove("hidden");treePanel.classList.remove("hidden");issuesPanel.classList.remove("hidden");
+const report={pass:true,mode:"preview_only",model:"categories_contents",requires_progressive_numbers:false,zip_name:file.name,course_name:clean(root),category_count:categories.length,content_count:records.length,video_count:counts.video,pdf_count:counts.pdf,image_count:counts.image,unknown_count:counts.other,potential_content_links:linkGroups.length,duplicate_path_count:duplicatePaths.length,writes_performed:0};log.textContent=`REPORT FINALE\n${JSON.stringify(report,null,2)}`;status.className="";status.textContent="Anteprima completata con il modello Categorie → Contenuti. Nessun file è stato caricato.";
+}catch(error){status.className="error";status.textContent=error.message;log.textContent=`ERRORE COMPLETO\n${error.stack||error.message}`}});
+</script></body></html>
