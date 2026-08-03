@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Scheda corso — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}
+    main{max-width:980px;margin:auto;padding:24px}
+    .panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:18px;margin-bottom:18px}
+    select,button{width:100%;box-sizing:border-box;padding:12px;border-radius:11px;border:1px solid #bbb2a6}
+    button{margin-top:12px;border:0;background:#365d44;color:white;font-weight:700;cursor:pointer}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    .hero{padding:24px;border-radius:16px;background:linear-gradient(135deg,#365d44,#78947f);color:#fff}
+    .hero h2{font-size:clamp(28px,5vw,46px);margin:0 0 10px}
+    .meta{color:#6d655c}
+    .lesson{padding:14px 0;border-bottom:1px solid #e6dfd5}
+    .lesson:last-child{border:0}
+    .badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#ece6dd;color:#4c453d;font-size:13px;font-weight:700}
+    .ok{color:#1b6b36}.error{color:#a62424}
+    pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#211f1c;color:#f7f2e8;border-radius:12px;padding:16px}
+    a.back{display:inline-block;margin-bottom:16px;color:#365d44;font-weight:700;text-decoration:none}
+  </style>
+</head>
+<body>
+<main>
+  <a class="back" href="../?v=26">← Torna a Cucina Hub</a>
+  <h1>Scheda corso</h1>
+  <section class="panel">
+    <label for="course"><strong>Corso</strong></label>
+    <select id="course"><option>Caricamento…</option></select>
+    <button id="load" disabled>Apri corso</button>
+    <p id="status"></p>
+  </section>
+  <section id="card" hidden>
+    <section class="panel hero"><span class="badge">Corso</span><h2 id="title"></h2><p id="description"></p></section>
+    <section class="panel"><h2>Lezioni</h2><div id="lessons"></div></section>
+    <section class="panel"><h2>Materiali</h2><p class="meta">I materiali del corso saranno mostrati qui quando i collegamenti ai file saranno popolati.</p></section>
+    <section class="panel"><h2>Collegamenti futuri</h2><p class="meta">Ricette, tecniche ed elettrodomestici collegati verranno aggiunti nei prossimi sottostep.</p></section>
+  </section>
+  <section class="panel"><h2>Registro</h2><pre id="log">In attesa.</pre></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script>
+<script type="module">
+const client=window.cucinaHubSupabase,$=s=>document.querySelector(s),courseSelect=$("#course"),loadButton=$("#load"),status=$("#status"),card=$("#card"),title=$("#title"),description=$("#description"),lessons=$("#lessons"),log=$("#log");
+const esc=value=>String(value??"").replace(/[&<>\"]/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[char]));
+const check=(error,context)=>{if(error)throw new Error(`${context}: ${error.message}`)};
+async function currentUser(){const{data,error}=await client.auth.getSession();check(error,"Sessione");if(!data.session?.user)throw new Error("Accedi prima di aprire i corsi.");return data.session.user}
+async function init(){try{const user=await currentUser();const{data,error}=await client.from("courses").select("id,title,description,created_at").eq("owner_user_id",user.id).order("created_at",{ascending:false});check(error,"Lettura courses");courseSelect.innerHTML="";if(!(data||[]).length){const option=document.createElement("option");option.textContent="Nessun corso presente";option.value="";courseSelect.appendChild(option);status.className="meta";status.textContent="La struttura è pronta, ma la tabella courses è ancora vuota.";log.textContent=`REPORT FINALE\n${JSON.stringify({pass:true,course_count:0,empty_state:true},null,2)}`;return}const placeholder=document.createElement("option");placeholder.value="";placeholder.textContent="Seleziona…";courseSelect.appendChild(placeholder);for(const course of data){const option=document.createElement("option");option.value=course.id;option.textContent=course.title;courseSelect.appendChild(option)}loadButton.disabled=false;status.className="ok";status.textContent=`${data.length} corsi disponibili.`}catch(error){status.className="error";status.textContent=error.message;log.textContent=`ERRORE COMPLETO\n${error.stack||error.message}`}}
+loadButton.addEventListener("click",async()=>{status.className="";status.textContent="Caricamento…";card.hidden=true;try{const user=await currentUser();if(!courseSelect.value)throw new Error("Seleziona un corso.");const{data:course,error:courseError}=await client.from("courses").select("id,title,description,created_at").eq("id",courseSelect.value).eq("owner_user_id",user.id).single();check(courseError,"Lettura corso");const{data:lessonRows,error:lessonError}=await client.from("course_lessons").select("id,course_id,title,sort_order").eq("course_id",course.id).order("sort_order");check(lessonError,"Lettura lezioni");title.textContent=course.title;description.textContent=course.description||"Nessuna descrizione disponibile.";lessons.innerHTML=(lessonRows||[]).length?lessonRows.map((lesson,index)=>`<article class="lesson"><span class="badge">Lezione ${index+1}</span><h3>${esc(lesson.title)}</h3></article>`).join(""):'<p class="meta">Nessuna lezione collegata a questo corso.</p>';card.hidden=false;status.className="ok";status.textContent="Corso caricato correttamente.";log.textContent=`REPORT FINALE\n${JSON.stringify({pass:true,course_id:course.id,course_title:course.title,lesson_count:(lessonRows||[]).length},null,2)}`}catch(error){status.className="error";status.textContent=error.message;log.textContent=`ERRORE COMPLETO\n${error.stack||error.message}`}});
+init();
+</script>
+</body>
+</html>
