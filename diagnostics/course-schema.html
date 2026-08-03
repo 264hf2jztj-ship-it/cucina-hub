@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Diagnostica corsi — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}
+    main{max-width:980px;margin:auto;padding:24px}
+    .panel{background:#fff;border:1px solid #ddd5ca;border-radius:16px;padding:18px;margin-bottom:16px}
+    button{width:100%;padding:12px;border:0;border-radius:10px;background:#365d44;color:#fff;font-weight:700}
+    .ok{color:#1b6b36}.warn{color:#9a6500}.error{color:#a62424}
+    table{width:100%;border-collapse:collapse;margin-top:12px;font-size:.92rem}
+    th,td{text-align:left;border-bottom:1px solid #e5ded4;padding:10px 8px;vertical-align:top}
+    code{overflow-wrap:anywhere}
+    pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#211f1c;color:#f7f2e8;border-radius:12px;padding:16px;max-height:520px;overflow:auto}
+    .meta{color:#6d655c}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Diagnostica schema corsi</h1>
+  <p class="meta">Verifica in sola lettura le tabelle candidate per corsi, sezioni, lezioni, file e collegamenti agli elettrodomestici.</p>
+  <section class="panel">
+    <button id="run" type="button">Esegui diagnostica</button>
+    <p id="status"></p>
+  </section>
+  <section class="panel">
+    <h2>Risultati</h2>
+    <div id="results">In attesa.</div>
+  </section>
+  <section class="panel">
+    <h2>Report</h2>
+    <pre id="log">In attesa.</pre>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script>
+<script type="module">
+const client=window.cucinaHubSupabase;
+const run=document.querySelector('#run');
+const status=document.querySelector('#status');
+const results=document.querySelector('#results');
+const log=document.querySelector('#log');
+const tables=['courses','course_sections','course_lessons','course_files','appliance_courses','course_appliances'];
+const candidates={
+  courses:['id','owner_user_id','title','name','description','storage_file_id','created_at'],
+  course_sections:['id','course_id','title','name','sort_order','position'],
+  course_lessons:['id','course_id','section_id','title','name','sort_order','position'],
+  course_files:['id','course_id','storage_file_id','file_role','relation_role'],
+  appliance_courses:['id','appliance_id','course_id','relation_role','owner_user_id'],
+  course_appliances:['id','appliance_id','course_id','relation_role','owner_user_id']
+};
+function esc(v){return String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]))}
+async function requireUser(){const{data,error}=await client.auth.getSession();if(error)throw error;if(!data.session?.user)throw new Error('Accedi prima di eseguire la diagnostica.');return data.session.user}
+async function inspectTable(table){
+  const base=await client.from(table).select('*',{count:'exact',head:true});
+  if(base.error){return{table,exists:false,error:base.error.message,code:base.error.code}}
+  const present=[];const missing=[];
+  for(const column of candidates[table]){
+    const{error}=await client.from(table).select(column).limit(1);
+    if(error){missing.push(column)}else{present.push(column)}
+  }
+  return{table,exists:true,count:base.count??0,present_columns:present,missing_columns:missing};
+}
+run.addEventListener('click',async()=>{
+  run.disabled=true;status.className='';status.textContent='Diagnostica in corso…';results.textContent='Caricamento…';log.textContent='Avvio…';
+  try{
+    const user=await requireUser();
+    const inspected=[];
+    for(const table of tables) inspected.push(await inspectTable(table));
+    const existing=inspected.filter(x=>x.exists);
+    const relation=existing.find(x=>x.table==='appliance_courses'||x.table==='course_appliances')||null;
+    results.innerHTML=`<table><thead><tr><th>Tabella</th><th>Esiste</th><th>Record</th><th>Colonne trovate</th><th>Nota</th></tr></thead><tbody>${inspected.map(x=>`<tr><td><code>${esc(x.table)}</code></td><td>${x.exists?'✅':'❌'}</td><td>${x.exists?esc(x.count):'—'}</td><td>${x.exists?esc(x.present_columns.join(', ')||'nessuna tra le candidate'):'—'}</td><td>${x.exists?esc(x.missing_columns.length?`Mancano: ${x.missing_columns.join(', ')}`:'Tutte le colonne candidate presenti'):esc(x.error)}</td></tr>`).join('')}</tbody></table>`;
+    const report={pass:true,owner_user_id:user.id,existing_tables:existing.map(x=>x.table),course_table_exists:existing.some(x=>x.table==='courses'),appliance_relation_table:relation?.table??null,tables:inspected};
+    log.textContent=`REPORT FINALE\n${JSON.stringify(report,null,2)}`;
+    status.className=report.course_table_exists?'ok':'warn';
+    status.textContent=report.course_table_exists?'Diagnostica completata. Copia il REPORT FINALE.':'Diagnostica completata: la tabella courses non risulta accessibile.';
+  }catch(error){
+    console.error(error);status.className='error';status.textContent=error.message;results.textContent='Diagnostica non completata.';log.textContent=`ERRORE COMPLETO\n${error.stack||error.message}`;
+  }finally{run.disabled=false}
+});
+</script>
+</body>
+</html>
