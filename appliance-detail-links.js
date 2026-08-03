@@ -1,7 +1,7 @@
 "use strict";
 
 (function () {
-  const DETAIL_PATH = "appliances/detail.html";
+  const DETAIL_PATH = "appliances/open.html";
 
   function addDetailLinks() {
     document.querySelectorAll(".appliance-row").forEach(row => {
@@ -33,34 +33,9 @@
     });
   }
 
-  function openRequestedDetail() {
-    const select = document.querySelector("#appliance");
-    const button = document.querySelector("#load");
-    if (!select || !button) return;
-
-    const requestedName = new URLSearchParams(location.search).get("name")?.trim();
-    if (!requestedName) return;
-
-    let attempts = 0;
-    const timer = setInterval(() => {
-      attempts += 1;
-      const option = [...select.options].find(item => item.textContent.trim() === requestedName);
-      if (option) {
-        clearInterval(timer);
-        select.value = option.value;
-        button.click();
-        return;
-      }
-      if (attempts >= 50) clearInterval(timer);
-    }, 100);
-  }
-
   const root = document.querySelector("#viewRoot");
-  if (root) {
-    const observer = new MutationObserver(addDetailLinks);
-    observer.observe(root, { childList: true, subtree: true });
-    addDetailLinks();
-  }
-
-  openRequestedDetail();
+  if (!root) return;
+  const observer = new MutationObserver(addDetailLinks);
+  observer.observe(root, { childList: true, subtree: true });
+  addDetailLinks();
 })();
