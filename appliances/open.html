@@ -24,12 +24,73 @@
     const backButton = document.querySelector("#backButton");
 
     backButton.addEventListener("click", () => {
-      if (history.length > 1) {
-        history.back();
-      } else {
-        location.href = "../?v=23";
-      }
+      if (history.length > 1) history.back();
+      else location.href = "../?v=24";
     });
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>\"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[char]));
+    }
+
+    async function addCompatibleRecipes(doc, applianceId) {
+      const client = frame.contentWindow.cucinaHubSupabase;
+      const card = doc.querySelector("#card");
+      if (!client || !card || doc.querySelector("#compatibleRecipesPanel")) return;
+
+      const panel = doc.createElement("section");
+      panel.id = "compatibleRecipesPanel";
+      panel.className = "panel";
+      panel.innerHTML = '<h2>Ricette compatibili</h2><p class="meta">Caricamento delle ricette collegate…</p>';
+      card.appendChild(panel);
+
+      try {
+        const {data: sessionData, error: sessionError} = await client.auth.getSession();
+        if (sessionError) throw sessionError;
+        const ownerId = sessionData.session?.user?.id;
+        if (!ownerId) throw new Error("Sessione non disponibile.");
+
+        const {data: links, error: linkError} = await client
+          .from("recipe_appliances")
+          .select("recipe_id")
+          .eq("appliance_id", applianceId);
+        if (linkError) throw linkError;
+
+        const recipeIds = [...new Set((links || []).map(item => item.recipe_id).filter(Boolean))];
+        if (!recipeIds.length) {
+          panel.innerHTML = '<h2>Ricette compatibili</h2><p class="meta">Nessuna ricetta collegata a questo elettrodomestico.</p>';
+          return;
+        }
+
+        const {data: recipes, error: recipeError} = await client
+          .from("recipes")
+          .select("*")
+          .eq("owner_user_id", ownerId)
+          .in("id", recipeIds)
+          .order("code", {ascending: true});
+        if (recipeError) throw recipeError;
+
+        const items = recipes || [];
+        panel.innerHTML = `<h2>Ricette compatibili <small class="meta">(${items.length})</small></h2>` +
+          (items.length
+            ? items.map(recipe => {
+                const title = recipe.title || recipe.name || recipe.code || "Ricetta";
+                const code = recipe.code ? `<strong>${escapeHtml(recipe.code)}</strong> — ` : "";
+                const status = recipe.status || recipe.state || "";
+                const description = recipe.description || recipe.summary || "";
+                return `<article style="padding:14px 0;border-bottom:1px solid #e6dfd5">
+                  <div>${code}<strong>${escapeHtml(title)}</strong></div>
+                  ${status ? `<div class="meta">Stato: ${escapeHtml(status)}</div>` : ""}
+                  ${description ? `<p class="meta">${escapeHtml(description)}</p>` : ""}
+                </article>`;
+              }).join("")
+            : '<p class="meta">Nessuna ricetta collegata a questo elettrodomestico.</p>');
+
+        const log = doc.querySelector("#log");
+        if (log) log.textContent += `\n\nRICETTE COMPATIBILI\n${JSON.stringify({pass:true, appliance_id:applianceId, recipe_count:items.length}, null, 2)}`;
+      } catch (error) {
+        panel.innerHTML = `<h2>Ricette compatibili</h2><p class="error">${escapeHtml(error.message)}</p>`;
+      }
+    }
 
     frame.addEventListener("load", () => {
       if (!requestedName) {
@@ -51,6 +112,18 @@
           select.value = option.value;
           button.click();
           message.remove();
+
+          let detailAttempts = 0;
+          const detailTimer = setInterval(() => {
+            detailAttempts += 1;
+            const status = doc.querySelector("#status");
+            if (status?.classList.contains("ok")) {
+              clearInterval(detailTimer);
+              addCompatibleRecipes(doc, option.value);
+            } else if (detailAttempts >= 100) {
+              clearInterval(detailTimer);
+            }
+          }, 100);
           return;
         }
 
