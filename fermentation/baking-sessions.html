@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sessioni impasto — Cucina Hub</title>
+  <style>
+    :root{--bg:#f6f3ee;--card:#fff;--line:#ddd5ca;--green:#365d44;--muted:#6d655c;--danger:#a62424}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:#26221d;font-family:system-ui,-apple-system,sans-serif}main{max-width:1100px;margin:auto;padding:24px}.head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:18px}.head h1{margin:0}.head a{padding:12px 15px;border-radius:11px;background:var(--green);color:white;text-decoration:none;font-weight:800}.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:18px}.filters{display:flex;gap:8px;flex-wrap:wrap}.filters button,.actions button{border:0;border-radius:10px;padding:10px 13px;font-weight:800;cursor:pointer}.filters button{background:#eee8df;color:#26221d}.filters button.active{background:var(--green);color:white}.list{display:grid;gap:12px}.session{border:1px solid var(--line);border-radius:15px;padding:15px;background:#fff}.session-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.session h3{margin:0 0 4px}.meta{color:var(--muted);font-size:.93rem}.badge{padding:5px 9px;border-radius:999px;background:#eee8df;font-size:.82rem;font-weight:800;white-space:nowrap}.badge.active{background:#e5f2e8;color:#176b35}.badge.completed{background:#e7eef6;color:#245987}.badge.cancelled{background:#f7e8e5;color:#8d2e22}.metrics{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.metric{background:#faf8f4;border-radius:9px;padding:7px 9px;font-size:.9rem}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button,.actions a{padding:10px 12px;border-radius:10px;text-decoration:none;font-weight:800;border:0;cursor:pointer}.primary{background:var(--green);color:#fff}.secondary{background:#eee8df;color:#26221d}.danger{background:#f7e8e5;color:var(--danger)}.empty{padding:28px;text-align:center;color:var(--muted)}.editor{display:none}.editor.open{display:block}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.full{grid-column:1/-1}label{display:block;font-weight:750;margin-bottom:6px}input,select,textarea{width:100%;padding:11px;border:1px solid #bbb2a6;border-radius:10px;font:inherit}textarea{min-height:95px}.status{color:var(--muted);margin-top:10px}.ok{color:#176b35}.error{color:var(--danger)}@media(max-width:700px){main{padding:16px}.head{flex-direction:column}.grid{grid-template-columns:1fr}.full{grid-column:auto}.session-top{flex-direction:column}}
+  </style>
+</head>
+<body>
+<main>
+  <div class="head">
+    <div><h1>Sessioni impasto</h1><p class="meta">Gestisci sessioni pianificate, attive e completate.</p></div>
+    <a href="./baking-wizard.html?v=8">+ NUOVA SESSIONE</a>
+  </div>
+
+  <section class="panel">
+    <div class="filters" id="filters">
+      <button data-filter="all" class="active">TUTTE</button>
+      <button data-filter="planned">PIANIFICATE</button>
+      <button data-filter="active">ATTIVE</button>
+      <button data-filter="completed">COMPLETATE</button>
+      <button data-filter="cancelled">ANNULLATE</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div id="list" class="list"><div class="empty">Caricamento sessioni…</div></div>
+    <p id="status" class="status"></p>
+  </section>
+
+  <section id="editor" class="panel editor">
+    <h2>Modifica sessione</h2>
+    <div class="grid">
+      <div class="full"><label>Titolo</label><input id="editTitle"></div>
+      <div><label>Data e ora del pasto</label><input id="editTarget" type="datetime-local"></div>
+      <div><label>Stato</label><select id="editStatus"><option value="draft">Bozza</option><option value="planned">Pianificata</option><option value="active">Attiva</option><option value="completed">Completata</option><option value="cancelled">Annullata</option></select></div>
+      <div><label>Farina</label><input id="editFlour"></div>
+      <div><label>Farina totale (g)</label><input id="editFlourWeight" type="number" min="1" step="1"></div>
+      <div><label>Idratazione (%)</label><input id="editHydration" type="number" min="0" step="0.1"></div>
+      <div><label>Temperatura forno (°C)</label><input id="editOvenTemp" type="number" min="0" step="1"></div>
+      <div class="full"><label>Note risultato</label><textarea id="editNotes"></textarea></div>
+      <div class="full actions"><button id="saveEdit" class="primary">SALVA MODIFICHE</button><button id="closeEdit" class="secondary">ANNULLA</button></div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script>
+<script>
+const c=window.cucinaHubSupabase,$=s=>document.querySelector(s);let sessions=[],filter='all',editingId=null;
+const statusLabels={draft:'Bozza',planned:'Pianificata',active:'Attiva',completed:'Completata',cancelled:'Annullata'};
+function esc(value){return String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
+function msg(text,kind='status'){$('#status').className=kind;$('#status').textContent=text}
+function fmt(value){if(!value)return '—';return new Date(value).toLocaleString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+function localValue(value){if(!value)return '';const d=new Date(value);return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}
+function render(){const visible=filter==='all'?sessions:sessions.filter(s=>s.status===filter);if(!visible.length){$('#list').innerHTML='<div class="empty">Nessuna sessione in questa sezione.</div>';return}$('#list').innerHTML=visible.map(s=>{const guide=s.workflow_definition?`../workflow-engine/guided-session.html?session=${encodeURIComponent(s.id)}&v=6`:'';return `<article class="session"><div class="session-top"><div><h3>${esc(s.title)}</h3><div class="meta">${fmt(s.target_meal_at)}</div></div><span class="badge ${esc(s.status)}">${esc(statusLabels[s.status]||s.status)}</span></div><div class="metrics"><span class="metric">${esc(s.flour_weight_g)} g farina</span><span class="metric">Idratazione ${esc(s.hydration_percent??'—')}%</span><span class="metric">${esc(s.oven_temperature_c??'—')} °C</span><span class="metric">${esc(s.product_style)}</span></div><div class="actions">${guide?`<a class="primary" href="${guide}">${s.status==='active'?'RIPRENDI':'APRI GUIDA'}</a>`:''}<button class="secondary" onclick="editSession('${s.id}')">MODIFICA</button>${s.status!=='cancelled'?`<button class="secondary" onclick="setStatus('${s.id}','cancelled')">ANNULLA</button>`:''}<button class="danger" onclick="deleteSession('${s.id}')">ELIMINA</button></div></article>`}).join('')}
+async function load(){try{msg('Caricamento…');const auth=await c.auth.getSession();if(!auth.data.session?.user)throw new Error('Accedi prima di continuare.');const {data,error}=await c.from('baking_sessions').select('*').order('target_meal_at',{ascending:false});if(error)throw error;sessions=data||[];render();msg(`${sessions.length} sessioni caricate.`,'ok')}catch(e){msg(e.message,'error')}}
+window.editSession=id=>{const s=sessions.find(x=>x.id===id);if(!s)return;editingId=id;$('#editTitle').value=s.title||'';$('#editTarget').value=localValue(s.target_meal_at);$('#editStatus').value=s.status||'planned';$('#editFlour').value=s.flour_name||'';$('#editFlourWeight').value=s.flour_weight_g||'';$('#editHydration').value=s.hydration_percent??'';$('#editOvenTemp').value=s.oven_temperature_c??'';$('#editNotes').value=s.result_notes||'';$('#editor').classList.add('open');$('#editor').scrollIntoView({behavior:'smooth'})};
+window.setStatus=async(id,next)=>{try{const {error}=await c.from('baking_sessions').update({status:next,updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;await load()}catch(e){msg(e.message,'error')}};
+window.deleteSession=async id=>{const s=sessions.find(x=>x.id===id);if(!confirm(`Eliminare definitivamente “${s?.title||'questa sessione'}”?`))return;try{const {error}=await c.from('baking_sessions').delete().eq('id',id);if(error)throw error;await load();msg('Sessione eliminata.','ok')}catch(e){msg(e.message,'error')}};
+$('#saveEdit').onclick=async()=>{try{if(!editingId)return;const title=$('#editTitle').value.trim();const target=new Date($('#editTarget').value);const flourWeight=Number($('#editFlourWeight').value);if(!title)throw new Error('Il titolo è obbligatorio.');if(Number.isNaN(target.getTime()))throw new Error('Data e ora non valide.');if(!flourWeight||flourWeight<=0)throw new Error('La quantità di farina deve essere maggiore di zero.');const payload={title,target_meal_at:target.toISOString(),status:$('#editStatus').value,flour_name:$('#editFlour').value.trim()||null,flour_weight_g:flourWeight,hydration_percent:$('#editHydration').value===''?null:Number($('#editHydration').value),oven_temperature_c:$('#editOvenTemp').value===''?null:Number($('#editOvenTemp').value),result_notes:$('#editNotes').value.trim()||null,updated_at:new Date().toISOString()};const {error}=await c.from('baking_sessions').update(payload).eq('id',editingId);if(error)throw error;$('#editor').classList.remove('open');editingId=null;await load();msg('Sessione aggiornata.','ok')}catch(e){msg(e.message,'error')}};
+$('#closeEdit').onclick=()=>{$('#editor').classList.remove('open');editingId=null};
+$('#filters').onclick=e=>{const b=e.target.closest('button[data-filter]');if(!b)return;filter=b.dataset.filter;document.querySelectorAll('#filters button').forEach(x=>x.classList.toggle('active',x===b));render()};
+load();
+</script>
+</body>
+</html>
