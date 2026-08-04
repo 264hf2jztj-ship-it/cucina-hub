@@ -1,0 +1,51 @@
+[
+  {
+    "id":"prepare_ingredients_v1","version":4,"type":"preparation","title":"Preparazione ingredienti","description":"Prepara tutto nell’ordine in cui servirà.","purpose":"Ridurre interruzioni ed errori durante l’impasto, avendo ingredienti e utensili già pronti.","equipment":["Bilancia"],"estimated_minutes":10,
+    "activities":[
+      {"id":"prep_flour","kind":"action","label":"Pesa la farina e mettila nella ciotola dell’impastatrice.","why":"La farina è il riferimento per tutte le percentuali dell’impasto.","success":"Peso verificato e ciotola pronta."},
+      {"id":"prep_water","kind":"action","label":"Pesa tutta l’acqua e separa la parte iniziale da quella da aggiungere dopo.","why":"L’aggiunta graduale aiuta l’assorbimento e il controllo degli impasti idratati.","success":"Acqua iniziale e acqua restante sono separate."},
+      {"id":"prep_salt","kind":"action","label":"Pesa il sale e tienilo separato.","why":"Verrà aggiunto dopo l’assorbimento iniziale, per non irrigidire subito l’impasto.","success":"Sale pesato e distinto dal lievito."},
+      {"id":"prep_yeast","kind":"action","label":"Pesa il lievito e preparalo per l’aggiunta.","success":"Quantità verificata e pronta all’uso."},
+      {"id":"prep_tools","kind":"action","label":"Prepara spatola, contenitore leggermente unto e coperchio.","success":"Tutto è raggiungibile senza interrompere il lavoro."},
+      {"id":"prep_check","kind":"check","label":"Controlla che tutti gli ingredienti siano pronti e separati.","success":"Puoi iniziare senza dover cercare o pesare altro."}
+    ],"metadata":{"category":"panificazione"}
+  },
+  {
+    "id":"mixing_dcg_v1","version":4,"type":"mixing","title":"Impasto con impastatrice DCG","description":"Segui le attività dall’alto verso il basso.","purpose":"Sviluppare una maglia glutinica elastica senza surriscaldare o strappare l’impasto.","equipment":["DCG KM1401R","Gancio impastatore"],"estimated_minutes":18,
+    "activities":[
+      {"id":"mount_hook","kind":"action","label":"Monta il gancio impastatore sulla DCG.","why":"Il gancio sviluppa l’impasto senza incorporare aria come una frusta.","success":"Gancio bloccato correttamente."},
+      {"id":"load_bowl","kind":"action","label":"Metti nella ciotola la farina e circa il 70–80% dell’acqua totale.","why":"Partire con meno acqua rende più semplice avviare la struttura.","success":"Non resta farina fuori dalla ciotola; l’acqua restante è tenuta da parte."},
+      {"id":"start_low","kind":"action","label":"Avvia l’impastatrice a velocità bassa.","why":"La partenza lenta evita schizzi e distribuisce l’acqua in modo uniforme.","success":"Farina e acqua iniziano ad amalgamarsi senza impasto sul bordo."},
+      {"id":"initial_mix","kind":"timer","label":"Lascia lavorare a velocità bassa per 3 minuti.","seconds":180,"why":"Serve a idratare la farina prima delle aggiunte successive."},
+      {"id":"initial_check","kind":"check","label":"Controlla l’assorbimento iniziale.","success":"La farina asciutta è quasi scomparsa; l’impasto è grezzo ma unito."},
+      {"id":"add_yeast","kind":"action","label":"Aggiungi il lievito e attendi che si distribuisca.","why":"Lo inseriamo quando l’impasto ha già iniziato a formarsi, così si distribuisce meglio.","success":"Non vedi più grumi o zone concentrate di lievito."},
+      {"id":"add_remaining_water","kind":"action","label":"Versa gradualmente l’acqua rimasta, in più riprese.","why":"Ogni aggiunta va fatta solo quando la precedente è assorbita.","success":"L’impasto assorbe l’acqua senza trasformarsi in una massa liquida separata."},
+      {"id":"add_salt","kind":"action","label":"Quando l’acqua è quasi assorbita, aggiungi il sale.","why":"Aggiungerlo ora rinforza la struttura senza ostacolare la prima idratazione.","success":"Sale completamente incorporato."},
+      {"id":"final_speed","kind":"action","label":"Passa a velocità medio-bassa per chiudere l’impasto.","success":"L’impasto comincia a raccogliersi e pulisce parzialmente la ciotola."},
+      {"id":"final_mix","kind":"timer","label":"Lascia lavorare per 5 minuti.","seconds":300,"why":"Questa fase completa lo sviluppo della struttura."},
+      {"id":"temperature_warning","kind":"warning","label":"Ferma la macchina se l’impasto si strappa, si avvolge troppo sul gancio o supera circa 26 °C."},
+      {"id":"window_check","kind":"check","label":"Verifica elasticità e prova del velo.","success":"L’impasto è più liscio, elastico e forma un velo senza strapparsi subito."},
+      {"id":"final_temperature","kind":"check","label":"Controlla la temperatura finale.","success":"Indicativamente circa 24 °C, comunque entro 22–26 °C."}
+    ],"temperature":{"target_c":24,"min_c":22,"max_c":26},"metadata":{"appliance":"DCG KM1401R"}
+  },
+  {
+    "id":"bulk_fermentation_v1","version":4,"type":"fermentation","title":"Puntata","description":"Trasferisci, copri e avvia la prima fermentazione.","purpose":"Permettere al glutine di rilassarsi e ai lieviti di produrre gas e aromi.","equipment":["Contenitore con coperchio"],"estimated_minutes":120,
+    "activities":[
+      {"id":"transfer_dough","kind":"action","label":"Trasferisci l’impasto nel contenitore leggermente unto.","why":"L’olio evita che l’impasto si attacchi durante la crescita.","success":"Impasto raccolto senza strapparlo."},
+      {"id":"cover_container","kind":"action","label":"Copri bene il contenitore.","why":"La copertura impedisce che si formi una crosta superficiale.","success":"Contenitore chiuso ma con spazio per la crescita."},
+      {"id":"bulk","kind":"timer","label":"Lascia fermentare per 120 minuti alla temperatura prevista.","seconds":7200},
+      {"id":"bulk_check","kind":"check","label":"Valuta la fine della puntata.","success":"Impasto più rilassato e aumentato di volume, senza cedimenti o collasso."}
+    ],"temperature":{"target_c":22},"metadata":{}
+  },
+  {
+    "id":"bake_samsung_v1","version":4,"type":"baking","title":"Cottura nel forno Samsung","description":"Preriscalda, inforna e controlla il risultato.","purpose":"Trasferire rapidamente calore all’impasto per sviluppare struttura, colore e fondo croccante.","equipment":["Samsung NV75N5641RS/ET"],"estimated_minutes":61,
+    "activities":[
+      {"id":"set_oven","kind":"action","label":"Imposta il forno Samsung alla temperatura prevista, senza superare 250 °C.","why":"La sessione rispetta il limite reale del forno e compensa con preriscaldamento e posizione.","success":"Temperatura e modalità impostate."},
+      {"id":"preheat","kind":"timer","label":"Preriscalda completamente il forno per 45 minuti.","seconds":2700,"why":"Non basta che l’aria sia calda: devono scaldarsi anche camera e supporto di cottura."},
+      {"id":"preheat_check","kind":"check","label":"Controlla che il forno sia realmente pronto.","success":"Temperatura raggiunta e teglia o supporto ben caldi."},
+      {"id":"load_oven","kind":"action","label":"Inforna nella posizione prevista dalla sessione.","success":"Teglia stabile e sportello richiuso rapidamente."},
+      {"id":"bake","kind":"timer","label":"Cuoci per il tempo indicativo di 16 minuti.","seconds":960},
+      {"id":"bake_check","kind":"check","label":"Valuta la cottura prima di sfornare.","success":"Fondo dorato, superficie ben colorita e struttura cotta senza zone umide."}
+    ],"temperature":{"target_c":250,"max_c":250},"metadata":{"appliance":"Samsung NV75N5641RS/ET"}
+  }
+]
