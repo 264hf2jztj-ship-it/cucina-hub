@@ -1,0 +1,29 @@
+[
+  {
+    "id":"prepare_ingredients_v1","version":1,"type":"preparation","title":"Preparazione ingredienti","description":"Pesa e organizza tutti gli ingredienti prima di iniziare.","equipment":["Bilancia"],"estimated_minutes":10,
+    "instructions":["Pesa farina, acqua, sale e lievito.","Prepara contenitore, gancio e spatola."],
+    "checklist":[{"id":"flour","label":"Farina pesata","required":true},{"id":"water","label":"Acqua pesata","required":true},{"id":"salt","label":"Sale pesato","required":true},{"id":"yeast","label":"Lievito pesato","required":true}],
+    "timers":[],"quality_checks":["Ingredienti pronti e separati"],"temperature":null,"attachments":[],"allows_notes":true,"allows_photo":false,"metadata":{"category":"panificazione"}
+  },
+  {
+    "id":"mixing_dcg_v1","version":1,"type":"mixing","title":"Impasto con impastatrice DCG","description":"Protocollo base riutilizzabile per impasti salati.","equipment":["DCG KM1401R","Gancio impastatore"],"estimated_minutes":18,
+    "instructions":["Inserisci farina e circa il 70–80% dell’acqua.","Avvia a velocità bassa.","Aggiungi il lievito, poi l’acqua restante gradualmente.","Aggiungi il sale solo dopo l’assorbimento iniziale.","Concludi a velocità medio-bassa controllando la temperatura."],
+    "checklist":[{"id":"hook","label":"Gancio montato","required":true},{"id":"water_reserved","label":"Acqua restante tenuta da parte","required":true},{"id":"salt_added","label":"Sale incorporato","required":true},{"id":"final_check","label":"Controllo finale eseguito","required":true}],
+    "timers":[{"id":"initial_mix","label":"Impasto iniziale","seconds":180,"auto_start":false},{"id":"final_mix","label":"Chiusura impasto","seconds":300,"auto_start":false}],
+    "quality_checks":["Impasto più liscio ed elastico","Ciotola parzialmente pulita","Prova del velo","Temperatura finale circa 24 °C"],
+    "temperature":{"target_c":24,"min_c":22,"max_c":26},"attachments":[],"allows_notes":true,"allows_photo":true,"metadata":{"appliance":"DCG KM1401R"}
+  },
+  {
+    "id":"bulk_fermentation_v1","version":1,"type":"fermentation","title":"Puntata","description":"Prima fermentazione dell’impasto.","equipment":["Contenitore con coperchio"],"estimated_minutes":120,
+    "instructions":["Trasferisci l’impasto nel contenitore leggermente unto.","Copri e lascia fermentare alla temperatura prevista."],
+    "checklist":[{"id":"covered","label":"Contenitore coperto","required":true}],"timers":[{"id":"bulk","label":"Puntata","seconds":7200,"auto_start":false}],
+    "quality_checks":["Impasto più rilassato","Volume aumentato senza collasso"],"temperature":{"target_c":22},"attachments":[],"allows_notes":true,"allows_photo":true,"metadata":{}
+  },
+  {
+    "id":"bake_samsung_v1","version":1,"type":"baking","title":"Cottura nel forno Samsung","description":"Cottura compatibile con Samsung NV75N5641RS/ET.","equipment":["Samsung NV75N5641RS/ET"],"estimated_minutes":61,
+    "instructions":["Preriscalda completamente il forno.","Usa una temperatura non superiore a 250 °C.","Inforna nella posizione prevista e controlla fondo e superficie."],
+    "checklist":[{"id":"preheated","label":"Preriscaldamento completato","required":true},{"id":"bake_check","label":"Cottura controllata","required":true}],
+    "timers":[{"id":"preheat","label":"Preriscaldamento","seconds":2700,"auto_start":false},{"id":"bake","label":"Cottura indicativa","seconds":960,"auto_start":false}],
+    "quality_checks":["Fondo dorato","Superficie ben colorita","Struttura cotta"],"temperature":{"target_c":250,"max_c":250},"attachments":[],"allows_notes":true,"allows_photo":true,"metadata":{"appliance":"Samsung NV75N5641RS/ET"}
+  }
+]
