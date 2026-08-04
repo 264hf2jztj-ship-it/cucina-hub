@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Profili impasto — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}main{max-width:1100px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:18px;margin-bottom:18px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full{grid-column:1/-1}label{display:block;font-weight:700;margin:0 0 6px}input,select,textarea,button{width:100%;box-sizing:border-box;padding:12px;border-radius:11px;border:1px solid #bbb2a6;font:inherit}textarea{min-height:90px}button{border:0;background:#365d44;color:#fff;font-weight:800}.secondary{background:#eee8df;color:#26221d}.danger{background:#9f2d2d}.actions{display:flex;gap:10px;flex-wrap:wrap}.actions button{width:auto}.muted{color:#6d655c}.ok{color:#1b6b36}.error{color:#a62424}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#eee8df}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}.card{border:1px solid #e5ded4;border-radius:14px;padding:14px}.card h3{margin:0 0 6px}.small{font-size:.92rem}.suggestion{background:#f2f7f3;border:1px solid #bdd1c2;border-radius:14px;padding:16px;margin-top:16px}.suggestion h3{margin-top:0}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.metric{background:#fff;border-radius:10px;padding:10px;border:1px solid #d7e4da}.metric strong{display:block;font-size:1.2rem}.advanced{margin-top:16px}.advanced summary{cursor:pointer;font-weight:800;padding:10px 0}.inline-check{display:flex;align-items:center;gap:8px}.inline-check input{width:auto}@media(max-width:760px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Profili impasto</h1>
+  <p class="muted">Descrivi il risultato che vuoi ottenere e inserisci solo i dati essenziali. Cucina Hub propone automaticamente idratazione, lievito e fermentazione; i dettagli restano modificabili.</p>
+
+  <section class="panel">
+    <h2 id="formTitle">Crea un impasto guidato</h2>
+    <input id="profileId" type="hidden">
+    <div class="grid">
+      <div class="full"><label>Cosa vuoi preparare?</label><select id="style"><option value="roman_pan">Pizza in teglia romana</option><option value="neapolitan">Pizza napoletana</option><option value="home_round">Pizza tonda nel forno di casa</option><option value="focaccia">Focaccia</option><option value="bread">Pane</option></select></div>
+      <div><label>Farina totale (g)</label><input id="flourWeight" type="number" min="100" max="100000" step="10" value="1000"></div>
+      <div><label>Ambiente</label><select id="environmentProfile"><option value="">Nessun profilo ambiente</option></select></div>
+      <div><label>Lievito disponibile</label><select id="yeastType"><option value="fresh_yeast">Lievito di birra fresco</option><option value="dry_yeast">Lievito di birra secco</option><option value="sourdough">Lievito madre</option><option value="none">Nessun lievito</option></select></div>
+      <div><label>Quando vuoi mangiare?</label><input id="readyAt" type="datetime-local"></div>
+      <div class="full actions"><button id="generate" type="button">GENERA PROPOSTA</button><button id="reset" class="secondary" type="button">NUOVO</button></div>
+    </div>
+
+    <div id="suggestion" class="suggestion" hidden>
+      <h3>Proposta Cucina Hub</h3>
+      <p id="summary"></p>
+      <div class="metrics">
+        <div class="metric"><span>Idratazione</span><strong id="mHydration">—</strong></div>
+        <div class="metric"><span>Lievito</span><strong id="mYeast">—</strong></div>
+        <div class="metric"><span>Puntata</span><strong id="mBulk">—</strong></div>
+        <div class="metric"><span>Frigo</span><strong id="mCold">—</strong></div>
+        <div class="metric"><span>Appretto</span><strong id="mProof">—</strong></div>
+      </div>
+      <p class="muted small">È una proposta iniziale basata sul tipo di impasto, sul tempo disponibile e sul profilo ambiente. Potrai perfezionarla con le future sessioni e con il diario fermentazioni.</p>
+    </div>
+
+    <details class="advanced">
+      <summary>Mostra e modifica i dettagli tecnici</summary>
+      <div class="grid">
+        <div><label>Nome profilo</label><input id="name" required></div>
+        <div><label>Tipo impasto</label><select id="doughType"><option value="pizza">Pizza</option><option value="bread">Pane</option><option value="focaccia">Focaccia</option><option value="other">Altro</option></select></div>
+        <div><label>Idratazione (%)</label><input id="hydration" type="number" min="0" max="200" step="0.1"></div>
+        <div><label>Temperatura impasto obiettivo (°C)</label><input id="targetDoughTemp" type="number" min="0" max="45" step="0.1"></div>
+        <div><label>Lievito (% panificatore)</label><input id="yeastPercent" type="number" min="0" max="100" step="0.0001"></div>
+        <div><label>Prefermento</label><select id="prefermentType"><option value="none">Nessuno</option><option value="poolish">Poolish</option><option value="biga">Biga</option><option value="sourdough">Lievito madre</option></select></div>
+        <div><label>Farina nel prefermento (%)</label><input id="prefermentFlourPercent" type="number" min="0" max="100" step="0.1"></div>
+        <div><label>Puntata (minuti)</label><input id="bulkMinutes" type="number" min="0" max="100800"></div>
+        <div><label>Temperatura puntata (°C)</label><input id="bulkTemp" type="number" min="-5" max="45" step="0.1"></div>
+        <div><label>Frigo (minuti)</label><input id="coldMinutes" type="number" min="0" max="100800"></div>
+        <div><label>Temperatura frigo (°C)</label><input id="fridgeTemp" type="number" min="-5" max="20" step="0.1"></div>
+        <div><label>Appretto finale (minuti)</label><input id="finalProofMinutes" type="number" min="0" max="100800"></div>
+        <div><label>Temperatura appretto (°C)</label><input id="finalProofTemp" type="number" min="-5" max="45" step="0.1"></div>
+        <div class="inline-check"><input id="isDefault" type="checkbox"><label for="isDefault" style="margin:0">Profilo predefinito</label></div>
+        <div class="full"><label>Note</label><textarea id="notes"></textarea></div>
+      </div>
+    </details>
+
+    <div class="actions" style="margin-top:16px"><button id="save">SALVA PROFILO</button></div>
+    <p id="status" class="muted">In attesa.</p>
+  </section>
+
+  <section class="panel"><h2>Profili salvati</h2><div id="cards" class="cards"><p>Caricamento…</p></div></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script>
+<script>
+const c=window.cucinaHubSupabase,$=s=>document.querySelector(s);let owner=null,profiles=[],environments=[];
+const f={id:$('#profileId'),style:$('#style'),flourWeight:$('#flourWeight'),environmentProfile:$('#environmentProfile'),yeastType:$('#yeastType'),readyAt:$('#readyAt'),name:$('#name'),doughType:$('#doughType'),hydration:$('#hydration'),targetDoughTemp:$('#targetDoughTemp'),yeastPercent:$('#yeastPercent'),prefermentType:$('#prefermentType'),prefermentFlourPercent:$('#prefermentFlourPercent'),bulkMinutes:$('#bulkMinutes'),bulkTemp:$('#bulkTemp'),coldMinutes:$('#coldMinutes'),fridgeTemp:$('#fridgeTemp'),finalProofMinutes:$('#finalProofMinutes'),finalProofTemp:$('#finalProofTemp'),isDefault:$('#isDefault'),notes:$('#notes')};
+const status=$('#status'),cards=$('#cards'),suggestion=$('#suggestion');
+const styles={
+ roman_pan:{name:'Pizza in teglia romana',type:'pizza',hydration:80,targetTemp:24,bulk:120,proof:180,minHours:8,baseFresh:0.15,notes:'Impasto ad alta idratazione. Prevedere pieghe durante la puntata e stesura delicata in teglia.'},
+ neapolitan:{name:'Pizza napoletana',type:'pizza',hydration:65,targetTemp:24,bulk:120,proof:240,minHours:8,baseFresh:0.10,notes:'Formare i panetti prima dell’appretto e stendere senza mattarello.'},
+ home_round:{name:'Pizza tonda nel forno di casa',type:'pizza',hydration:68,targetTemp:24,bulk:120,proof:180,minHours:6,baseFresh:0.18,notes:'Adatta alla cottura su pietra o teglia nel forno domestico.'},
+ focaccia:{name:'Focaccia',type:'focaccia',hydration:75,targetTemp:25,bulk:120,proof:150,minHours:5,baseFresh:0.25,notes:'Prevedere riposo in teglia, salamoia e fossette prima della cottura.'},
+ bread:{name:'Pane',type:'bread',hydration:70,targetTemp:24,bulk:180,proof:150,minHours:6,baseFresh:0.20,notes:'Prevedere pieghe, formatura e incisione prima della cottura.'}
+};
+function setStatus(message,kind='muted'){status.className=kind;status.textContent=message}
+async function currentUser(){const{data,error}=await c.auth.getSession();if(error)throw error;if(!data.session?.user)throw new Error('Accedi prima di continuare.');return data.session.user}
+function selectedEnvironment(){return environments.find(x=>x.id===f.environmentProfile.value)||null}
+function defaultReadyAt(){const d=new Date(Date.now()+24*3600000);d.setHours(20,0,0,0);f.readyAt.value=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}
+function resetForm(){f.id.value='';f.style.value='roman_pan';f.flourWeight.value='1000';f.environmentProfile.value=environments.find(x=>x.is_default)?.id||'';f.yeastType.value='fresh_yeast';defaultReadyAt();f.name.value='';f.doughType.value='pizza';f.hydration.value='';f.targetDoughTemp.value='';f.yeastPercent.value='';f.prefermentType.value='none';f.prefermentFlourPercent.value='0';f.bulkMinutes.value='';f.bulkTemp.value='';f.coldMinutes.value='';f.fridgeTemp.value='';f.finalProofMinutes.value='';f.finalProofTemp.value='';f.isDefault.checked=false;f.notes.value='';suggestion.hidden=true;$('#formTitle').textContent='Crea un impasto guidato';setStatus('Inserisci i dati essenziali e genera la proposta.')}
+function hoursAvailable(){const target=new Date(f.readyAt.value);if(Number.isNaN(target.getTime()))throw new Error('Indica quando vuoi mangiare.');const hours=(target-Date.now())/3600000;if(hours<3)throw new Error('Servono almeno 3 ore. Scegli un orario più avanti.');return hours}
+function round(v,d=2){const p=10**d;return Math.round(v*p)/p}
+function generateSuggestion(){try{const p=styles[f.style.value],hours=hoursAvailable(),env=selectedEnvironment(),room=Number(env?.room_temperature_c||22),fridge=Number(env?.fridge_temperature_c??4);const availableMin=Math.floor(hours*60);let proof=p.proof,bulk=p.bulk,cold=Math.max(0,availableMin-bulk-proof-90);if(hours<10){cold=0;bulk=Math.max(90,availableMin-proof-90)}else if(cold<240){cold=0;bulk=Math.max(120,availableMin-proof-90)}const tempFactor=Math.pow(1.12,22-room),timeFactor=24/Math.max(hours,4);let yeast=p.baseFresh*timeFactor*tempFactor;if(f.yeastType.value==='dry_yeast')yeast*=0.4;if(f.yeastType.value==='sourdough')yeast=Math.max(10,Math.min(25,15*timeFactor));if(f.yeastType.value==='none')yeast=0;yeast=Math.max(0,Math.min(f.yeastType.value==='sourdough'?30:2,yeast));f.name.value=`${p.name} — ${Math.round(hours)}h`;f.doughType.value=p.type;f.hydration.value=p.hydration;f.targetDoughTemp.value=p.targetTemp;f.yeastPercent.value=round(yeast,4);f.prefermentType.value=f.yeastType.value==='sourdough'?'sourdough':'none';f.prefermentFlourPercent.value=f.yeastType.value==='sourdough'?'15':'0';f.bulkMinutes.value=bulk;f.bulkTemp.value=room;f.coldMinutes.value=cold;f.fridgeTemp.value=fridge;f.finalProofMinutes.value=proof;f.finalProofTemp.value=room;f.notes.value=p.notes;$('#summary').textContent=`Per ${f.flourWeight.value} g di farina, ${round(hours,1)} ore disponibili e ambiente a ${room} °C, questa è la prima impostazione consigliata.`;$('#mHydration').textContent=`${p.hydration}%`;$('#mYeast').textContent=`${round(yeast,4)}%`;$('#mBulk').textContent=`${Math.round(bulk/60*10)/10} h`;$('#mCold').textContent=cold?`${Math.round(cold/60*10)/10} h`:'Nessuno';$('#mProof').textContent=`${Math.round(proof/60*10)/10} h`;suggestion.hidden=false;setStatus('Proposta generata. Controlla e salva.','ok')}catch(e){setStatus(e.message,'error')}}
+function targetParts(){const target=new Date(f.readyAt.value),now=new Date(),today=new Date(now.getFullYear(),now.getMonth(),now.getDate()),day=new Date(target.getFullYear(),target.getMonth(),target.getDate());return{time:`${String(target.getHours()).padStart(2,'0')}:${String(target.getMinutes()).padStart(2,'0')}`,offset:Math.max(0,Math.round((day-today)/86400000))}}
+function environmentName(id){return environments.find(x=>x.id===id)?.name||'Nessuno'}
+function render(){if(!profiles.length){cards.innerHTML='<p>Nessun profilo salvato.</p>';return}cards.innerHTML=profiles.map(p=>`<article class="card"><h3>${p.name}</h3><p class="muted small">${p.dough_type}${p.is_default?' · <span class="badge">Predefinito</span>':''}</p><p><strong>${p.flour_weight_g} g</strong> farina · <strong>${p.target_hydration_percent}%</strong> idratazione</p><p class="small">Ambiente: ${environmentName(p.environment_profile_id)}<br>Puntata: ${p.bulk_fermentation_minutes} min · Frigo: ${p.cold_fermentation_minutes} min · Appretto: ${p.final_proof_minutes} min</p><div class="actions"><button class="secondary" onclick="editProfile('${p.id}')">Modifica</button><button class="danger" onclick="removeProfile('${p.id}')">Elimina</button></div></article>`).join('')}
+function editProfile(id){const p=profiles.find(x=>x.id===id);if(!p)return;f.id.value=p.id;f.name.value=p.name;f.doughType.value=p.dough_type;f.environmentProfile.value=p.environment_profile_id||'';f.isDefault.checked=p.is_default;f.flourWeight.value=p.flour_weight_g;f.hydration.value=p.target_hydration_percent;f.targetDoughTemp.value=p.target_dough_temperature_c??'';f.yeastType.value=p.yeast_type;f.yeastPercent.value=p.yeast_baker_percent??'';f.prefermentType.value=p.preferment_type;f.prefermentFlourPercent.value=p.preferment_flour_percent;f.bulkMinutes.value=p.bulk_fermentation_minutes;f.bulkTemp.value=p.bulk_fermentation_temperature_c??'';f.coldMinutes.value=p.cold_fermentation_minutes;f.fridgeTemp.value=p.fridge_temperature_c??'';f.finalProofMinutes.value=p.final_proof_minutes;f.finalProofTemp.value=p.final_proof_temperature_c??'';f.notes.value=p.notes||'';const d=new Date();d.setDate(d.getDate()+p.target_ready_day_offset);const [hh,mm]=String(p.target_ready_time||'20:00').split(':');d.setHours(Number(hh),Number(mm),0,0);f.readyAt.value=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);suggestion.hidden=true;$('#formTitle').textContent='Modifica profilo impasto';scrollTo({top:0,behavior:'smooth'})}
+async function removeProfile(id){if(!confirm('Eliminare questo profilo impasto?'))return;const{error}=await c.from('fermentation_dough_profiles').delete().eq('id',id).eq('owner_user_id',owner);if(error)return setStatus(error.message,'error');await loadProfiles();resetForm()}
+async function loadEnvironments(){const{data,error}=await c.from('fermentation_environment_profiles').select('*').eq('owner_user_id',owner).order('is_default',{ascending:false}).order('name');if(error)throw error;environments=data||[];f.environmentProfile.innerHTML='<option value="">Nessun profilo ambiente</option>'+environments.map(x=>`<option value="${x.id}">${x.name}${x.is_default?' — predefinito':''}</option>`).join('')}
+async function loadProfiles(){const{data,error}=await c.from('fermentation_dough_profiles').select('*').eq('owner_user_id',owner).order('is_default',{ascending:false}).order('name');if(error)throw error;profiles=data||[];render()}
+$('#generate').onclick=generateSuggestion;$('#reset').onclick=resetForm;
+$('#save').onclick=async()=>{try{if(!f.name.value.trim()||f.hydration.value==='')generateSuggestion();const t=targetParts();const row={owner_user_id:owner,environment_profile_id:f.environmentProfile.value||null,name:f.name.value.trim(),dough_type:f.doughType.value,description:`Profilo guidato: ${styles[f.style.value]?.name||'impasto'}`,is_default:f.isDefault.checked,flour_weight_g:Number(f.flourWeight.value),target_hydration_percent:Number(f.hydration.value),target_dough_temperature_c:Number(f.targetDoughTemp.value)||null,yeast_type:f.yeastType.value,yeast_baker_percent:Number(f.yeastPercent.value)||0,preferment_type:f.prefermentType.value,preferment_flour_percent:Number(f.prefermentFlourPercent.value)||0,bulk_fermentation_minutes:Number(f.bulkMinutes.value)||0,bulk_fermentation_temperature_c:Number(f.bulkTemp.value)||null,cold_fermentation_minutes:Number(f.coldMinutes.value)||0,fridge_temperature_c:Number(f.fridgeTemp.value)||null,final_proof_minutes:Number(f.finalProofMinutes.value)||0,final_proof_temperature_c:Number(f.finalProofTemp.value)||null,target_ready_time:t.time,target_ready_day_offset:t.offset,notes:f.notes.value.trim()||null,updated_at:new Date().toISOString()};if(row.is_default){let q=c.from('fermentation_dough_profiles').update({is_default:false}).eq('owner_user_id',owner).eq('is_default',true);if(f.id.value)q=q.neq('id',f.id.value);const{error}=await q;if(error)throw error}const q=f.id.value?c.from('fermentation_dough_profiles').update(row).eq('id',f.id.value).eq('owner_user_id',owner):c.from('fermentation_dough_profiles').insert(row);const{error}=await q;if(error)throw error;await loadProfiles();resetForm();setStatus('Profilo salvato.','ok')}catch(e){setStatus(e.message,'error')}};
+window.editProfile=editProfile;window.removeProfile=removeProfile;
+(async()=>{try{owner=(await currentUser()).id;await loadEnvironments();await loadProfiles();resetForm()}catch(e){setStatus(e.message,'error');cards.innerHTML='<p>Impossibile caricare i profili.</p>'}})();
+</script>
+</body>
+</html>
