@@ -1,26 +1,23 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://cucina-hub.local/schemas/workflow-phase.schema.json",
-  "title": "Cucina Hub Workflow Phase",
-  "type": "object",
-  "required": ["id", "version", "type", "title", "estimated_minutes", "instructions"],
-  "properties": {
-    "id": {"type": "string", "pattern": "^[a-z0-9_\\-]+$"},
-    "version": {"type": "integer", "minimum": 1},
-    "type": {"enum": ["preparation", "mixing", "rest", "fermentation", "folding", "shaping", "baking", "cooling", "finishing", "evaluation", "custom"]},
-    "title": {"type": "string", "minLength": 1},
-    "description": {"type": ["string", "null"]},
-    "equipment": {"type": "array", "items": {"type": "string"}, "default": []},
-    "estimated_minutes": {"type": "integer", "minimum": 0},
-    "instructions": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-    "checklist": {"type": "array", "items": {"type": "object", "required": ["id", "label"], "properties": {"id": {"type": "string"}, "label": {"type": "string"}, "required": {"type": "boolean", "default": true}}},
-    "timers": {"type": "array", "items": {"type": "object", "required": ["id", "label", "seconds"], "properties": {"id": {"type": "string"}, "label": {"type": "string"}, "seconds": {"type": "integer", "minimum": 1}, "auto_start": {"type": "boolean", "default": false}}},
-    "quality_checks": {"type": "array", "items": {"type": "string"}, "default": []},
-    "temperature": {"type": ["object", "null"], "properties": {"target_c": {"type": "number"}, "min_c": {"type": "number"}, "max_c": {"type": "number"}}},
-    "attachments": {"type": "array", "items": {"type": "object", "properties": {"kind": {"enum": ["image", "video", "manual", "note"]}, "url": {"type": "string"}, "label": {"type": "string"}}},
-    "allows_notes": {"type": "boolean", "default": true},
-    "allows_photo": {"type": "boolean", "default": false},
-    "metadata": {"type": "object", "additionalProperties": true}
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://cucina-hub.local/schemas/workflow-phase.schema.json",
+  "title":"Cucina Hub Workflow Phase",
+  "type":"object",
+  "required":["id","version","type","title","estimated_minutes","activities"],
+  "properties":{
+    "id":{"type":"string","pattern":"^[a-z0-9_\\-]+$"},
+    "version":{"type":"integer","minimum":1},
+    "type":{"enum":["preparation","mixing","rest","fermentation","folding","shaping","baking","cooling","finishing","evaluation","custom"]},
+    "title":{"type":"string","minLength":1},
+    "description":{"type":["string","null"]},
+    "equipment":{"type":"array","items":{"type":"string"},"default":[]},
+    "estimated_minutes":{"type":"integer","minimum":0},
+    "activities":{"type":"array","minItems":1,"items":{"type":"object","required":["id","kind","label"],"properties":{"id":{"type":"string"},"kind":{"enum":["action","timer","check","information","warning","photo"]},"label":{"type":"string","minLength":1},"detail":{"type":["string","null"]},"required":{"type":"boolean","default":false},"seconds":{"type":"integer","minimum":1},"auto_start":{"type":"boolean","default":false},"metadata":{"type":"object","additionalProperties":true}},"additionalProperties":false}},
+    "temperature":{"type":["object","null"],"properties":{"target_c":{"type":"number"},"min_c":{"type":"number"},"max_c":{"type":"number"}}},
+    "attachments":{"type":"array","items":{"type":"object"}},
+    "allows_notes":{"type":"boolean","default":true},
+    "allows_photo":{"type":"boolean","default":false},
+    "metadata":{"type":"object","additionalProperties":true}
   },
-  "additionalProperties": false
+  "additionalProperties":false
 }
