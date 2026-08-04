@@ -50,6 +50,20 @@
       );
 
     window.cucinaHubSupabaseError = null;
+
+    const path = window.location.pathname;
+    let modulePath = null;
+    if (path.endsWith("/workflow-engine/guided-session.html")) {
+      modulePath = "./photo-diary.js?v=1";
+    } else if (path.endsWith("/fermentation/baking-session-history.html")) {
+      modulePath = "./history-photos.js?v=1";
+    }
+    if (modulePath) {
+      const script = document.createElement("script");
+      script.src = modulePath;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
   } catch (error) {
     console.error(
       "Supabase non inizializzato:",
