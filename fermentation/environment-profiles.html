@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Profili ambiente — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}
+    main{max-width:960px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:18px;margin-bottom:18px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full{grid-column:1/-1}
+    label{display:block;font-weight:700;margin:0 0 6px}input,select,textarea,button{width:100%;box-sizing:border-box;padding:12px;border-radius:11px;border:1px solid #bbb2a6;font:inherit}
+    textarea{min-height:90px}button{border:0;background:#365d44;color:#fff;font-weight:800}.secondary{background:#eee8df;color:#26221d}.danger{background:#9f2d2d}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}.actions button{width:auto}.muted{color:#6d655c}.ok{color:#1b6b36}.error{color:#a62424}
+    table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #eee7de}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#eee8df}
+    @media(max-width:700px){.grid{grid-template-columns:1fr}.full{grid-column:auto}table{font-size:.9rem}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Ambiente & fermentazione</h1>
+  <p class="muted">Salva i valori tipici della cucina. La timeline userà temperatura, umidità e frigorifero per adattare i tempi degli impasti.</p>
+
+  <section class="panel">
+    <h2 id="formTitle">Nuovo profilo</h2>
+    <input id="profileId" type="hidden">
+    <div class="grid">
+      <div><label>Nome profilo</label><input id="name" placeholder="Casa — Estate" required></div>
+      <div><label>Luogo</label><input id="location" placeholder="Cucina, veranda, garage..."></div>
+      <div><label>Stagione</label><select id="season"><option value="custom">Personalizzato</option><option value="spring">Primavera</option><option value="summer">Estate</option><option value="autumn">Autunno</option><option value="winter">Inverno</option></select></div>
+      <div><label>Temperatura ambiente (°C)</label><input id="roomTemp" type="number" min="0" max="45" step="0.1" value="22" required></div>
+      <div><label>Umidità relativa (%)</label><input id="humidity" type="number" min="0" max="100" step="0.1" value="55" required></div>
+      <div><label>Temperatura frigorifero (°C)</label><input id="fridgeTemp" type="number" min="-5" max="20" step="0.1" value="4"></div>
+      <div class="full"><label><input id="isDefault" type="checkbox" style="width:auto"> Imposta come profilo predefinito</label></div>
+      <div class="full"><label>Note</label><textarea id="notes" placeholder="Sole diretto, aria condizionata, stanza molto calda..."></textarea></div>
+    </div>
+    <div class="actions" style="margin-top:14px"><button id="save">SALVA PROFILO</button><button id="reset" class="secondary" type="button">Nuovo</button></div>
+    <p id="status" class="muted">In attesa.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Profili salvati</h2>
+    <div style="overflow:auto"><table><thead><tr><th>Profilo</th><th>Ambiente</th><th>Frigo</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="4">Caricamento…</td></tr></tbody></table></div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script>
+<script>
+const c=window.cucinaHubSupabase,$=s=>document.querySelector(s);let owner=null,profiles=[];
+const fields={id:$('#profileId'),name:$('#name'),location:$('#location'),season:$('#season'),roomTemp:$('#roomTemp'),humidity:$('#humidity'),fridgeTemp:$('#fridgeTemp'),isDefault:$('#isDefault'),notes:$('#notes')};
+const status=$('#status'),rows=$('#rows');
+function setStatus(message,kind='muted'){status.className=kind;status.textContent=message}
+async function currentUser(){const{data,error}=await c.auth.getSession();if(error)throw error;if(!data.session?.user)throw new Error('Accedi prima di continuare.');return data.session.user}
+function resetForm(){Object.assign(fields.id,{value:''});fields.name.value='';fields.location.value='';fields.season.value='custom';fields.roomTemp.value='22';fields.humidity.value='55';fields.fridgeTemp.value='4';fields.isDefault.checked=false;fields.notes.value='';$('#formTitle').textContent='Nuovo profilo';setStatus('In attesa.')}
+function editProfile(id){const p=profiles.find(x=>x.id===id);if(!p)return;fields.id.value=p.id;fields.name.value=p.name;fields.location.value=p.location_label||'';fields.season.value=p.season;fields.roomTemp.value=p.room_temperature_c;fields.humidity.value=p.relative_humidity_percent;fields.fridgeTemp.value=p.fridge_temperature_c??'';fields.isDefault.checked=p.is_default;fields.notes.value=p.notes||'';$('#formTitle').textContent='Modifica profilo';scrollTo({top:0,behavior:'smooth'})}
+async function removeProfile(id){if(!confirm('Eliminare questo profilo?'))return;const{error}=await c.from('fermentation_environment_profiles').delete().eq('id',id).eq('owner_user_id',owner);if(error)return setStatus(error.message,'error');await loadProfiles();resetForm()}
+function render(){if(!profiles.length){rows.innerHTML='<tr><td colspan="4">Nessun profilo salvato.</td></tr>';return}rows.innerHTML=profiles.map(p=>`<tr><td><strong>${p.name}</strong><br><span class="muted">${p.location_label||'—'} ${p.is_default?'<span class="badge">Predefinito</span>':''}</span></td><td>${p.room_temperature_c} °C · ${p.relative_humidity_percent}%</td><td>${p.fridge_temperature_c==null?'—':p.fridge_temperature_c+' °C'}</td><td><div class="actions"><button class="secondary" onclick="editProfile('${p.id}')">Modifica</button><button class="danger" onclick="removeProfile('${p.id}')">Elimina</button></div></td></tr>`).join('')}
+async function loadProfiles(){const{data,error}=await c.from('fermentation_environment_profiles').select('*').eq('owner_user_id',owner).order('is_default',{ascending:false}).order('name');if(error)throw error;profiles=data||[];render()}
+$('#save').onclick=async()=>{try{if(!fields.name.value.trim())throw new Error('Inserisci il nome del profilo.');const row={owner_user_id:owner,name:fields.name.value.trim(),location_label:fields.location.value.trim()||null,season:fields.season.value,room_temperature_c:Number(fields.roomTemp.value),relative_humidity_percent:Number(fields.humidity.value),fridge_temperature_c:fields.fridgeTemp.value===''?null:Number(fields.fridgeTemp.value),is_default:fields.isDefault.checked,notes:fields.notes.value.trim()||null,updated_at:new Date().toISOString()};if(row.is_default){const{error}=await c.from('fermentation_environment_profiles').update({is_default:false}).eq('owner_user_id',owner).eq('is_default',true);if(error)throw error}let q;if(fields.id.value)q=c.from('fermentation_environment_profiles').update(row).eq('id',fields.id.value).eq('owner_user_id',owner);else q=c.from('fermentation_environment_profiles').insert(row);const{error}=await q;if(error)throw error;setStatus('Profilo salvato.','ok');await loadProfiles();resetForm()}catch(e){setStatus(e.message,'error')}};
+$('#reset').onclick=resetForm;window.editProfile=editProfile;window.removeProfile=removeProfile;
+(async()=>{try{owner=(await currentUser()).id;await loadProfiles();setStatus('Pronto.','ok')}catch(e){setStatus(e.message,'error');rows.innerHTML='<tr><td colspan="4">Impossibile caricare i profili.</td></tr>'}})();
+</script>
+</body>
+</html>
