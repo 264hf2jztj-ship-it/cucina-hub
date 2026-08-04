@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cucina-hub.local/schemas/workflow-session.schema.json",
+  "title": "Cucina Hub Workflow Session",
+  "type": "object",
+  "required": ["id", "title", "version", "phases"],
+  "properties": {
+    "id": {"type": "string"},
+    "title": {"type": "string", "minLength": 1},
+    "version": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["draft", "planned", "active", "paused", "completed", "cancelled"], "default": "draft"},
+    "context": {"type": "object", "additionalProperties": true},
+    "phases": {"type": "array", "minItems": 1, "items": {"oneOf": [{"type": "string"}, {"$ref": "workflow-phase.schema.json"}]}},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "additionalProperties": false
+}
