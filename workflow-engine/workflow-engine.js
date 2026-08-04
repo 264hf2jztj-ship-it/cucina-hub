@@ -1,89 +1,16 @@
 (function(global){
-  'use strict';
-
-  class WorkflowEngine {
-    constructor(){
-      this.phaseLibrary = new Map();
-    }
-
-    registerPhase(phase){
-      this.validatePhase(phase);
-      const key = `${phase.id}@${phase.version}`;
-      this.phaseLibrary.set(key, structuredClone(phase));
-      return key;
-    }
-
-    registerPhases(phases){
-      return phases.map(phase => this.registerPhase(phase));
-    }
-
-    getPhase(id, version){
-      if(version){
-        const phase = this.phaseLibrary.get(`${id}@${version}`);
-        if(!phase) throw new Error(`Fase non trovata: ${id}@${version}`);
-        return structuredClone(phase);
-      }
-      const matches = [...this.phaseLibrary.entries()]
-        .filter(([key]) => key.startsWith(`${id}@`))
-        .sort((a,b) => Number(b[0].split('@')[1]) - Number(a[0].split('@')[1]));
-      if(!matches.length) throw new Error(`Fase non trovata: ${id}`);
-      return structuredClone(matches[0][1]);
-    }
-
-    composeSession(definition){
-      if(!definition || !definition.id || !definition.title) throw new Error('Sessione non valida.');
-      if(!Array.isArray(definition.phases) || !definition.phases.length) throw new Error('La sessione deve contenere almeno una fase.');
-      const phases = definition.phases.map((item,index) => {
-        const phase = typeof item === 'string' ? this.getPhase(item) : structuredClone(item);
-        this.validatePhase(phase);
-        return {...phase, order: index + 1};
-      });
-      return {
-        id: definition.id,
-        title: definition.title,
-        version: definition.version || 1,
-        status: definition.status || 'draft',
-        context: structuredClone(definition.context || {}),
-        phases,
-        estimated_minutes: phases.reduce((sum,p) => sum + p.estimated_minutes, 0),
-        created_at: definition.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-    }
-
-    buildTimeline(session,startAt){
-      const start = new Date(startAt || Date.now());
-      if(Number.isNaN(start.getTime())) throw new Error('Data di inizio non valida.');
-      let cursor = new Date(start);
-      return session.phases.map(phase => {
-        const phaseStart = new Date(cursor);
-        cursor = new Date(cursor.getTime() + phase.estimated_minutes * 60000);
-        return {...structuredClone(phase), starts_at: phaseStart.toISOString(), ends_at: cursor.toISOString()};
-      });
-    }
-
-    createRuntime(session){
-      return {
-        session_id: session.id,
-        status: 'planned',
-        current_phase_index: 0,
-        checklist: {},
-        timers: {},
-        notes: {},
-        photos: {},
-        started_at: null,
-        completed_at: null
-      };
-    }
-
-    validatePhase(phase){
-      const required = ['id','version','type','title','estimated_minutes','instructions'];
-      required.forEach(field => { if(phase?.[field] === undefined || phase[field] === null) throw new Error(`Campo fase mancante: ${field}`); });
-      if(!Array.isArray(phase.instructions) || !phase.instructions.length) throw new Error(`La fase ${phase.id} deve avere istruzioni.`);
-      if(!Number.isInteger(phase.estimated_minutes) || phase.estimated_minutes < 0) throw new Error(`Durata non valida per ${phase.id}.`);
-      return true;
-    }
-  }
-
-  global.CucinaHubWorkflowEngine = WorkflowEngine;
+'use strict';
+class WorkflowEngine{
+ constructor(){this.phaseLibrary=new Map()}
+ registerPhase(phase){const normalized=this.normalizePhase(phase);this.validatePhase(normalized);const key=`${normalized.id}@${normalized.version}`;this.phaseLibrary.set(key,structuredClone(normalized));return key}
+ registerPhases(phases){return phases.map(p=>this.registerPhase(p))}
+ getPhase(id,version){const matches=[...this.phaseLibrary.entries()].filter(([k])=>k.startsWith(`${id}@`)).sort((a,b)=>Number(b[0].split('@')[1])-Number(a[0].split('@')[1]));const phase=version?this.phaseLibrary.get(`${id}@${version}`):matches[0]?.[1];if(!phase)throw new Error(`Fase non trovata: ${id}${version?'@'+version:''}`);return structuredClone(phase)}
+ normalizePhase(phase){const p=structuredClone(phase);if(!Array.isArray(p.activities)){p.activities=[];(p.instructions||[]).forEach((text,i)=>p.activities.push({id:`instruction_${i+1}`,kind:'information',label:text}));(p.checklist||[]).forEach(x=>p.activities.push({id:x.id,kind:'action',label:x.label,required:x.required!==false}));(p.timers||[]).forEach(x=>p.activities.push({id:x.id,kind:'timer',label:x.label,seconds:x.seconds,auto_start:!!x.auto_start}));(p.quality_checks||[]).forEach((text,i)=>p.activities.push({id:`quality_${i+1}`,kind:'check',label:text}));}return p}
+ composeSession(def){if(!def?.id||!def?.title||!Array.isArray(def.phases)||!def.phases.length)throw new Error('Sessione non valida.');const phases=def.phases.map((item,index)=>({...this.getPhase(typeof item==='string'?item:item.id,item.version),order:index+1}));return{id:def.id,title:def.title,version:def.version||1,status:def.status||'draft',context:structuredClone(def.context||{}),phases,estimated_minutes:phases.reduce((s,p)=>s+p.estimated_minutes,0),created_at:def.created_at||new Date().toISOString(),updated_at:new Date().toISOString()}}
+ buildTimeline(session,startAt){let cursor=new Date(startAt||Date.now());if(Number.isNaN(cursor.getTime()))throw new Error('Data non valida.');return session.phases.map(p=>{const starts=new Date(cursor);cursor=new Date(cursor.getTime()+p.estimated_minutes*60000);return{...structuredClone(p),starts_at:starts.toISOString(),ends_at:cursor.toISOString()}})}
+ createRuntime(session){const activities={};session.phases.forEach(p=>p.activities.forEach(a=>activities[`${p.id}:${a.id}`]={status:'pending',started_at:null,completed_at:null,remaining_seconds:a.seconds||null}));return{session_id:session.id,status:'planned',current_phase_index:0,activities,notes:{},photos:{},started_at:null,completed_at:null}}
+ completeActivity(runtime,phaseId,activityId){const key=`${phaseId}:${activityId}`;if(!runtime.activities[key])throw new Error('Attività non trovata.');runtime.activities[key].status='completed';runtime.activities[key].completed_at=new Date().toISOString();return runtime}
+ validatePhase(p){['id','version','type','title','estimated_minutes','activities'].forEach(f=>{if(p?.[f]===undefined||p[f]===null)throw new Error(`Campo fase mancante: ${f}`)});if(!Array.isArray(p.activities)||!p.activities.length)throw new Error(`La fase ${p.id} deve avere attività.`);p.activities.forEach(a=>{if(!a.id||!['action','timer','check','information','warning','photo'].includes(a.kind)||!a.label)throw new Error(`Attività non valida in ${p.id}`);if(a.kind==='timer'&&(!Number.isInteger(a.seconds)||a.seconds<1))throw new Error(`Timer non valido in ${p.id}`)});return true}
+}
+global.CucinaHubWorkflowEngine=WorkflowEngine;
 })(window);
