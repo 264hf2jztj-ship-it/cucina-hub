@@ -1,0 +1,51 @@
+[
+  {
+    "id":"prepare_ingredients_v1","version":3,"type":"preparation","title":"Preparazione ingredienti","description":"Prepara tutto nell’ordine in cui servirà.","equipment":["Bilancia"],"estimated_minutes":10,
+    "activities":[
+      {"id":"prep_flour","kind":"action","label":"Pesa la farina e mettila nella ciotola dell’impastatrice."},
+      {"id":"prep_water","kind":"action","label":"Pesa tutta l’acqua e separa la parte iniziale da quella da aggiungere dopo."},
+      {"id":"prep_salt","kind":"action","label":"Pesa il sale e tienilo separato."},
+      {"id":"prep_yeast","kind":"action","label":"Pesa il lievito e preparalo per l’aggiunta."},
+      {"id":"prep_tools","kind":"action","label":"Prepara spatola, contenitore leggermente unto e coperchio."},
+      {"id":"prep_check","kind":"check","label":"Controlla che tutti gli ingredienti siano pronti e separati prima di iniziare."}
+    ],"metadata":{"category":"panificazione"}
+  },
+  {
+    "id":"mixing_dcg_v1","version":3,"type":"mixing","title":"Impasto con impastatrice DCG","description":"Segui le attività dall’alto verso il basso: ogni timer va avviato solo dopo aver completato l’attività che lo precede.","equipment":["DCG KM1401R","Gancio impastatore"],"estimated_minutes":18,
+    "activities":[
+      {"id":"mount_hook","kind":"action","label":"1. Monta il gancio impastatore sulla DCG."},
+      {"id":"load_bowl","kind":"action","label":"2. Metti nella ciotola la farina e circa il 70–80% dell’acqua totale."},
+      {"id":"start_low","kind":"action","label":"3. Avvia l’impastatrice a velocità bassa."},
+      {"id":"initial_mix","kind":"timer","label":"4. Lascia lavorare a velocità bassa per 3 minuti.","seconds":180},
+      {"id":"initial_check","kind":"check","label":"5. Controlla che la farina asciutta sia quasi scomparsa; l’impasto non deve ancora essere liscio."},
+      {"id":"add_yeast","kind":"action","label":"6. Aggiungi il lievito e attendi che si distribuisca nell’impasto."},
+      {"id":"add_remaining_water","kind":"action","label":"7. Versa gradualmente l’acqua rimasta, in più riprese, aspettando ogni volta che venga assorbita."},
+      {"id":"add_salt","kind":"action","label":"8. Quando l’acqua è quasi assorbita, aggiungi il sale."},
+      {"id":"final_speed","kind":"action","label":"9. Passa a velocità medio-bassa per chiudere l’impasto."},
+      {"id":"final_mix","kind":"timer","label":"10. Lascia lavorare per 5 minuti, controllando che l’impasto non si scaldi troppo.","seconds":300},
+      {"id":"temperature_warning","kind":"warning","label":"Ferma la macchina se l’impasto si strappa, si avvolge troppo sul gancio o supera circa 26 °C."},
+      {"id":"window_check","kind":"check","label":"11. Verifica che l’impasto sia più liscio, elastico e formi un velo senza strapparsi subito."},
+      {"id":"final_temperature","kind":"check","label":"12. Controlla una temperatura finale indicativa di circa 24 °C."}
+    ],"temperature":{"target_c":24,"min_c":22,"max_c":26},"metadata":{"appliance":"DCG KM1401R"}
+  },
+  {
+    "id":"bulk_fermentation_v1","version":3,"type":"fermentation","title":"Puntata","description":"Trasferisci, copri e poi avvia il tempo di fermentazione.","equipment":["Contenitore con coperchio"],"estimated_minutes":120,
+    "activities":[
+      {"id":"transfer_dough","kind":"action","label":"1. Trasferisci l’impasto nel contenitore leggermente unto."},
+      {"id":"cover_container","kind":"action","label":"2. Copri bene il contenitore."},
+      {"id":"bulk","kind":"timer","label":"3. Lascia fermentare per 120 minuti alla temperatura prevista.","seconds":7200},
+      {"id":"bulk_check","kind":"check","label":"4. Alla fine controlla che l’impasto sia più rilassato e aumentato di volume, senza segni di collasso."}
+    ],"temperature":{"target_c":22},"metadata":{}
+  },
+  {
+    "id":"bake_samsung_v1","version":3,"type":"baking","title":"Cottura nel forno Samsung","description":"Prima preriscalda, poi inforna e infine controlla la cottura.","equipment":["Samsung NV75N5641RS/ET"],"estimated_minutes":61,
+    "activities":[
+      {"id":"set_oven","kind":"action","label":"1. Imposta il forno Samsung alla temperatura prevista, senza superare 250 °C."},
+      {"id":"preheat","kind":"timer","label":"2. Preriscalda completamente il forno per 45 minuti.","seconds":2700},
+      {"id":"preheat_check","kind":"check","label":"3. Controlla che il forno abbia raggiunto la temperatura prima di infornare."},
+      {"id":"load_oven","kind":"action","label":"4. Inforna nella posizione prevista dalla sessione."},
+      {"id":"bake","kind":"timer","label":"5. Cuoci per il tempo indicativo di 16 minuti.","seconds":960},
+      {"id":"bake_check","kind":"check","label":"6. Controlla fondo dorato, superficie ben colorita e struttura cotta."}
+    ],"temperature":{"target_c":250,"max_c":250},"metadata":{"appliance":"Samsung NV75N5641RS/ET"}
+  }
+]
