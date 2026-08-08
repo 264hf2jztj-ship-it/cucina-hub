@@ -1,12 +1,36 @@
 (function(global){
 'use strict';
 function phase(id,type,title,description,estimated,goal,why,activities,metadata={}){
-  return {id,version:4,type,title,description,estimated_minutes:estimated,goal,why,activities,metadata};
+  return {id,version:5,type,title,description,estimated_minutes:estimated,goal,why,activities,metadata};
+}
+function humidityTimerActivities(prefix,totalMinutes,correction,actionText){
+  const operation=correction?.operational;
+  if(!operation?.monitor_mid_phase||!operation.mid_phase_check){
+    return[{id:`${prefix}_timer`,kind:'timer',label:`4. ${actionText} ${totalMinutes} minuti.`,seconds:totalMinutes*60}];
+  }
+  const first=Math.max(1,Math.round(totalMinutes/2));
+  const second=Math.max(1,totalMinutes-first);
+  return[
+    {id:`${prefix}_timer_first`,kind:'timer',label:`4a. ${actionText} ${first} minuti, poi esegui il controllo umidità.`,seconds:first*60},
+    {id:`${prefix}_humidity_check`,kind:'check',label:`4b. ${operation.mid_phase_check}`,success_criteria:operation.final_check},
+    {id:`${prefix}_timer_second`,kind:'timer',label:`4c. Prosegui per altri ${second} minuti.`,seconds:second*60}
+  ];
 }
 function build(plan){
   const firstWater=Math.round(plan.water_weight_g*(plan.hydration_percent>=75?.7:.8));
   const remaining=Math.round(plan.water_weight_g-firstWater);
   const saltWater=Math.min(20,Math.max(10,Math.round(remaining*.08)));
+  const humidityCorrection=plan.humidity_correction||null;
+  const humidity=humidityCorrection?.operational||{
+    covering_strategy:'Copri bene il contenitore.',
+    handling_strategy:'Gestisci l’impasto normalmente con spatola e mani appena unte se necessario.',
+    bulk_instruction:'Mantieni il contenitore coperto per tutta la puntata.',
+    proof_instruction:'Copri panetti o teglia durante l’appretto.',
+    final_check:'La superficie deve essere morbida e uniforme.',
+    monitor_mid_phase:false,
+    mid_phase_check:null
+  };
+  const humidityLabel=humidityCorrection?`${humidityCorrection.relative_humidity_percent}% UR — ${humidityCorrection.classification_label}`:'umidità non specificata';
   const yeastPreparation=plan.yeast_type==='fresh_yeast'
     ? `Pesa ${plan.yeast_weight_g} g di lievito fresco e tienilo da parte: lo sbriciolerai nell’impasto solo dopo i primi 3 minuti di lavorazione.`
     : plan.yeast_type==='dry_yeast'
@@ -18,6 +42,20 @@ function build(plan){
       ? `Solo ora, terminati i 3 minuti e completato il controllo, aggiungi il lievito secco: direttamente se istantaneo, oppure già sciolto se secco attivo, sempre con la DCG a velocità 1.`
       : `Solo ora, terminati i 3 minuti e completato il controllo, aggiungi ${plan.yeast_weight_g} g di lievito madre a piccoli pezzi mentre la DCG gira a velocità 1.`;
   const ovenLabel={samsung_oven:'Forno Samsung',weber_kettle:'Weber Kettle',air_fryer:'Friggitrice ad aria',other:'Forno selezionato'}[plan.oven_type]||'Forno selezionato';
+  const bulkActivities=[
+    {id:'transfer',kind:'action',label:'1. Trasferisci l’impasto nel contenitore leggermente unto.'},
+    {id:'cover',kind:'action',label:`2. ${humidity.covering_strategy}`},
+    {id:'humidity_guidance',kind:'information',label:`3. Indicazione per ${humidityLabel}: ${humidity.bulk_instruction}`},
+    ...humidityTimerActivities('bulk',plan.bulk_fermentation_minutes,humidityCorrection,'Lascia fermentare per'),
+    {id:'bulk_check',kind:'check',label:'5. Controlla lo sviluppo e la superficie.',success_criteria:`Impasto più rilassato e aumentato di volume, senza segni di collasso. ${humidity.final_check}`}
+  ];
+  const proofActivities=[
+    {id:'shape',kind:'action',label:'1. Forma o stendi delicatamente l’impasto.'},
+    {id:'proof_cover',kind:'action',label:`2. ${humidity.covering_strategy}`},
+    {id:'proof_humidity_guidance',kind:'information',label:`3. Indicazione per ${humidityLabel}: ${humidity.proof_instruction}`},
+    ...humidityTimerActivities('proof',plan.final_proof_minutes,humidityCorrection,'Lascia in appretto per'),
+    {id:'proof_check',kind:'check',label:'5. Controlla sviluppo e superficie.',success_criteria:`L’impasto risponde al tocco lentamente senza sgonfiarsi. ${humidity.final_check}`}
+  ];
   const phases=[
     phase('session_preparation','preparation','Preparazione ingredienti','Pesa e organizza tutto prima di iniziare.',10,'Avere ingredienti e utensili pronti.','Riduce errori e interruzioni durante l’impasto',[
       {id:'flour',kind:'action',label:`Pesa ${plan.flour_weight_g} g di farina${plan.flour_name?' '+plan.flour_name:''}.`},
@@ -25,6 +63,7 @@ function build(plan){
       {id:'salt',kind:'action',label:`Pesa ${plan.salt_weight_g} g di sale e scioglilo in circa ${saltWater} g dell’acqua tenuta da parte. Tienilo da parte: non va aggiunto nei primi 3 minuti.`},
       {id:'yeast',kind:'action',label:yeastPreparation},
       {id:'tools',kind:'action',label:'Prepara gancio, spatola, contenitore leggermente unto e coperchio.'},
+      {id:'humidity_setup',kind:'information',label:`Umidità ambiente ${humidityLabel}. ${humidity.handling_strategy}`},
       {id:'ready',kind:'check',label:'Tutto è pesato, separato e a portata di mano.',success_criteria:'Nessun ingrediente manca; lievito e sale sono pronti ma ancora separati dall’impasto.'}
     ],{timeline_role:'preparation',attention:'active'}),
     phase('session_mixing','mixing','Impasto con impastatrice DCG','Segui le attività nell’ordine indicato. Non anticipare lievito o sale durante il primo timer.',18,'Ottenere un impasto elastico senza surriscaldarlo.','La sequenza favorisce assorbimento e formazione della maglia glutinica',[
@@ -42,12 +81,7 @@ function build(plan){
       {id:'window',kind:'check',label:'11. Controlla elasticità e prova del velo.',success_criteria:'Impasto più liscio, elastico e capace di formare un velo senza strapparsi subito.'},
       {id:'temperature',kind:'check',label:`12. Controlla una temperatura finale vicina a ${plan.target_dough_temperature_c||24} °C.`,success_criteria:'Indicativamente 22–26 °C.'}
     ],{appliance:'DCG KM1401R',speed_min:1,speed_max:2,timeline_role:'mixing',attention:'active'}),
-    phase('session_bulk','fermentation','Puntata','Prima fermentazione dell’impasto.',plan.bulk_fermentation_minutes,'Avviare fermentazione e rilassamento dell’impasto.','Questa fase sviluppa struttura, aromi e gas',[
-      {id:'transfer',kind:'action',label:'1. Trasferisci l’impasto nel contenitore leggermente unto.'},
-      {id:'cover',kind:'action',label:'2. Copri bene il contenitore.'},
-      {id:'bulk_timer',kind:'timer',label:`3. Lascia fermentare ${plan.bulk_fermentation_minutes} minuti.`,seconds:plan.bulk_fermentation_minutes*60},
-      {id:'bulk_check',kind:'check',label:'4. Controlla lo sviluppo.',success_criteria:'Impasto più rilassato e aumentato di volume, senza segni di collasso.'}
-    ],{timeline_role:'bulk',attention:'passive'})
+    phase('session_bulk','fermentation','Puntata','Prima fermentazione dell’impasto.',plan.bulk_fermentation_minutes,'Avviare fermentazione e rilassamento dell’impasto.','Questa fase sviluppa struttura, aromi e gas',bulkActivities,{timeline_role:'bulk',attention:'passive'})
   ];
   if(plan.cold_fermentation_minutes>0){phases.push(phase('session_cold','fermentation','Fermentazione in frigorifero','Maturazione controllata a freddo.',plan.cold_fermentation_minutes,'Rallentare la fermentazione e sviluppare aroma.','Il freddo rende la gestione più prevedibile',[
     {id:'refrigerate',kind:'action',label:'Metti il contenitore ben coperto in frigorifero.'},
@@ -55,11 +89,7 @@ function build(plan){
     {id:'cold_check',kind:'check',label:'Controlla che l’impasto sia vivo ma non collassato.',success_criteria:'Volume aumentato e superficie ancora sostenuta.'}
   ],{timeline_role:'cold',attention:'passive'}));}
   phases.push(
-    phase('session_proof','fermentation','Formatura e appretto','Forma o stendi senza sgonfiare eccessivamente.',plan.final_proof_minutes,'Preparare l’impasto alla cottura.','L’appretto permette l’ultimo sviluppo prima del forno',[
-      {id:'shape',kind:'action',label:'Forma o stendi delicatamente l’impasto.'},
-      {id:'proof_timer',kind:'timer',label:`Lascia in appretto ${plan.final_proof_minutes} minuti.`,seconds:plan.final_proof_minutes*60},
-      {id:'proof_check',kind:'check',label:'Controlla che l’impasto sia rilassato e leggermente gonfio.',success_criteria:'Risponde al tocco lentamente senza sgonfiarsi.'}
-    ],{timeline_role:'proof',attention:'passive'}),
+    phase('session_proof','fermentation','Formatura e appretto','Forma o stendi senza sgonfiare eccessivamente.',plan.final_proof_minutes,'Preparare l’impasto alla cottura.','L’appretto permette l’ultimo sviluppo prima del forno',proofActivities,{timeline_role:'proof',attention:'passive'}),
     phase('session_bake','baking',`Cottura con ${ovenLabel}`,'Preriscalda, inforna e controlla il risultato.',(plan.preheat_minutes||30)+(plan.bake_minutes||15),'Cuocere fondo, struttura e superficie in modo uniforme.','Il preriscaldamento completo stabilizza la temperatura reale',[
       {id:'set_oven',kind:'action',label:`1. Imposta ${ovenLabel} a ${plan.oven_temperature_c} °C.`},
       {id:'preheat_timer',kind:'timer',label:`2. Preriscalda per ${plan.preheat_minutes||30} minuti.`,seconds:(plan.preheat_minutes||30)*60},
@@ -74,7 +104,7 @@ function build(plan){
       {id:'evaluate',kind:'check',label:'Valuta fondo, struttura, alveolatura e sapore.'}
     ],{timeline_role:'finish',attention:'active'})
   );
-  return {id:`workflow_${Date.now()}`,title:plan.title,version:4,status:'planned',context:{baking_session:true,timeline_engine:true},phases,estimated_minutes:phases.reduce((sum,p)=>sum+p.estimated_minutes,0),created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+  return {id:`workflow_${Date.now()}`,title:plan.title,version:5,status:'planned',context:{baking_session:true,timeline_engine:true,humidity_engine:true},phases,estimated_minutes:phases.reduce((sum,p)=>sum+p.estimated_minutes,0),created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
 }
 global.CucinaHubSessionWorkflowBuilder={build};
 })(window);
