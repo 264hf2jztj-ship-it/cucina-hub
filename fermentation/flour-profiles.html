@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Profili farina — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}main{max-width:1080px;margin:auto;padding:22px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:18px;margin-bottom:18px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.full{grid-column:1/-1}label{display:block;font-weight:750;margin-bottom:6px}input,select,textarea,button,a.button{width:100%;box-sizing:border-box;padding:11px;border-radius:11px;border:1px solid #bbb2a6;font:inherit}textarea{min-height:86px;resize:vertical}button,a.button{border:0;background:#365d44;color:#fff;font-weight:800;text-decoration:none;text-align:center}.secondary{background:#eee8df!important;color:#26221d!important}.danger{background:#9f2d2d!important}.actions{display:flex;gap:9px;flex-wrap:wrap}.actions button,.actions a{width:auto}.muted{color:#6d655c}.ok{color:#1b6b36}.error{color:#a62424}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:13px}.card{border:1px solid #e2dbd1;border-radius:14px;padding:14px;background:#fff}.card h3{margin:0 0 6px}.badges{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.badge{background:#eef5f0;border-radius:999px;padding:4px 8px;font-size:.8rem}.checks{display:flex;gap:14px;flex-wrap:wrap;padding:10px 0}.checks label{font-weight:600;margin:0}.checks input{width:auto}.hint{background:#f2f7f3;border:1px solid #c5d9ca;border-radius:12px;padding:12px}.technical{background:#faf8f4;border:1px solid #e4ddd3;border-radius:12px;padding:13px}.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px}.metric{background:#fff;border:1px solid #e5ded5;border-radius:10px;padding:10px}.metric span{display:block;color:#6d655c;font-size:.82rem}.metric strong{font-size:1.05rem}@media(max-width:720px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.actions button,.actions a{width:100%}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Profili farina</h1>
+  <p class="muted">Salva i dati dell’etichetta o della scheda tecnica. I campi che non conosci possono restare vuoti: il Wizard mostrerà anche quanto è completa ogni media ponderata.</p>
+
+  <section class="panel">
+    <div class="actions" style="margin-bottom:14px"><a class="button secondary" href="./baking-wizard.html?v=20">TORNA AL WIZARD</a></div>
+    <h2 id="formTitle">Nuova farina</h2>
+    <input id="profileId" type="hidden">
+    <div class="grid">
+      <div><label>Nome commerciale *</label><input id="name" placeholder="Es. Nuvola Super"></div>
+      <div><label>Marca</label><input id="brand" placeholder="Es. Caputo"></div>
+      <div><label>Linea o variante</label><input id="productLine" placeholder="Es. Pizzeria, Bio, Macinata a pietra"></div>
+      <div><label>Cereale principale</label><select id="cereal"><option value="soft_wheat">Grano tenero</option><option value="durum_wheat">Grano duro</option><option value="spelt">Farro</option><option value="rye">Segale</option><option value="corn">Mais</option><option value="rice">Riso</option><option value="buckwheat">Grano saraceno</option><option value="oat">Avena</option><option value="barley">Orzo</option><option value="mixed_cereals">Cereali misti</option><option value="gluten_free_mix">Mix senza glutine</option><option value="other">Altro</option></select></div>
+      <div><label>Tipo</label><select id="flourType"><option value="00">00</option><option value="0">0</option><option value="1">1</option><option value="2">2 / semintegrale</option><option value="wholemeal">Integrale</option><option value="manitoba">Manitoba</option><option value="semola">Semola</option><option value="semola_rimacinata">Semola rimacinata</option><option value="farro">Farro</option><option value="segale">Segale</option><option value="multicereale">Multicereale</option><option value="gluten_free">Senza glutine</option><option value="other">Altro</option></select></div>
+      <div><label>Macinazione</label><select id="milling"><option value="unknown">Non indicata</option><option value="stone">Pietra</option><option value="roller">Cilindri</option><option value="mixed">Mista</option><option value="other">Altro</option></select></div>
+
+      <div class="full technical">
+        <h3 style="margin-top:0">Dati tecnici</h3>
+        <div class="metric-grid">
+          <div><label>Forza W</label><input id="strengthW" type="number" min="50" max="600" step="1" placeholder="Es. 300"></div>
+          <div><label>Rapporto P/L</label><input id="plRatio" type="number" min="0.1" max="5" step="0.01" placeholder="Es. 0,60"></div>
+          <div><label>Proteine (%)</label><input id="protein" type="number" min="0" max="40" step="0.1" placeholder="Es. 13"></div>
+          <div><label>Ceneri (%)</label><input id="ash" type="number" min="0" max="5" step="0.01" placeholder="Es. 0,55"></div>
+          <div><label>Assorbimento (%)</label><input id="absorption" type="number" min="30" max="150" step="0.1" placeholder="Dichiarato o testato"></div>
+          <div><label>Falling Number</label><input id="fallingNumber" type="number" min="50" max="1000" step="1" placeholder="Se disponibile"></div>
+        </div>
+        <p class="muted">W descrive la forza; P/L l’equilibrio tenacità/estensibilità. Proteine e assorbimento aiutano a interpretare idratazione e lavorabilità, ma non sostituiscono la prova reale dell’impasto.</p>
+      </div>
+
+      <div class="full checks">
+        <label><input id="malted" type="checkbox"> Farina maltata</label>
+        <label><input id="improvers" type="checkbox"> Dichiara miglioratori/additivi</label>
+        <label><input id="isDefault" type="checkbox"> Predefinita</label>
+      </div>
+      <div class="full"><label>Impieghi consigliati</label><input id="uses" placeholder="pizza in teglia, napoletana, pane, focaccia — separati da virgola"></div>
+      <div class="full"><label>Dati riportati sulla confezione</label><textarea id="packageNotes" placeholder="Tempi consigliati, idratazione, temperatura, lotto o altre indicazioni"></textarea></div>
+      <div class="full"><label>Note personali</label><textarea id="notes" placeholder="Come si comporta, facilità di stesura, sapore, risultati ottenuti"></textarea></div>
+    </div>
+    <div class="actions" style="margin-top:14px"><button id="save" type="button">SALVA FARINA</button><button id="reset" class="secondary" type="button">NUOVA</button></div>
+    <p id="status" class="muted">In attesa.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Farine salvate</h2>
+    <div class="hint">Nel Wizard potrai combinarne più di una. Le percentuali devono totalizzare 100%; il peso di ogni farina verrà calcolato automaticamente.</div>
+    <div id="cards" class="cards" style="margin-top:14px"></div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script>
+<script>
+const c=window.cucinaHubSupabase,$=selector=>document.querySelector(selector);
+let owner,profiles=[];
+const fields={
+  id:$('#profileId'),name:$('#name'),brand:$('#brand'),productLine:$('#productLine'),cereal:$('#cereal'),flourType:$('#flourType'),milling:$('#milling'),strengthW:$('#strengthW'),plRatio:$('#plRatio'),protein:$('#protein'),ash:$('#ash'),absorption:$('#absorption'),fallingNumber:$('#fallingNumber'),malted:$('#malted'),improvers:$('#improvers'),isDefault:$('#isDefault'),uses:$('#uses'),packageNotes:$('#packageNotes'),notes:$('#notes')
+};
+const cerealLabels={soft_wheat:'Grano tenero',durum_wheat:'Grano duro',spelt:'Farro',rye:'Segale',corn:'Mais',rice:'Riso',buckwheat:'Grano saraceno',oat:'Avena',barley:'Orzo',mixed_cereals:'Cereali misti',gluten_free_mix:'Mix senza glutine',other:'Altro'};
+const typeLabels={'00':'00','0':'0','1':'1','2':'2 / semintegrale',wholemeal:'Integrale',manitoba:'Manitoba',semola:'Semola',semola_rimacinata:'Semola rimacinata',farro:'Farro',segale:'Segale',multicereale:'Multicereale',gluten_free:'Senza glutine',other:'Altro'};
+function msg(text,kind='muted'){$('#status').className=kind;$('#status').textContent=text}
+function esc(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
+function optionalNumber(field){return field.value===''?null:Number(field.value)}
+function reset(){Object.values(fields).forEach(field=>{if(field.type==='checkbox')field.checked=false;else field.value=''});fields.cereal.value='soft_wheat';fields.flourType.value='00';fields.milling.value='unknown';$('#formTitle').textContent='Nuova farina';msg('Inserisci i dati della farina. I campi tecnici possono restare vuoti.')}
+function label(profile){return [profile.brand,profile.name,profile.product_line].filter(Boolean).join(' · ')}
+function render(){
+  $('#cards').innerHTML=profiles.length?profiles.map(profile=>{
+    const metrics=[profile.strength_w!=null?`W ${profile.strength_w}`:null,profile.pl_ratio!=null?`P/L ${profile.pl_ratio}`:null,profile.protein_percent!=null?`${profile.protein_percent}% proteine`:null,profile.absorption_percent!=null?`${profile.absorption_percent}% assorbimento`:null].filter(Boolean);
+    return `<article class="card"><h3>${esc(label(profile))}${profile.is_default?' ★':''}</h3><p>${esc(cerealLabels[profile.cereal]||profile.cereal)} · ${esc(typeLabels[profile.flour_type]||profile.flour_type)} · ${esc(profile.milling_method==='stone'?'macinata a pietra':profile.milling_method==='roller'?'macinata a cilindri':'macinazione non indicata')}</p><div class="badges">${metrics.length?metrics.map(item=>`<span class="badge">${esc(item)}</span>`).join(''):'<span class="badge">Dati tecnici non inseriti</span>'}</div>${profile.notes?`<p class="muted">${esc(profile.notes)}</p>`:''}<div class="actions"><button class="secondary" onclick="editProfile('${profile.id}')">MODIFICA</button><button class="danger" onclick="deleteProfile('${profile.id}')">ELIMINA</button></div></article>`;
+  }).join(''):'<p class="muted">Nessuna farina salvata.</p>';
+}
+async function load(){const{data,error}=await c.from('flour_profiles').select('*').eq('owner_user_id',owner).order('is_default',{ascending:false}).order('brand').order('name');if(error)throw error;profiles=data||[];render()}
+function editProfile(id){const profile=profiles.find(item=>item.id===id);if(!profile)return;fields.id.value=profile.id;fields.name.value=profile.name||'';fields.brand.value=profile.brand||'';fields.productLine.value=profile.product_line||'';fields.cereal.value=profile.cereal;fields.flourType.value=profile.flour_type;fields.milling.value=profile.milling_method;fields.strengthW.value=profile.strength_w??'';fields.plRatio.value=profile.pl_ratio??'';fields.protein.value=profile.protein_percent??'';fields.ash.value=profile.ash_percent??'';fields.absorption.value=profile.absorption_percent??'';fields.fallingNumber.value=profile.falling_number??'';fields.malted.checked=profile.is_malted;fields.improvers.checked=profile.contains_improvers;fields.isDefault.checked=profile.is_default;fields.uses.value=(profile.recommended_uses||[]).join(', ');fields.packageNotes.value=profile.package_notes||'';fields.notes.value=profile.notes||'';$('#formTitle').textContent='Modifica farina';scrollTo({top:0,behavior:'smooth'})}
+async function deleteProfile(id){if(!confirm('Eliminare questo profilo farina? Le sessioni già salvate manterranno lo snapshot storico.'))return;const{error}=await c.from('flour_profiles').delete().eq('id',id).eq('owner_user_id',owner);if(error)return msg(error.message,'error');await load();reset();msg('Profilo eliminato.','ok')}
+async function save(){try{
+  if(!fields.name.value.trim())throw new Error('Inserisci il nome commerciale della farina.');
+  const row={owner_user_id:owner,name:fields.name.value.trim(),brand:fields.brand.value.trim()||null,product_line:fields.productLine.value.trim()||null,cereal:fields.cereal.value,flour_type:fields.flourType.value,strength_w:optionalNumber(fields.strengthW),pl_ratio:optionalNumber(fields.plRatio),protein_percent:optionalNumber(fields.protein),ash_percent:optionalNumber(fields.ash),absorption_percent:optionalNumber(fields.absorption),falling_number:optionalNumber(fields.fallingNumber),milling_method:fields.milling.value,is_malted:fields.malted.checked,contains_improvers:fields.improvers.checked,recommended_uses:fields.uses.value.split(',').map(item=>item.trim()).filter(Boolean),package_notes:fields.packageNotes.value.trim()||null,notes:fields.notes.value.trim()||null,is_default:fields.isDefault.checked,updated_at:new Date().toISOString()};
+  if(row.is_default){let query=c.from('flour_profiles').update({is_default:false}).eq('owner_user_id',owner).eq('is_default',true);if(fields.id.value)query=query.neq('id',fields.id.value);const{error}=await query;if(error)throw error}
+  const query=fields.id.value?c.from('flour_profiles').update(row).eq('id',fields.id.value).eq('owner_user_id',owner):c.from('flour_profiles').insert(row);
+  const{error}=await query;if(error)throw error;await load();reset();msg('Profilo farina salvato.','ok');
+}catch(error){msg(error.message,'error')}}
+async function init(){try{const{data,error}=await c.auth.getSession();if(error)throw error;if(!data.session?.user)throw new Error('Accedi prima di continuare.');owner=data.session.user.id;await load();reset();msg('Pronto.','ok')}catch(error){msg(error.message,'error')}}
+$('#save').onclick=save;$('#reset').onclick=reset;window.editProfile=editProfile;window.deleteProfile=deleteProfile;init();
+</script>
+</body>
+</html>
