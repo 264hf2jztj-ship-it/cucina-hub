@@ -1,37 +1,42 @@
 (function(global){
 'use strict';
 function phase(id,type,title,description,estimated,goal,why,activities,metadata={}){
-  return {id,version:3,type,title,description,estimated_minutes:estimated,goal,why,activities,metadata};
+  return {id,version:4,type,title,description,estimated_minutes:estimated,goal,why,activities,metadata};
 }
 function build(plan){
   const firstWater=Math.round(plan.water_weight_g*(plan.hydration_percent>=75?.7:.8));
   const remaining=Math.round(plan.water_weight_g-firstWater);
   const saltWater=Math.min(20,Math.max(10,Math.round(remaining*.08)));
-  const yeastInstruction=plan.yeast_type==='fresh_yeast'
-    ? `Sbriciola direttamente nell’impasto i ${plan.yeast_weight_g} g di lievito fresco mentre la DCG gira a velocità 1.`
+  const yeastPreparation=plan.yeast_type==='fresh_yeast'
+    ? `Pesa ${plan.yeast_weight_g} g di lievito fresco e tienilo da parte: lo sbriciolerai nell’impasto solo dopo i primi 3 minuti di lavorazione.`
     : plan.yeast_type==='dry_yeast'
-      ? `Se è lievito secco istantaneo, aggiungi direttamente i ${plan.yeast_weight_g} g nell’impasto; se è secco attivo, scioglilo prima in poca acqua presa da quella tenuta da parte.`
-      : `Aggiungi ${plan.yeast_weight_g} g di lievito madre a piccoli pezzi mentre la DCG gira a velocità 1.`;
+      ? `Pesa ${plan.yeast_weight_g} g di lievito secco. Se è istantaneo tienilo asciutto; se è secco attivo scioglilo in poca acqua presa da quella tenuta da parte. Non aggiungerlo ancora.`
+      : `Pesa ${plan.yeast_weight_g} g di lievito madre e tienilo da parte: lo aggiungerai solo dopo i primi 3 minuti di lavorazione.`;
+  const yeastAddition=plan.yeast_type==='fresh_yeast'
+    ? `Solo ora, terminati i 3 minuti e completato il controllo, sbriciola direttamente nell’impasto i ${plan.yeast_weight_g} g di lievito fresco mentre la DCG gira a velocità 1.`
+    : plan.yeast_type==='dry_yeast'
+      ? `Solo ora, terminati i 3 minuti e completato il controllo, aggiungi il lievito secco: direttamente se istantaneo, oppure già sciolto se secco attivo, sempre con la DCG a velocità 1.`
+      : `Solo ora, terminati i 3 minuti e completato il controllo, aggiungi ${plan.yeast_weight_g} g di lievito madre a piccoli pezzi mentre la DCG gira a velocità 1.`;
   const ovenLabel={samsung_oven:'Forno Samsung',weber_kettle:'Weber Kettle',air_fryer:'Friggitrice ad aria',other:'Forno selezionato'}[plan.oven_type]||'Forno selezionato';
   const phases=[
     phase('session_preparation','preparation','Preparazione ingredienti','Pesa e organizza tutto prima di iniziare.',10,'Avere ingredienti e utensili pronti.','Riduce errori e interruzioni durante l’impasto',[
       {id:'flour',kind:'action',label:`Pesa ${plan.flour_weight_g} g di farina${plan.flour_name?' '+plan.flour_name:''}.`},
       {id:'water',kind:'action',label:`Pesa ${plan.water_weight_g} g d’acqua: ${firstWater} g iniziali e ${remaining} g da tenere da parte.`},
-      {id:'salt',kind:'action',label:`Pesa ${plan.salt_weight_g} g di sale e scioglilo in circa ${saltWater} g dell’acqua tenuta da parte.`},
-      {id:'yeast',kind:'action',label:`Pesa ${plan.yeast_weight_g} g di lievito. ${yeastInstruction}`},
+      {id:'salt',kind:'action',label:`Pesa ${plan.salt_weight_g} g di sale e scioglilo in circa ${saltWater} g dell’acqua tenuta da parte. Tienilo da parte: non va aggiunto nei primi 3 minuti.`},
+      {id:'yeast',kind:'action',label:yeastPreparation},
       {id:'tools',kind:'action',label:'Prepara gancio, spatola, contenitore leggermente unto e coperchio.'},
-      {id:'ready',kind:'check',label:'Tutto è pesato, separato e a portata di mano.',success_criteria:'Nessun ingrediente manca e l’acqua è già divisa.'}
+      {id:'ready',kind:'check',label:'Tutto è pesato, separato e a portata di mano.',success_criteria:'Nessun ingrediente manca; lievito e sale sono pronti ma ancora separati dall’impasto.'}
     ],{timeline_role:'preparation',attention:'active'}),
-    phase('session_mixing','mixing','Impasto con impastatrice DCG','Segui le attività nell’ordine indicato.',18,'Ottenere un impasto elastico senza surriscaldarlo.','La sequenza favorisce assorbimento e formazione della maglia glutinica',[
+    phase('session_mixing','mixing','Impasto con impastatrice DCG','Segui le attività nell’ordine indicato. Non anticipare lievito o sale durante il primo timer.',18,'Ottenere un impasto elastico senza surriscaldarlo.','La sequenza favorisce assorbimento e formazione della maglia glutinica',[
       {id:'hook',kind:'action',label:'1. Monta il gancio impastatore sulla DCG.'},
-      {id:'load',kind:'action',label:`2. Metti in ciotola farina e ${firstWater} g d’acqua.`},
+      {id:'load',kind:'action',label:`2. Metti in ciotola solo farina e ${firstWater} g d’acqua.`},
       {id:'low',kind:'action',label:'3. Avvia la DCG a velocità 1.',why_now:'La velocità 1 idrata la farina senza stressare l’impasto.'},
-      {id:'initial_timer',kind:'timer',label:'4. Lascia lavorare 3 minuti a velocità 1.',seconds:180},
-      {id:'initial_check',kind:'check',label:'5. Controlla l’assorbimento.',success_criteria:'La farina asciutta è quasi scomparsa; l’impasto non deve ancora essere liscio.'},
-      {id:'add_yeast',kind:'action',label:`6. ${yeastInstruction}`},
-      {id:'add_water',kind:'action',label:`7. A velocità 1 versa gradualmente i ${Math.max(0,remaining-saltWater)} g d’acqua rimasti, in più riprese.`,why_now:'Aggiungere tutta l’acqua insieme potrebbe far perdere struttura.'},
-      {id:'add_salt',kind:'action',label:`8. Aggiungi il sale già sciolto nei ${saltWater} g d’acqua, sempre a velocità 1.`,why_now:'Il sale entra dopo l’idratazione iniziale e con il lievito già distribuito.'},
-      {id:'medium',kind:'action',label:'9. Quando il sale è assorbito, passa a velocità 2.'},
+      {id:'initial_timer',kind:'timer',label:'4. Lascia lavorare 3 minuti a velocità 1. Durante questi 3 minuti non aggiungere lievito, acqua restante o sale.',seconds:180},
+      {id:'initial_check',kind:'check',label:'5. Solo quando il timer è terminato, controlla l’assorbimento.',success_criteria:'La farina asciutta è quasi scomparsa; l’impasto non deve ancora essere liscio.'},
+      {id:'add_yeast',kind:'action',label:`6. ${yeastAddition}`},
+      {id:'add_water',kind:'action',label:`7. Dopo che il lievito si è distribuito, a velocità 1 versa gradualmente i ${Math.max(0,remaining-saltWater)} g d’acqua rimasti, in più riprese.`,why_now:'Aggiungere tutta l’acqua insieme potrebbe far perdere struttura.'},
+      {id:'add_salt',kind:'action',label:`8. Solo dopo avere incorporato l’acqua restante, aggiungi il sale già sciolto nei ${saltWater} g d’acqua, sempre a velocità 1.`,why_now:'Il sale entra dopo l’idratazione iniziale, con il lievito già distribuito e l’acqua restante quasi assorbita.'},
+      {id:'medium',kind:'action',label:'9. Quando il sale è completamente assorbito, passa a velocità 2.'},
       {id:'final_timer',kind:'timer',label:'10. Lavora 5 minuti a velocità 2.',seconds:300},
       {id:'heat_warning',kind:'warning',label:'Non superare la velocità 2. Ferma la macchina se l’impasto si strappa, si avvolge troppo sul gancio o supera circa 26 °C.'},
       {id:'window',kind:'check',label:'11. Controlla elasticità e prova del velo.',success_criteria:'Impasto più liscio, elastico e capace di formare un velo senza strapparsi subito.'},
@@ -69,7 +74,7 @@ function build(plan){
       {id:'evaluate',kind:'check',label:'Valuta fondo, struttura, alveolatura e sapore.'}
     ],{timeline_role:'finish',attention:'active'})
   );
-  return {id:`workflow_${Date.now()}`,title:plan.title,version:3,status:'planned',context:{baking_session:true,timeline_engine:true},phases,estimated_minutes:phases.reduce((sum,p)=>sum+p.estimated_minutes,0),created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+  return {id:`workflow_${Date.now()}`,title:plan.title,version:4,status:'planned',context:{baking_session:true,timeline_engine:true},phases,estimated_minutes:phases.reduce((sum,p)=>sum+p.estimated_minutes,0),created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
 }
 global.CucinaHubSessionWorkflowBuilder={build};
 })(window);
