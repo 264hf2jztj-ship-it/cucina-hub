@@ -18,11 +18,11 @@
 <main>
   <div class="card">
     <h1>Comando Rapido “Cucina Hub Calendario”</h1>
-    <p>Questa configurazione si esegue una sola volta. Dopo, il pulsante <strong>AGGIUNGI DIRETTAMENTE</strong> del Wizard creerà gli appuntamenti della timeline senza passare da Mail o dal file <code>.ics</code>.</p>
+    <p>Questa configurazione si esegue una sola volta. Dopo, il pulsante <strong>AGGIUNGI DIRETTAMENTE</strong> del Wizard creerà gli appuntamenti senza passare da Mail o dal file <code>.ics</code>.</p>
     <div class="actions">
       <a class="button" href="shortcuts://create-shortcut">APRI UN NUOVO COMANDO RAPIDO</a>
       <button id="copyName" class="secondary" type="button">COPIA IL NOME</button>
-      <a class="button secondary" href="../fermentation/baking-wizard.html?v=18">TORNA AL WIZARD</a>
+      <a class="button secondary" href="../fermentation/baking-wizard.html?v=19">TORNA AL WIZARD</a>
     </div>
     <p id="status" class="muted">Nome obbligatorio: <strong>Cucina Hub Calendario</strong></p>
   </div>
@@ -30,14 +30,14 @@
   <div class="card">
     <h2>Azioni da inserire</h2>
     <div class="step"><strong>1. Rinomina il comando</strong><br>Usa esattamente <code>Cucina Hub Calendario</code>.</div>
-    <div class="step"><strong>2. Leggi il testo ricevuto</strong><br>Aggiungi l’azione <strong>Ottieni dizionario dall’input</strong>. L’input arriverà automaticamente dal Wizard.</div>
-    <div class="step"><strong>3. Estrai l’elenco degli eventi</strong><br>Aggiungi <strong>Ottieni valore dizionario</strong> e usa la chiave <code>events</code>.</div>
+    <div class="step"><strong>2. Leggi il testo ricevuto</strong><br>Aggiungi <strong>Ottieni dizionario dall’input</strong>. Prima dell’apertura, Cucina Hub copia il JSON negli appunti e lo passa al comando come input.</div>
+    <div class="step"><strong>3. Estrai l’elenco degli eventi</strong><br>Aggiungi <strong>Ottieni valore dizionario</strong> e usa la chiave minuscola <code>events</code>.</div>
     <div class="step"><strong>4. Ripeti per ogni evento</strong><br>Aggiungi <strong>Ripeti con ogni elemento</strong> usando l’elenco ottenuto nel passaggio precedente.</div>
-    <div class="step"><strong>5. Dentro “Ripeti”, estrai i campi</strong><br>Dal <em>Elemento ripetuto</em> ricava con <strong>Ottieni valore dizionario</strong> i campi <code>title</code>, <code>start</code>, <code>end</code>, <code>notes</code> e <code>alert</code>. Per <code>start</code> ed <code>end</code> usa poi <strong>Ottieni date dall’input</strong>.</div>
-    <div class="step"><strong>6. Crea l’appuntamento</strong><br>Aggiungi <strong>Aggiungi nuovo evento</strong> e collega: titolo = <code>title</code>, inizio = data ottenuta da <code>start</code>, fine = data ottenuta da <code>end</code>, note = <code>notes</code>. Seleziona il calendario iCloud che vuoi usare. Nelle opzioni dell’azione imposta l’avviso usando il valore <code>alert</code> minuti prima.</div>
+    <div class="step"><strong>5. Dentro “Ripeti”, estrai i campi</strong><br>Dal <em>Elemento ripetuto</em> ricava i campi minuscoli <code>title</code>, <code>start</code>, <code>end</code> e <code>notes</code>. Per <code>start</code> ed <code>end</code> usa poi <strong>Ottieni date dall’input</strong>.</div>
+    <div class="step"><strong>6. Crea l’appuntamento</strong><br>Aggiungi <strong>Aggiungi nuovo evento</strong> e collega: titolo = <code>title</code>, inizio = data ottenuta da <code>start</code>, fine = data ottenuta da <code>end</code>, note = <code>notes</code>. Seleziona il calendario iCloud, imposta per ora un avviso fisso di 5 minuti e disattiva <strong>Mostra foglio di composizione</strong>.</div>
     <div class="step"><strong>7. Conferma finale</strong><br>Dopo “Fine ripetizione”, aggiungi <strong>Mostra notifica</strong> con il testo “Eventi Cucina Hub aggiunti al Calendario”.</div>
 
-    <div class="note"><strong>Prima esecuzione:</strong> Comandi Rapidi potrebbe chiedere il permesso di accedere al Calendario. Concedilo. Il comando viene poi sincronizzato tra i dispositivi su cui è attiva la sincronizzazione iCloud di Comandi Rapidi.</div>
+    <div class="note"><strong>Nota sugli appunti:</strong> premendo il test o l’aggiunta diretta, il contenuto attuale degli appunti viene sostituito temporaneamente dal JSON della timeline. Non devi aggiungere l’azione “Ottieni appunti”: l’input viene passato automaticamente dal collegamento di Comandi Rapidi.</div>
   </div>
 
   <div class="card">
@@ -47,18 +47,18 @@
       <div class="key"><code>start</code><br><span class="muted">Data e ora iniziale ISO</span></div>
       <div class="key"><code>end</code><br><span class="muted">Data e ora finale ISO</span></div>
       <div class="key"><code>notes</code><br><span class="muted">Istruzione operativa</span></div>
-      <div class="key"><code>alert</code><br><span class="muted">Minuti di anticipo</span></div>
+      <div class="key"><code>alert</code><br><span class="muted">Anticipo disponibile per una futura gestione dinamica</span></div>
     </div>
   </div>
 
   <div class="card">
     <h2>Prova il collegamento</h2>
-    <p class="muted">Il test invia due appuntamenti temporanei, programmati fra circa 10 e 20 minuti. Potrai cancellarli dopo la verifica.</p>
+    <p class="muted">Il test copia negli appunti un JSON con due appuntamenti temporanei, programmati fra circa 10 e 20 minuti, quindi avvia il comando.</p>
     <div class="actions"><button id="testShortcut" class="test" type="button">TESTA COMANDO RAPIDO</button></div>
     <p id="testStatus" class="muted">Prima completa i sette passaggi sopra.</p>
   </div>
 </main>
-<script src="./calendar-export-engine.js?v=2"></script>
+<script src="./calendar-export-engine.js?v=3"></script>
 <script>
 const shortcutName='Cucina Hub Calendario';
 const status=document.querySelector('#status'),testStatus=document.querySelector('#testStatus');
@@ -77,7 +77,8 @@ document.querySelector('#testShortcut').onclick=async()=>{
         {id:'test_2',title:'Test Cucina Hub — secondo avviso',at:new Date(now+20*60000).toISOString(),description:'Secondo evento di prova del Comando Rapido.',alert_minutes:1,duration_minutes:5}
       ]
     };
-    testStatus.className='ok';testStatus.textContent='Apro Comandi Rapidi…';
+    testStatus.className='ok';
+    testStatus.textContent='Copio i dati negli appunti e apro Comandi Rapidi…';
     await CucinaHubCalendarExportEngine.runShortcut(calendar,{shortcutName});
   }catch(error){testStatus.className='error';testStatus.textContent='Test non riuscito: '+error.message}
 };
