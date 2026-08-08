@@ -17,11 +17,11 @@
     .step{border-left:4px solid #365d44;padding:10px 12px;background:#faf8f4;border-radius:8px}.step.passive{border-left-color:#3479a5}.step.parallel{background:#f4f0f8;border-left-color:#8058a5}
     .step small{display:block;color:#6d655c;margin-top:4px}.tag{display:inline-block;margin-left:7px;padding:2px 7px;border-radius:999px;background:#eee8df;font-size:.72rem}
     .note{background:#fff8df;border:1px solid #e4cf7d;border-radius:10px;padding:10px;margin-top:12px}.timeline-info{background:#eef5f0;border:1px solid #cbdccd;border-radius:12px;padding:12px;margin:12px 0}
-    .temperature-info{background:#f4f0f8;border:1px solid #d4c6df;border-radius:12px;padding:14px;margin:12px 0}.temperature-head,.humidity-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
-    .temperature-badge,.humidity-badge{padding:4px 9px;border-radius:999px;background:#fff;font-size:.82rem;font-weight:800}.adjustments{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}
-    .adjustment{background:#fff;border-radius:10px;padding:10px}.adjustment span{display:block;color:#6d655c;font-size:.85rem}.adjustment strong{display:block;margin-top:3px}.adjustment small{display:block;margin-top:3px;color:#6d655c}
-    .humidity-info{background:#eef5f7;border:1px solid #c5d9df;border-radius:12px;padding:14px;margin:12px 0}.humidity-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}.humidity-action{background:#fff;border-radius:10px;padding:10px}.humidity-action span{display:block;color:#6d655c;font-size:.85rem}.humidity-action strong{display:block;margin-top:3px;font-size:.96rem}.warning-list{margin:8px 0 0;padding-left:20px;color:#8d4b12}
-    @media(max-width:720px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.adjustments,.humidity-actions{grid-template-columns:1fr}.environment-tools a,.environment-tools button{width:100%}}
+    .info-box{border-radius:12px;padding:14px;margin:12px 0}.temperature-info{background:#f4f0f8;border:1px solid #d4c6df}.humidity-info{background:#eef5f7;border:1px solid #c5d9df}.fridge-info{background:#eef3f8;border:1px solid #c4d3e0}
+    .info-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}.info-badge{padding:4px 9px;border-radius:999px;background:#fff;font-size:.82rem;font-weight:800}
+    .adjustments,.action-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}.adjustment,.action-card{background:#fff;border-radius:10px;padding:10px}.adjustment span,.action-card span{display:block;color:#6d655c;font-size:.85rem}.adjustment strong,.action-card strong{display:block;margin-top:3px}.action-card strong{font-size:.96rem}.adjustment small{display:block;margin-top:3px;color:#6d655c}
+    .warning-list{margin:8px 0 0;padding-left:20px;color:#8d4b12}
+    @media(max-width:720px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.adjustments,.action-grid{grid-template-columns:1fr}.environment-tools a,.environment-tools button{width:100%}}
   </style>
 </head>
 <body>
@@ -62,8 +62,9 @@
         <div class="metric">Cottura<strong id="bake"></strong></div>
         <div class="metric">Workflow<strong id="phases"></strong></div>
       </div>
-      <div id="temperatureInfo" class="temperature-info"></div>
-      <div id="humidityInfo" class="humidity-info"></div>
+      <div id="temperatureInfo" class="info-box temperature-info"></div>
+      <div id="humidityInfo" class="info-box humidity-info"></div>
+      <div id="fridgeInfo" class="info-box fridge-info"></div>
       <div id="ovenNote" class="note"></div>
       <div id="timelineInfo" class="timeline-info"></div>
       <h3>Timeline intelligente</h3>
@@ -79,11 +80,12 @@
 <script src="../supabase-client.js?v=12"></script>
 <script src="../workflow-engine/temperature-correction-engine.js?v=1"></script>
 <script src="../workflow-engine/humidity-correction-engine.js?v=1"></script>
+<script src="../workflow-engine/fridge-correction-engine.js?v=1"></script>
 <script src="../workflow-engine/session-workflow-builder.js?v=5"></script>
 <script src="../workflow-engine/timeline-engine.js?v=1"></script>
 <script>
 const c=window.cucinaHubSupabase,$=selector=>document.querySelector(selector);
-let owner,environments=[],plan=null,workflow=null,schedule=null,temperatureCorrection=null,humidityCorrection=null,environmentRefreshToken=0,lastAutoRefresh=0;
+let owner,environments=[],plan=null,workflow=null,schedule=null,temperatureCorrection=null,humidityCorrection=null,fridgeCorrection=null,environmentRefreshToken=0,lastAutoRefresh=0;
 const presets={
   roman_pan:{name:'Pizza in teglia romana',hydration:80,salt:2.5,base:.15,bulk:120,proof:180,ideal:280,bake:16},
   neapolitan:{name:'Pizza napoletana',hydration:65,salt:2.8,base:.10,bulk:120,proof:240,ideal:300,bake:7},
@@ -98,7 +100,7 @@ const appliances={
   other:{label:'Altro',max:250,preheat:30,note:'Profilo prudenziale fino a 250 °C.'}
 };
 function msg(text,kind='muted'){$('#status').className=kind;$('#status').textContent=text}
-function esc(value){return String(value??'').replace(/[&<>\'\"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]))}
+function esc(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
 function localValue(date){return new Date(date-date.getTimezoneOffset()*60000).toISOString().slice(0,16)}
 function defaultDate(){const date=new Date(Date.now()+86400000);date.setHours(20,0,0,0);$('#targetMeal').value=localValue(date)}
 function fmt(date){return new Date(date).toLocaleString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}
@@ -109,11 +111,11 @@ function signedMinutes(value){const rounded=Math.round(Number(value)||0);return 
 function grams(value,type){const number=Number(value)||0;return type==='dry_yeast'?number.toFixed(2):type==='sourdough'?number.toFixed(0):number.toFixed(1)}
 function signedGrams(value,type){const number=Number(value)||0;return `${number>0?'+':''}${grams(number,type)} g`}
 function environmentFingerprint(){return JSON.stringify(environments.map(item=>[item.id,item.name,item.room_temperature_c,item.relative_humidity_percent,item.fridge_temperature_c,item.is_default]))}
-function invalidateProposal(message){plan=null;workflow=null;schedule=null;temperatureCorrection=null;humidityCorrection=null;$('#proposal').hidden=true;$('#start').hidden=true;if(message)msg(message)}
+function invalidateProposal(message){plan=null;workflow=null;schedule=null;temperatureCorrection=null;humidityCorrection=null;fridgeCorrection=null;$('#proposal').hidden=true;$('#start').hidden=true;if(message)msg(message)}
 function renderEnvironmentSnapshot(){
   const profile=env(),node=$('#environmentSnapshot');
-  if(!profile){node.innerHTML='<strong>Nessun profilo selezionato.</strong> Verranno usati i riferimenti neutri di 22 °C e 55% UR.';return}
-  const fridge=profile.fridge_temperature_c==null?'frigorifero non indicato':`${profile.fridge_temperature_c} °C frigorifero`;
+  if(!profile){node.innerHTML='<strong>Nessun profilo selezionato.</strong> Verranno usati i riferimenti neutri di 22 °C, 55% UR e frigorifero a 4 °C.';return}
+  const fridge=profile.fridge_temperature_c==null?'frigorifero: riferimento 4 °C':`${profile.fridge_temperature_c} °C frigorifero`;
   node.innerHTML=`<strong>${esc(profile.name)}</strong> · ${profile.room_temperature_c} °C · ${profile.relative_humidity_percent}% UR · ${esc(fridge)}`;
 }
 async function loadEnvironments({preserve=true}={}){
@@ -121,7 +123,7 @@ async function loadEnvironments({preserve=true}={}){
   const result=await c.from('fermentation_environment_profiles').select('*').eq('owner_user_id',owner).order('is_default',{ascending:false}).order('name');
   if(result.error)throw result.error;if(token!==environmentRefreshToken)return;
   environments=result.data||[];
-  select.innerHTML='<option value="">Nessun profilo — usa 22 °C e 55% UR</option>'+environments.map(item=>`<option value="${item.id}">${esc(item.name)} · ${item.room_temperature_c} °C · ${item.relative_humidity_percent}% UR${item.is_default?' — predefinito':''}</option>`).join('');
+  select.innerHTML='<option value="">Nessun profilo — usa valori di riferimento</option>'+environments.map(item=>`<option value="${item.id}">${esc(item.name)} · ${item.room_temperature_c} °C · ${item.relative_humidity_percent}% UR${item.is_default?' — predefinito':''}</option>`).join('');
   const selected=previous&&environments.some(item=>item.id===previous)?previous:(environments.find(item=>item.is_default)?.id||'');
   select.value=selected;renderEnvironmentSnapshot();
 }
@@ -135,130 +137,79 @@ async function refreshEnvironmentData({automatic=false}={}){
     else if(!automatic)msg('I dati ambiente sono già aggiornati.','ok');
   }catch(error){if(!automatic)msg('Impossibile aggiornare i profili: '+error.message,'error')}
 }
-async function refreshOnReturn(){
-  if(!owner||document.hidden||Date.now()-lastAutoRefresh<800)return;
-  lastAutoRefresh=Date.now();
-  await refreshEnvironmentData({automatic:true});
-}
+async function refreshOnReturn(){if(!owner||document.hidden||Date.now()-lastAutoRefresh<800)return;lastAutoRefresh=Date.now();await refreshEnvironmentData({automatic:true})}
+function warningsHtml(items){return items?.length?`<ul class="warning-list">${items.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:''}
 
 function renderTemperature(){
   const correction=temperatureCorrection,profile=env(),type=$('#yeastType').value;
-  const warnings=correction.warnings.length?`<ul class="warning-list">${correction.warnings.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:'';
-  $('#temperatureInfo').innerHTML=`
-    <div class="temperature-head">
-      <div><strong>Correzione temperatura</strong><br><span class="muted">${esc(profile?.name||'Riferimento senza profilo')} · ${correction.room_temperature_c.toFixed(1)} °C rispetto a ${correction.reference_temperature_c.toFixed(1)} °C</span></div>
-      <span class="temperature-badge">${esc(correction.classification_label.toUpperCase())}</span>
-    </div>
-    <p>${esc(correction.explanation)}</p>
-    <div class="adjustments">
-      <div class="adjustment"><span>Puntata</span><strong>${minutesLabel(correction.baseline.bulk_minutes)} → ${minutesLabel(correction.corrected.bulk_minutes)}</strong><small>${signedMinutes(correction.changes.bulk_minutes)}</small></div>
-      <div class="adjustment"><span>Appretto</span><strong>${minutesLabel(correction.baseline.proof_minutes)} → ${minutesLabel(correction.corrected.proof_minutes)}</strong><small>${signedMinutes(correction.changes.proof_minutes)}</small></div>
-      <div class="adjustment"><span>Lievito</span><strong>${grams(correction.baseline.yeast_weight_g,type)} g → ${grams(correction.corrected.yeast_weight_g,type)} g</strong><small>${signedGrams(correction.changes.yeast_weight_g,type)}</small></div>
-    </div>
-    <p class="muted" style="margin-bottom:0">${esc(correction.note)} I controlli visivi della Sessione Guidata restano prioritari.</p>${warnings}`;
+  $('#temperatureInfo').innerHTML=`<div class="info-head"><div><strong>Correzione temperatura</strong><br><span class="muted">${esc(profile?.name||'Riferimento senza profilo')} · ${correction.room_temperature_c.toFixed(1)} °C rispetto a ${correction.reference_temperature_c.toFixed(1)} °C</span></div><span class="info-badge">${esc(correction.classification_label.toUpperCase())}</span></div><p>${esc(correction.explanation)}</p><div class="adjustments"><div class="adjustment"><span>Puntata</span><strong>${minutesLabel(correction.baseline.bulk_minutes)} → ${minutesLabel(correction.corrected.bulk_minutes)}</strong><small>${signedMinutes(correction.changes.bulk_minutes)}</small></div><div class="adjustment"><span>Appretto</span><strong>${minutesLabel(correction.baseline.proof_minutes)} → ${minutesLabel(correction.corrected.proof_minutes)}</strong><small>${signedMinutes(correction.changes.proof_minutes)}</small></div><div class="adjustment"><span>Lievito</span><strong>${grams(correction.baseline.yeast_weight_g,type)} g → ${grams(correction.corrected.yeast_weight_g,type)} g</strong><small>${signedGrams(correction.changes.yeast_weight_g,type)}</small></div></div><p class="muted" style="margin-bottom:0">${esc(correction.note)} I controlli visivi della Sessione Guidata restano prioritari.</p>${warningsHtml(correction.warnings)}`;
 }
 function renderHumidity(){
   const correction=humidityCorrection,profile=env(),operation=correction.operational;
-  const warnings=correction.warnings.length?`<ul class="warning-list">${correction.warnings.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:'';
-  $('#humidityInfo').innerHTML=`
-    <div class="humidity-head">
-      <div><strong>Correzione umidità</strong><br><span class="muted">${esc(profile?.name||'Riferimento senza profilo')} · ${correction.relative_humidity_percent.toFixed(1)}% UR rispetto a ${correction.reference_humidity_percent.toFixed(1)}% UR</span></div>
-      <span class="humidity-badge">${esc(correction.classification_label.toUpperCase())}</span>
-    </div>
-    <p>${esc(correction.explanation)}</p>
-    <div class="humidity-actions">
-      <div class="humidity-action"><span>Copertura</span><strong>${esc(operation.covering_strategy)}</strong></div>
-      <div class="humidity-action"><span>Manipolazione</span><strong>${esc(operation.handling_strategy)}</strong></div>
-      <div class="humidity-action"><span>Controllo finale</span><strong>${esc(operation.final_check)}</strong></div>
-    </div>
-    <p class="muted" style="margin-bottom:0"><strong>Formula e timeline invariate:</strong> ${esc(correction.note)}</p>${warnings}`;
+  $('#humidityInfo').innerHTML=`<div class="info-head"><div><strong>Correzione umidità</strong><br><span class="muted">${esc(profile?.name||'Riferimento senza profilo')} · ${correction.relative_humidity_percent.toFixed(1)}% UR rispetto a ${correction.reference_humidity_percent.toFixed(1)}% UR</span></div><span class="info-badge">${esc(correction.classification_label.toUpperCase())}</span></div><p>${esc(correction.explanation)}</p><div class="action-grid"><div class="action-card"><span>Copertura</span><strong>${esc(operation.covering_strategy)}</strong></div><div class="action-card"><span>Manipolazione</span><strong>${esc(operation.handling_strategy)}</strong></div><div class="action-card"><span>Controllo finale</span><strong>${esc(operation.final_check)}</strong></div></div><p class="muted" style="margin-bottom:0"><strong>Formula e timeline invariate:</strong> ${esc(correction.note)}</p>${warningsHtml(correction.warnings)}`;
+}
+function renderFridge(){
+  const correction=fridgeCorrection,profile=env(),operation=correction.operational;
+  if(!correction.applied){$('#fridgeInfo').innerHTML=`<div class="info-head"><div><strong>Correzione frigorifero</strong><br><span class="muted">${correction.fridge_temperature_c.toFixed(1)} °C rispetto a ${correction.reference_temperature_c.toFixed(1)} °C</span></div><span class="info-badge">NON APPLICATA</span></div><p>${esc(correction.explanation)}</p><p class="muted" style="margin-bottom:0">${esc(correction.note)}</p>`;return}
+  $('#fridgeInfo').innerHTML=`<div class="info-head"><div><strong>Correzione frigorifero</strong><br><span class="muted">${esc(profile?.name||'Riferimento senza profilo')} · ${correction.fridge_temperature_c.toFixed(1)} °C rispetto a ${correction.reference_temperature_c.toFixed(1)} °C</span></div><span class="info-badge">${esc(correction.classification_label.toUpperCase())}</span></div><p>${esc(correction.explanation)}</p><div class="adjustments"><div class="adjustment"><span>Durata a freddo</span><strong>${minutesLabel(correction.baseline_minutes)} → ${minutesLabel(correction.corrected_minutes)}</strong><small>${signedMinutes(correction.change_minutes)}</small></div><div class="adjustment"><span>Posizione nel frigo</span><strong>${esc(operation.storage_instruction)}</strong></div><div class="adjustment"><span>Controllo all’uscita</span><strong>${esc(operation.exit_instruction)}</strong></div></div><p class="muted" style="margin-bottom:0">${esc(correction.note)} La correzione può anticipare o posticipare l’orario di inizio della sessione.</p>${warningsHtml(correction.warnings)}`;
 }
 function renderTimeline(){
   const events=schedule.events;
   $('#timeline').innerHTML=events.map(event=>`<div class="step ${event.attention==='passive'?'passive':''} ${event.parallel?'parallel':''}"><strong>${fmt(event.start_at)}–${onlyTime(event.end_at)} — ${esc(event.title)}</strong>${event.parallel?'<span class="tag">IN PARALLELO</span>':''}<small>${minutesLabel(event.duration_minutes)} · ${event.attention==='passive'?'attesa/controllo':'presenza richiesta'}${event.note?' · '+esc(event.note):''}</small></div>`).join('');
-  const warnings=schedule.warnings.length?`<ul class="warning-list">${schedule.warnings.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:'';
-  $('#timelineInfo').innerHTML=`<strong>Calcolo a ritroso dall’orario del pasto</strong><br>Il preriscaldamento viene sovrapposto alla parte finale dell’appretto: risparmi circa ${minutesLabel(schedule.summary.overlap_minutes)} senza accorciare la fermentazione.${warnings}`;
+  $('#timelineInfo').innerHTML=`<strong>Calcolo a ritroso dall’orario del pasto</strong><br>Il preriscaldamento viene sovrapposto alla parte finale dell’appretto: risparmi circa ${minutesLabel(schedule.summary.overlap_minutes)} senza accorciare la fermentazione.${warningsHtml(schedule.warnings)}`;
 }
 function generate(){
   try{
     const preset=presets[$('#style').value],flour=Number($('#flourWeight').value),target=new Date($('#targetMeal').value);
     if(!flour||flour<100)throw new Error('Inserisci almeno 100 g di farina.');
     if(Number.isNaN(target.getTime()))throw new Error('Scegli data e ora del pasto.');
-    const hours=(target-Date.now())/3600000;
-    if(hours<4)throw new Error('Servono almeno 4 ore.');
-    const environment=env(),room=Number(environment?.room_temperature_c??22),humidity=Number(environment?.relative_humidity_percent??55),device=appliances[$('#ovenType').value];
+    const hours=(target-Date.now())/3600000;if(hours<4)throw new Error('Servono almeno 4 ore.');
+    const environment=env(),room=Number(environment?.room_temperature_c??22),humidity=Number(environment?.relative_humidity_percent??55),fridge=Number(environment?.fridge_temperature_c??4),device=appliances[$('#ovenType').value];
     const oven=Math.min(preset.ideal,device.max),bake=preset.bake+(oven<preset.ideal?3:0);
-
     const fixedCritical=10+18+preset.proof+bake+5;
-    let baseBulk=preset.bulk,cold=Math.max(0,Math.floor(hours*60)-fixedCritical-baseBulk);
-    if(hours<10||cold<240){cold=0;baseBulk=Math.max(90,Math.floor(hours*60)-fixedCritical)}
-
+    let baseBulk=preset.bulk,coldBaseline=Math.max(0,Math.floor(hours*60)-fixedCritical-baseBulk);
+    if(hours<10||coldBaseline<240){coldBaseline=0;baseBulk=Math.max(90,Math.floor(hours*60)-fixedCritical)}
     let baseYeastPercent=preset.base*(24/Math.max(hours,4));
     if($('#yeastType').value==='dry_yeast')baseYeastPercent*=.4;
     if($('#yeastType').value==='sourdough')baseYeastPercent=Math.min(25,Math.max(10,15*(24/Math.max(hours,4))));
     const baseYeast=flour*baseYeastPercent/100;
 
     temperatureCorrection=CucinaHubTemperatureCorrectionEngine.calculate({roomTemperatureC:room,referenceTemperatureC:22,bulkMinutes:baseBulk,proofMinutes:preset.proof,yeastWeightG:baseYeast,yeastType:$('#yeastType').value});
-    const temperatureValidation=CucinaHubTemperatureCorrectionEngine.validate(temperatureCorrection);
-    if(!temperatureValidation.valid)throw new Error(temperatureValidation.errors.join(' '));
-
+    const temperatureValidation=CucinaHubTemperatureCorrectionEngine.validate(temperatureCorrection);if(!temperatureValidation.valid)throw new Error(temperatureValidation.errors.join(' '));
     humidityCorrection=CucinaHubHumidityCorrectionEngine.calculate({relativeHumidityPercent:humidity,referenceHumidityPercent:55});
-    const humidityValidation=CucinaHubHumidityCorrectionEngine.validate(humidityCorrection);
-    if(!humidityValidation.valid)throw new Error(humidityValidation.errors.join(' '));
+    const humidityValidation=CucinaHubHumidityCorrectionEngine.validate(humidityCorrection);if(!humidityValidation.valid)throw new Error(humidityValidation.errors.join(' '));
+    fridgeCorrection=CucinaHubFridgeCorrectionEngine.calculate({fridgeTemperatureC:fridge,referenceTemperatureC:4,coldFermentationMinutes:coldBaseline});
+    const fridgeValidation=CucinaHubFridgeCorrectionEngine.validate(fridgeCorrection);if(!fridgeValidation.valid)throw new Error(fridgeValidation.errors.join(' '));
 
     const water=flour*preset.hydration/100,salt=flour*preset.salt/100;
-    plan={
-      owner_user_id:owner,environment_profile_id:$('#environmentProfile').value||null,title:`${preset.name} — ${fmt(target)}`,product_style:$('#style').value,status:'planned',
-      flour_name:$('#flourName').value.trim()||null,flour_weight_g:flour,yeast_type:$('#yeastType').value,target_meal_at:target.toISOString(),
-      hydration_percent:preset.hydration,water_weight_g:+water.toFixed(1),salt_weight_g:+salt.toFixed(1),yeast_weight_g:temperatureCorrection.corrected.yeast_weight_g,
-      bulk_fermentation_minutes:temperatureCorrection.corrected.bulk_minutes,cold_fermentation_minutes:cold,final_proof_minutes:temperatureCorrection.corrected.proof_minutes,
-      target_dough_temperature_c:24,oven_type:$('#ovenType').value,oven_temperature_c:oven,preheat_minutes:device.preheat,bake_minutes:bake,
-      guidance_mode:$('#guidanceMode').value,temperature_correction:temperatureCorrection,humidity_correction:humidityCorrection
-    };
+    plan={owner_user_id:owner,environment_profile_id:$('#environmentProfile').value||null,title:`${preset.name} — ${fmt(target)}`,product_style:$('#style').value,status:'planned',flour_name:$('#flourName').value.trim()||null,flour_weight_g:flour,yeast_type:$('#yeastType').value,target_meal_at:target.toISOString(),hydration_percent:preset.hydration,water_weight_g:+water.toFixed(1),salt_weight_g:+salt.toFixed(1),yeast_weight_g:temperatureCorrection.corrected.yeast_weight_g,bulk_fermentation_minutes:temperatureCorrection.corrected.bulk_minutes,cold_fermentation_minutes:fridgeCorrection.corrected_minutes,final_proof_minutes:temperatureCorrection.corrected.proof_minutes,target_dough_temperature_c:24,oven_type:$('#ovenType').value,oven_temperature_c:oven,preheat_minutes:device.preheat,bake_minutes:bake,guidance_mode:$('#guidanceMode').value,temperature_correction:temperatureCorrection,humidity_correction:humidityCorrection,fridge_correction:fridgeCorrection};
     workflow=CucinaHubSessionWorkflowBuilder.build(plan);
-    workflow.context=workflow.context||{};
-    workflow.context.temperature_correction=temperatureCorrection;
-    workflow.context.humidity_correction=humidityCorrection;
-    workflow.context.environment_snapshot={profile_id:environment?.id||null,name:environment?.name||null,room_temperature_c:room,relative_humidity_percent:humidity,fridge_temperature_c:environment?.fridge_temperature_c??null};
+    workflow=CucinaHubFridgeCorrectionEngine.applyToWorkflow(workflow,fridgeCorrection);
+    workflow.context=workflow.context||{};workflow.context.temperature_correction=temperatureCorrection;workflow.context.humidity_correction=humidityCorrection;workflow.context.fridge_correction=fridgeCorrection;workflow.context.environment_snapshot={profile_id:environment?.id||null,name:environment?.name||null,room_temperature_c:room,relative_humidity_percent:humidity,fridge_temperature_c:fridge};
     schedule=CucinaHubTimelineEngine.build({workflow,targetAt:target});
-    const validation=CucinaHubTimelineEngine.validate(schedule);
-    if(!validation.valid)throw new Error(validation.errors.join(' '));
-    plan.generated_plan=schedule.events;
-    workflow.timeline={version:schedule.version,target_at:schedule.target_at,start_at:schedule.start_at,summary:schedule.summary};
-    plan.workflow_definition=workflow;
+    const validation=CucinaHubTimelineEngine.validate(schedule);if(!validation.valid)throw new Error(validation.errors.join(' '));
+    plan.generated_plan=schedule.events;workflow.timeline={version:schedule.version,target_at:schedule.target_at,start_at:schedule.start_at,summary:schedule.summary};plan.workflow_definition=workflow;
 
-    $('#summary').textContent=`${preset.name}, ${flour} g di farina, ${hours.toFixed(1)} ore disponibili, ambiente ${room.toFixed(1)} °C e ${humidity.toFixed(1)}% UR. Per mangiare alle ${onlyTime(target)}, inizia alle ${onlyTime(schedule.start_at)}.`;
-    $('#startAt').textContent=fmt(schedule.start_at);$('#activeTime').textContent=minutesLabel(schedule.summary.active_minutes);
-    $('#water').textContent=plan.water_weight_g+' g';$('#salt').textContent=plan.salt_weight_g+' g';$('#yeast').textContent=grams(plan.yeast_weight_g,$('#yeastType').value)+' g';
-    $('#hydration').textContent=preset.hydration+'%';$('#bake').textContent=oven+' °C · '+bake+' min';$('#phases').textContent=workflow.phases.length+' fasi · '+schedule.events.length+' eventi';
-    $('#ovenNote').textContent=device.note;renderTemperature();renderHumidity();renderTimeline();$('#proposal').hidden=false;$('#start').hidden=true;
-    msg('Temperatura, umidità e timeline calcolate. Controlla le correzioni e salva.','ok');
+    const fridgeSummary=fridgeCorrection.applied?`frigorifero ${fridge.toFixed(1)} °C`:'senza fase a freddo';
+    $('#summary').textContent=`${preset.name}, ${flour} g di farina, ${hours.toFixed(1)} ore disponibili, ambiente ${room.toFixed(1)} °C e ${humidity.toFixed(1)}% UR, ${fridgeSummary}. Per mangiare alle ${onlyTime(target)}, inizia alle ${onlyTime(schedule.start_at)}.`;
+    $('#startAt').textContent=fmt(schedule.start_at);$('#activeTime').textContent=minutesLabel(schedule.summary.active_minutes);$('#water').textContent=plan.water_weight_g+' g';$('#salt').textContent=plan.salt_weight_g+' g';$('#yeast').textContent=grams(plan.yeast_weight_g,$('#yeastType').value)+' g';$('#hydration').textContent=preset.hydration+'%';$('#bake').textContent=oven+' °C · '+bake+' min';$('#phases').textContent=workflow.phases.length+' fasi · '+schedule.events.length+' eventi';
+    $('#ovenNote').textContent=device.note;renderTemperature();renderHumidity();renderFridge();renderTimeline();$('#proposal').hidden=false;$('#start').hidden=true;msg('Temperatura, umidità, frigorifero e timeline calcolati. Controlla le correzioni e salva.','ok');
   }catch(error){msg(error.message,'error')}
 }
 async function save(){
   try{
-    if(!plan)generate();
-    if(!plan||!workflow||!schedule||!temperatureCorrection||!humidityCorrection)throw new Error('Genera prima la sessione.');
-    const payload={...plan};delete payload.preheat_minutes;delete payload.bake_minutes;delete payload.temperature_correction;delete payload.humidity_correction;
-    const{data,error}=await c.from('baking_sessions').insert(payload).select('id').single();
-    if(error)throw error;
-    $('#start').href=`../workflow-engine/guided-session.html?session=${encodeURIComponent(data.id)}&v=9`;$('#start').hidden=false;
-    msg('Sessione, correzioni ambiente e timeline salvate. Ora puoi avviare la guida.','ok');
+    if(!plan)generate();if(!plan||!workflow||!schedule||!temperatureCorrection||!humidityCorrection||!fridgeCorrection)throw new Error('Genera prima la sessione.');
+    const payload={...plan};delete payload.preheat_minutes;delete payload.bake_minutes;delete payload.temperature_correction;delete payload.humidity_correction;delete payload.fridge_correction;
+    const{data,error}=await c.from('baking_sessions').insert(payload).select('id').single();if(error)throw error;
+    $('#start').href=`../workflow-engine/guided-session.html?session=${encodeURIComponent(data.id)}&v=9`;$('#start').hidden=false;msg('Sessione, correzioni ambiente e timeline salvate. Ora puoi avviare la guida.','ok');
   }catch(error){msg(error.message,'error')}
 }
-async function init(){
-  try{
-    const{data,error}=await c.auth.getSession();if(error)throw error;if(!data.session?.user)throw new Error('Accedi prima di continuare.');owner=data.session.user.id;
-    await loadEnvironments({preserve:false});defaultDate();msg('Pronto. I valori del profilo selezionato verranno usati nella sessione.','ok');
-  }catch(error){msg(error.message,'error')}
-}
+async function init(){try{const{data,error}=await c.auth.getSession();if(error)throw error;if(!data.session?.user)throw new Error('Accedi prima di continuare.');owner=data.session.user.id;await loadEnvironments({preserve:false});defaultDate();msg('Pronto. I valori del profilo selezionato verranno usati nella sessione.','ok')}catch(error){msg(error.message,'error')}}
 $('#generate').onclick=generate;$('#save').onclick=save;
 $('#environmentProfile').onchange=()=>{renderEnvironmentSnapshot();invalidateProposal('Profilo ambiente cambiato. Genera la proposta con i nuovi valori.')};
 $('#reloadEnvironments').onclick=()=>refreshEnvironmentData({automatic:false});
-$('#reset').onclick=()=>{plan=null;workflow=null;schedule=null;temperatureCorrection=null;humidityCorrection=null;$('#proposal').hidden=true;$('#start').hidden=true;$('#flourName').value='';$('#flourWeight').value=1000;defaultDate();msg('Nuova sessione.')};
-window.addEventListener('focus',refreshOnReturn);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshOnReturn()});
-init();
+$('#reset').onclick=()=>{plan=null;workflow=null;schedule=null;temperatureCorrection=null;humidityCorrection=null;fridgeCorrection=null;$('#proposal').hidden=true;$('#start').hidden=true;$('#flourName').value='';$('#flourWeight').value=1000;defaultDate();msg('Nuova sessione.')};
+window.addEventListener('focus',refreshOnReturn);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshOnReturn()});init();
 </script>
 </body>
 </html>
