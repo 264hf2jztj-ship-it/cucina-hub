@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test correzione frigorifero</title>
+<style>body{font-family:system-ui,-apple-system,sans-serif;background:#f6f3ee;color:#26221d;margin:0}main{max-width:820px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:18px}button{padding:12px 16px;border:0;border-radius:11px;background:#365d44;color:#fff;font-weight:800}.ok{color:#1b6b36}.error{color:#a62424}pre{white-space:pre-wrap;background:#faf8f4;padding:12px;border-radius:10px}</style>
+</head>
+<body><main><h1>Test correzione frigorifero</h1><section class="panel"><p>Verifica i casi 2 °C, 4 °C, 7 °C e una sessione senza fase a freddo.</p><button id="run">ESEGUI TEST</button><p id="status">In attesa.</p><pre id="output"></pre></section></main>
+<script src="./fridge-correction-engine.js?v=1"></script>
+<script>
+const status=document.querySelector('#status'),output=document.querySelector('#output');
+function assert(value,message){if(!value)throw new Error(message)}
+document.querySelector('#run').onclick=()=>{try{
+  const cold=CucinaHubFridgeCorrectionEngine.calculate({fridgeTemperatureC:2,referenceTemperatureC:4,coldFermentationMinutes:720});
+  const neutral=CucinaHubFridgeCorrectionEngine.calculate({fridgeTemperatureC:4,referenceTemperatureC:4,coldFermentationMinutes:720});
+  const warm=CucinaHubFridgeCorrectionEngine.calculate({fridgeTemperatureC:7,referenceTemperatureC:4,coldFermentationMinutes:720});
+  const none=CucinaHubFridgeCorrectionEngine.calculate({fridgeTemperatureC:4,referenceTemperatureC:4,coldFermentationMinutes:0});
+  assert(cold.corrected_minutes>cold.baseline_minutes,'A 2 °C la durata deve aumentare.');
+  assert(neutral.corrected_minutes===neutral.baseline_minutes,'A 4 °C la durata deve restare invariata.');
+  assert(warm.corrected_minutes<warm.baseline_minutes,'A 7 °C la durata deve diminuire.');
+  assert(none.applied===false&&none.corrected_minutes===0,'Senza fase a freddo la correzione non deve essere applicata.');
+  [cold,neutral,warm,none].forEach(item=>{const validation=CucinaHubFridgeCorrectionEngine.validate(item);assert(validation.valid,validation.errors.join(' '))});
+  status.className='ok';status.textContent='Test completato: frigorifero freddo, regolare, caldo e assenza della fase a freddo funzionano.';
+  output.textContent=JSON.stringify({cold,neutral,warm,none},null,2);
+}catch(error){status.className='error';status.textContent='Test fallito: '+error.message;output.textContent=error.stack||error.message}}
+</script></body></html>
