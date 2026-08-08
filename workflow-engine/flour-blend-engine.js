@@ -64,9 +64,12 @@ function build(options={}){
   const raw=Array.isArray(options.components)?options.components:[];
   if(!raw.length)throw new Error('Aggiungi almeno una farina al blend.');
 
+  const seenProfiles=new Set();
   const components=raw.map((item,index)=>{
     const percentage=numberOrNull(item.percentage);
     if(!item.profile?.id)throw new Error(`Seleziona la farina per il componente ${index+1}.`);
+    if(seenProfiles.has(item.profile.id))throw new Error(`${profileLabel(item.profile)} è presente più volte. Ogni profilo farina può comparire una sola volta nel blend.`);
+    seenProfiles.add(item.profile.id);
     if(percentage===null||percentage<=0||percentage>100)throw new Error(`Percentuale non valida per ${profileLabel(item.profile)}.`);
     return{
       flour_profile_id:item.profile.id,
@@ -122,6 +125,8 @@ function validate(blend){
   if(!blend||!Array.isArray(blend.components)||blend.components.length===0)errors.push('Blend senza componenti.');
   if(Math.abs(Number(blend?.percentage_total)-100)>0.05)errors.push('Il blend non totalizza 100%.');
   if(Number(blend?.total_flour_g)<=0)errors.push('Peso totale farina non valido.');
+  const profileIds=(blend?.components||[]).map(item=>item.flour_profile_id).filter(Boolean);
+  if(new Set(profileIds).size!==profileIds.length)errors.push('Uno stesso profilo farina è presente più volte nel blend.');
   const componentWeight=(blend?.components||[]).reduce((sum,item)=>sum+Number(item.weight_g||0),0);
   if(Math.abs(componentWeight-Number(blend?.total_flour_g||0))>0.2)errors.push('La somma dei pesi delle farine non coincide con il totale.');
   return{valid:errors.length===0,errors};
