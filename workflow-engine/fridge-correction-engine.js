@@ -75,6 +75,46 @@ function calculate(options){
   };
 }
 
+function applyToWorkflow(workflow,correction){
+  if(!workflow||!Array.isArray(workflow.phases))throw new Error('Workflow non valido.');
+  workflow.context=workflow.context||{};
+  workflow.context.fridge_correction=correction;
+  workflow.context.fridge_engine=true;
+  if(!correction?.applied)return workflow;
+  const phase=workflow.phases.find(item=>item?.metadata?.timeline_role==='cold'||item?.id==='session_cold');
+  if(!phase)throw new Error('Fase frigorifero non trovata nel workflow.');
+  const minutes=correction.corrected_minutes;
+  const op=correction.operational;
+  const highRisk=['warm','very_warm'].includes(correction.classification);
+  const activities=[
+    {id:'refrigerate',kind:'action',label:`1. Metti il contenitore ben coperto in frigorifero a circa ${correction.fridge_temperature_c} °C.`},
+    {id:'fridge_position',kind:'information',label:`2. ${op.storage_instruction}`}
+  ];
+  if(highRisk){
+    const first=Math.max(1,Math.round(minutes*.75));
+    const second=Math.max(1,minutes-first);
+    activities.push(
+      {id:'cold_timer_first',kind:'timer',label:`3a. Lascia in frigorifero per ${first} minuti, poi controlla lo sviluppo.`,seconds:first*60},
+      {id:'cold_early_check',kind:'check',label:`3b. ${op.exit_instruction}`,success_criteria:op.check_instruction},
+      {id:'cold_timer_second',kind:'timer',label:`3c. Se l’impasto è ancora sostenuto, prosegui per altri ${second} minuti.`,seconds:second*60}
+    );
+  }else{
+    activities.push({id:'cold_timer',kind:'timer',label:`3. Lascia in frigorifero per circa ${(minutes/60).toFixed(1)} ore.`,seconds:minutes*60});
+  }
+  activities.push(
+    {id:'cold_exit',kind:'information',label:`4. ${op.exit_instruction}`},
+    {id:'cold_check',kind:'check',label:'5. Controlla lo stato dell’impasto.',success_criteria:op.check_instruction}
+  );
+  phase.estimated_minutes=minutes;
+  phase.activities=activities;
+  phase.description=`Maturazione controllata a ${correction.fridge_temperature_c} °C.`;
+  phase.metadata={...(phase.metadata||{}),fridge_temperature_c:correction.fridge_temperature_c,fridge_correction:correction.classification,baseline_minutes:correction.baseline_minutes,corrected_minutes:minutes};
+  workflow.version=Math.max(Number(workflow.version)||1,6);
+  workflow.estimated_minutes=workflow.phases.reduce((sum,item)=>sum+(Number(item.estimated_minutes)||0),0);
+  workflow.updated_at=new Date().toISOString();
+  return workflow;
+}
+
 function validate(correction){
   const errors=[];
   if(!correction||!Number.isFinite(Number(correction.fridge_temperature_c)))errors.push('Correzione frigorifero assente o non valida.');
@@ -84,5 +124,5 @@ function validate(correction){
   return{valid:errors.length===0,errors};
 }
 
-global.CucinaHubFridgeCorrectionEngine={calculate,validate};
+global.CucinaHubFridgeCorrectionEngine={calculate,applyToWorkflow,validate};
 })(window);
