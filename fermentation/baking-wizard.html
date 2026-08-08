@@ -1,11 +1,205 @@
-<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wizard Panificazione — Cucina Hub</title><style>body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}main{max-width:1050px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:18px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full{grid-column:1/-1}label{display:block;font-weight:700;margin-bottom:6px}input,select,button,a.button{width:100%;box-sizing:border-box;padding:12px;border-radius:11px;border:1px solid #bbb2a6;font:inherit}button,a.button{border:0;background:#365d44;color:#fff;font-weight:800;text-decoration:none;text-align:center}.secondary{background:#eee8df!important;color:#26221d!important}.actions{display:flex;gap:10px;flex-wrap:wrap}.actions button,.actions a{width:auto}.muted{color:#6d655c}.ok{color:#1b6b36}.error{color:#a62424}.proposal{background:#f2f7f3;border:1px solid #bdd1c2;border-radius:14px;padding:16px;margin-top:16px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}.metric{background:#fff;border:1px solid #d7e4da;border-radius:10px;padding:10px}.metric strong{display:block;font-size:1.15rem}.timeline{display:grid;gap:9px}.step{border-left:4px solid #365d44;padding:10px 12px;background:#faf8f4;border-radius:8px}.step.passive{border-left-color:#3479a5}.step.parallel{background:#f4f0f8;border-left-color:#8058a5}.step small{display:block;color:#6d655c;margin-top:4px}.tag{display:inline-block;margin-left:7px;padding:2px 7px;border-radius:999px;background:#eee8df;font-size:.72rem}.note{background:#fff8df;border:1px solid #e4cf7d;border-radius:10px;padding:10px;margin-top:12px}.timeline-info{background:#eef5f0;border:1px solid #cbdccd;border-radius:12px;padding:12px;margin:12px 0}.warning-list{margin:8px 0 0;padding-left:20px;color:#8d4b12}@media(max-width:720px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}</style></head><body><main><h1>Wizard di panificazione</h1><p class="muted">Genera una sessione completa e calcola a ritroso quando iniziare per mangiare all’orario scelto.</p><section class="panel"><div class="grid"><div class="full"><label>Cosa vuoi preparare?</label><select id="style"><option value="roman_pan">Pizza in teglia romana</option><option value="neapolitan">Pizza napoletana</option><option value="home_round">Pizza tonda nel forno di casa</option><option value="focaccia">Focaccia</option><option value="bread">Pane</option></select></div><div><label>Farina</label><input id="flourName" placeholder="Es. Caputo Nuvola"></div><div><label>Farina totale (g)</label><input id="flourWeight" type="number" min="100" step="10" value="1000"></div><div><label>Ambiente</label><select id="environmentProfile"></select></div><div><label>Lievito</label><select id="yeastType"><option value="fresh_yeast">Lievito fresco</option><option value="dry_yeast">Lievito secco</option><option value="sourdough">Lievito madre</option></select></div><div><label>Quando vuoi mangiare?</label><input id="targetMeal" type="datetime-local"></div><div><label>Cottura</label><select id="ovenType"><option value="samsung_oven">Forno Samsung</option><option value="weber_kettle">Weber Kettle</option><option value="air_fryer">Friggitrice ad aria</option><option value="other">Altro</option></select></div><div><label>Modalità guida</label><select id="guidanceMode"><option value="beginner">Principiante</option><option value="expert">Esperto</option></select></div><div class="full actions"><button id="generate" type="button">GENERA SESSIONE</button><button id="reset" class="secondary" type="button">NUOVO</button></div></div><div id="proposal" class="proposal" hidden><h2>Proposta Cucina Hub</h2><p id="summary"></p><div class="metrics"><div class="metric">Inizio preparazione<strong id="startAt"></strong></div><div class="metric">Tempo attivo<strong id="activeTime"></strong></div><div class="metric">Acqua<strong id="water"></strong></div><div class="metric">Sale<strong id="salt"></strong></div><div class="metric">Lievito<strong id="yeast"></strong></div><div class="metric">Idratazione<strong id="hydration"></strong></div><div class="metric">Cottura<strong id="bake"></strong></div><div class="metric">Workflow<strong id="phases"></strong></div></div><div id="ovenNote" class="note"></div><div id="timelineInfo" class="timeline-info"></div><h3>Timeline intelligente</h3><div id="timeline" class="timeline"></div><div class="actions" style="margin-top:14px"><button id="save" type="button">SALVA SESSIONE</button><a id="start" class="button" hidden>INIZIA SESSIONE GUIDATA</a></div></div><p id="status" class="muted">In attesa.</p></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="../supabase-config.js?v=12"></script><script src="../supabase-client.js?v=12"></script><script src="../workflow-engine/session-workflow-builder.js?v=4"></script><script src="../workflow-engine/timeline-engine.js?v=1"></script><script>
-const c=window.cucinaHubSupabase,$=s=>document.querySelector(s);let owner,environments=[],plan=null,workflow=null,schedule=null;
-const presets={roman_pan:{name:'Pizza in teglia romana',hydration:80,salt:2.5,base:.15,bulk:120,proof:180,ideal:280,bake:16},neapolitan:{name:'Pizza napoletana',hydration:65,salt:2.8,base:.10,bulk:120,proof:240,ideal:300,bake:7},home_round:{name:'Pizza tonda forno casa',hydration:68,salt:2.6,base:.18,bulk:120,proof:180,ideal:280,bake:9},focaccia:{name:'Focaccia',hydration:75,salt:2.3,base:.25,bulk:120,proof:150,ideal:230,bake:22},bread:{name:'Pane',hydration:70,salt:2,base:.20,bulk:180,proof:150,ideal:240,bake:40}};
-const appliances={samsung_oven:{label:'Forno Samsung',max:250,preheat:45,note:'Temperatura limitata a 250 °C. Compensa con preriscaldamento completo, teglia ben calda e posizione bassa.'},weber_kettle:{label:'Weber Kettle',max:350,preheat:50,note:'Usa pietra ben preriscaldata e gestione indiretta della brace.'},air_fryer:{label:'Friggitrice ad aria',max:200,preheat:5,note:'Solo piccole porzioni; temperatura limitata a 200 °C.'},other:{label:'Altro',max:250,preheat:30,note:'Profilo prudenziale fino a 250 °C.'}};
-function msg(t,k='muted'){$('#status').className=k;$('#status').textContent=t}function localValue(d){return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}function defaultDate(){const d=new Date(Date.now()+86400000);d.setHours(20,0,0,0);$('#targetMeal').value=localValue(d)}function fmt(d){return new Date(d).toLocaleString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}function onlyTime(d){return new Date(d).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}function env(){return environments.find(x=>x.id===$('#environmentProfile').value)}function minutesLabel(value){const minutes=Math.round(Number(value)||0);if(minutes>=60){const h=Math.floor(minutes/60),m=minutes%60;return m?`${h} h ${m} min`:`${h} h`}return `${minutes} min`}
-function renderTimeline(){const events=schedule.events;$('#timeline').innerHTML=events.map(event=>`<div class="step ${event.attention==='passive'?'passive':''} ${event.parallel?'parallel':''}"><strong>${fmt(event.start_at)}–${onlyTime(event.end_at)} — ${event.title}</strong>${event.parallel?'<span class="tag">IN PARALLELO</span>':''}<small>${minutesLabel(event.duration_minutes)} · ${event.attention==='passive'?'attesa/controllo':'presenza richiesta'}${event.note?' · '+event.note:''}</small></div>`).join('');const warnings=schedule.warnings.length?`<ul class="warning-list">${schedule.warnings.map(w=>`<li>${w}</li>`).join('')}</ul>`:'';$('#timelineInfo').innerHTML=`<strong>Calcolo a ritroso dall’orario del pasto</strong><br>Il preriscaldamento viene sovrapposto alla parte finale dell’appretto: risparmi circa ${minutesLabel(schedule.summary.overlap_minutes)} senza accorciare la fermentazione.${warnings}`}
-function generate(){try{const p=presets[$('#style').value],flour=Number($('#flourWeight').value),target=new Date($('#targetMeal').value);if(!flour||flour<100)throw new Error('Inserisci almeno 100 g di farina.');if(Number.isNaN(target.getTime()))throw new Error('Scegli data e ora del pasto.');const hours=(target-Date.now())/3600000;if(hours<4)throw new Error('Servono almeno 4 ore.');const room=Number(env()?.room_temperature_c||22),device=appliances[$('#ovenType').value];const oven=Math.min(p.ideal,device.max),bake=p.bake+(oven<p.ideal?3:0);const fixedCritical=10+18+p.proof+bake+5;let bulk=p.bulk,cold=Math.max(0,Math.floor(hours*60)-fixedCritical-bulk);if(hours<10||cold<240){cold=0;bulk=Math.max(90,Math.floor(hours*60)-fixedCritical)}let yp=p.base*(24/Math.max(hours,4))*Math.pow(1.12,22-room);if($('#yeastType').value==='dry_yeast')yp*=.4;if($('#yeastType').value==='sourdough')yp=Math.min(25,Math.max(10,15*(24/Math.max(hours,4))));const water=flour*p.hydration/100,salt=flour*p.salt/100,yeast=flour*yp/100;plan={owner_user_id:owner,environment_profile_id:$('#environmentProfile').value||null,title:`${p.name} — ${fmt(target)}`,product_style:$('#style').value,status:'planned',flour_name:$('#flourName').value.trim()||null,flour_weight_g:flour,yeast_type:$('#yeastType').value,target_meal_at:target.toISOString(),hydration_percent:p.hydration,water_weight_g:+water.toFixed(1),salt_weight_g:+salt.toFixed(1),yeast_weight_g:+yeast.toFixed(2),bulk_fermentation_minutes:bulk,cold_fermentation_minutes:cold,final_proof_minutes:p.proof,target_dough_temperature_c:24,oven_type:$('#ovenType').value,oven_temperature_c:oven,preheat_minutes:device.preheat,bake_minutes:bake,guidance_mode:$('#guidanceMode').value};workflow=CucinaHubSessionWorkflowBuilder.build(plan);schedule=CucinaHubTimelineEngine.build({workflow,targetAt:target});const validation=CucinaHubTimelineEngine.validate(schedule);if(!validation.valid)throw new Error(validation.errors.join(' '));plan.generated_plan=schedule.events;workflow.timeline={version:schedule.version,target_at:schedule.target_at,start_at:schedule.start_at,summary:schedule.summary};plan.workflow_definition=workflow;$('#summary').textContent=`${p.name}, ${flour} g di farina, ${hours.toFixed(1)} ore disponibili, ambiente ${room} °C. Per mangiare alle ${onlyTime(target)}, inizia alle ${onlyTime(schedule.start_at)}.`;$('#startAt').textContent=fmt(schedule.start_at);$('#activeTime').textContent=minutesLabel(schedule.summary.active_minutes);$('#water').textContent=plan.water_weight_g+' g';$('#salt').textContent=plan.salt_weight_g+' g';$('#yeast').textContent=plan.yeast_weight_g+' g';$('#hydration').textContent=p.hydration+'%';$('#bake').textContent=oven+' °C · '+bake+' min';$('#phases').textContent=workflow.phases.length+' fasi · '+schedule.events.length+' eventi';$('#ovenNote').textContent=device.note;renderTimeline();$('#proposal').hidden=false;$('#start').hidden=true;msg('Timeline calcolata. Controlla gli orari e salva.','ok')}catch(e){msg(e.message,'error')}}
-async function save(){try{if(!plan)generate();if(!plan||!workflow||!schedule)throw new Error('Genera prima la sessione.');const payload={...plan};delete payload.preheat_minutes;delete payload.bake_minutes;const{data,error}=await c.from('baking_sessions').insert(payload).select('id').single();if(error)throw error;$('#start').href=`../workflow-engine/guided-session.html?session=${encodeURIComponent(data.id)}&v=9`;$('#start').hidden=false;msg('Sessione e timeline salvate. Ora puoi avviare la guida.','ok')}catch(e){msg(e.message,'error')}}
-async function init(){try{const{data,error}=await c.auth.getSession();if(error)throw error;if(!data.session?.user)throw new Error('Accedi prima di continuare.');owner=data.session.user.id;const r=await c.from('fermentation_environment_profiles').select('*').eq('owner_user_id',owner).order('is_default',{ascending:false}).order('name');if(r.error)throw r.error;environments=r.data||[];$('#environmentProfile').innerHTML='<option value="">Nessun profilo</option>'+environments.map(x=>`<option value="${x.id}">${x.name}${x.is_default?' — predefinito':''}</option>`).join('');$('#environmentProfile').value=environments.find(x=>x.is_default)?.id||'';defaultDate();msg('Pronto.','ok')}catch(e){msg(e.message,'error')}}
-$('#generate').onclick=generate;$('#save').onclick=save;$('#reset').onclick=()=>{plan=null;workflow=null;schedule=null;$('#proposal').hidden=true;$('#start').hidden=true;$('#flourName').value='';$('#flourWeight').value=1000;defaultDate();msg('Nuova sessione.')};init();
-</script></body></html>
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wizard Panificazione — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}
+    main{max-width:1050px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:18px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.full{grid-column:1/-1}
+    label{display:block;font-weight:700;margin-bottom:6px}input,select,button,a.button{width:100%;box-sizing:border-box;padding:12px;border-radius:11px;border:1px solid #bbb2a6;font:inherit}
+    button,a.button{border:0;background:#365d44;color:#fff;font-weight:800;text-decoration:none;text-align:center}.secondary{background:#eee8df!important;color:#26221d!important}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}.actions button,.actions a{width:auto}.muted{color:#6d655c}.ok{color:#1b6b36}.error{color:#a62424}
+    .proposal{background:#f2f7f3;border:1px solid #bdd1c2;border-radius:14px;padding:16px;margin-top:16px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}
+    .metric{background:#fff;border:1px solid #d7e4da;border-radius:10px;padding:10px}.metric strong{display:block;font-size:1.15rem}.timeline{display:grid;gap:9px}
+    .step{border-left:4px solid #365d44;padding:10px 12px;background:#faf8f4;border-radius:8px}.step.passive{border-left-color:#3479a5}.step.parallel{background:#f4f0f8;border-left-color:#8058a5}
+    .step small{display:block;color:#6d655c;margin-top:4px}.tag{display:inline-block;margin-left:7px;padding:2px 7px;border-radius:999px;background:#eee8df;font-size:.72rem}
+    .note{background:#fff8df;border:1px solid #e4cf7d;border-radius:10px;padding:10px;margin-top:12px}.timeline-info{background:#eef5f0;border:1px solid #cbdccd;border-radius:12px;padding:12px;margin:12px 0}
+    .temperature-info{background:#f4f0f8;border:1px solid #d4c6df;border-radius:12px;padding:14px;margin:12px 0}.temperature-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+    .temperature-badge{padding:4px 9px;border-radius:999px;background:#fff;font-size:.82rem;font-weight:800}.adjustments{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}
+    .adjustment{background:#fff;border-radius:10px;padding:10px}.adjustment span{display:block;color:#6d655c;font-size:.85rem}.adjustment strong{display:block;margin-top:3px}.adjustment small{display:block;margin-top:3px;color:#6d655c}
+    .warning-list{margin:8px 0 0;padding-left:20px;color:#8d4b12}@media(max-width:720px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.adjustments{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Wizard di panificazione</h1>
+  <p class="muted">Genera una sessione completa, corregge la fermentazione in base alla temperatura e calcola a ritroso quando iniziare.</p>
+  <section class="panel">
+    <div class="grid">
+      <div class="full"><label>Cosa vuoi preparare?</label><select id="style"><option value="roman_pan">Pizza in teglia romana</option><option value="neapolitan">Pizza napoletana</option><option value="home_round">Pizza tonda nel forno di casa</option><option value="focaccia">Focaccia</option><option value="bread">Pane</option></select></div>
+      <div><label>Farina</label><input id="flourName" placeholder="Es. Caputo Nuvola"></div>
+      <div><label>Farina totale (g)</label><input id="flourWeight" type="number" min="100" step="10" value="1000"></div>
+      <div><label>Ambiente</label><select id="environmentProfile"></select></div>
+      <div><label>Lievito</label><select id="yeastType"><option value="fresh_yeast">Lievito fresco</option><option value="dry_yeast">Lievito secco</option><option value="sourdough">Lievito madre</option></select></div>
+      <div><label>Quando vuoi mangiare?</label><input id="targetMeal" type="datetime-local"></div>
+      <div><label>Cottura</label><select id="ovenType"><option value="samsung_oven">Forno Samsung</option><option value="weber_kettle">Weber Kettle</option><option value="air_fryer">Friggitrice ad aria</option><option value="other">Altro</option></select></div>
+      <div><label>Modalità guida</label><select id="guidanceMode"><option value="beginner">Principiante</option><option value="expert">Esperto</option></select></div>
+      <div class="full actions"><button id="generate" type="button">GENERA SESSIONE</button><button id="reset" class="secondary" type="button">NUOVO</button></div>
+    </div>
+
+    <div id="proposal" class="proposal" hidden>
+      <h2>Proposta Cucina Hub</h2>
+      <p id="summary"></p>
+      <div class="metrics">
+        <div class="metric">Inizio preparazione<strong id="startAt"></strong></div>
+        <div class="metric">Tempo attivo<strong id="activeTime"></strong></div>
+        <div class="metric">Acqua<strong id="water"></strong></div>
+        <div class="metric">Sale<strong id="salt"></strong></div>
+        <div class="metric">Lievito corretto<strong id="yeast"></strong></div>
+        <div class="metric">Idratazione<strong id="hydration"></strong></div>
+        <div class="metric">Cottura<strong id="bake"></strong></div>
+        <div class="metric">Workflow<strong id="phases"></strong></div>
+      </div>
+      <div id="temperatureInfo" class="temperature-info"></div>
+      <div id="ovenNote" class="note"></div>
+      <div id="timelineInfo" class="timeline-info"></div>
+      <h3>Timeline intelligente</h3>
+      <div id="timeline" class="timeline"></div>
+      <div class="actions" style="margin-top:14px"><button id="save" type="button">SALVA SESSIONE</button><a id="start" class="button" hidden>INIZIA SESSIONE GUIDATA</a></div>
+    </div>
+    <p id="status" class="muted">In attesa.</p>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script>
+<script src="../workflow-engine/temperature-correction-engine.js?v=1"></script>
+<script src="../workflow-engine/session-workflow-builder.js?v=4"></script>
+<script src="../workflow-engine/timeline-engine.js?v=1"></script>
+<script>
+const c=window.cucinaHubSupabase,$=s=>document.querySelector(s);
+let owner,environments=[],plan=null,workflow=null,schedule=null,temperatureCorrection=null;
+const presets={
+  roman_pan:{name:'Pizza in teglia romana',hydration:80,salt:2.5,base:.15,bulk:120,proof:180,ideal:280,bake:16},
+  neapolitan:{name:'Pizza napoletana',hydration:65,salt:2.8,base:.10,bulk:120,proof:240,ideal:300,bake:7},
+  home_round:{name:'Pizza tonda forno casa',hydration:68,salt:2.6,base:.18,bulk:120,proof:180,ideal:280,bake:9},
+  focaccia:{name:'Focaccia',hydration:75,salt:2.3,base:.25,bulk:120,proof:150,ideal:230,bake:22},
+  bread:{name:'Pane',hydration:70,salt:2,base:.20,bulk:180,proof:150,ideal:240,bake:40}
+};
+const appliances={
+  samsung_oven:{label:'Forno Samsung',max:250,preheat:45,note:'Temperatura limitata a 250 °C. Compensa con preriscaldamento completo, teglia ben calda e posizione bassa.'},
+  weber_kettle:{label:'Weber Kettle',max:350,preheat:50,note:'Usa pietra ben preriscaldata e gestione indiretta della brace.'},
+  air_fryer:{label:'Friggitrice ad aria',max:200,preheat:5,note:'Solo piccole porzioni; temperatura limitata a 200 °C.'},
+  other:{label:'Altro',max:250,preheat:30,note:'Profilo prudenziale fino a 250 °C.'}
+};
+function msg(text,kind='muted'){$('#status').className=kind;$('#status').textContent=text}
+function esc(value){return String(value??'').replace(/[&<>\'\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
+function localValue(date){return new Date(date-date.getTimezoneOffset()*60000).toISOString().slice(0,16)}
+function defaultDate(){const date=new Date(Date.now()+86400000);date.setHours(20,0,0,0);$('#targetMeal').value=localValue(date)}
+function fmt(date){return new Date(date).toLocaleString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}
+function onlyTime(date){return new Date(date).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}
+function env(){return environments.find(item=>item.id===$('#environmentProfile').value)}
+function minutesLabel(value){const minutes=Math.round(Number(value)||0);if(minutes>=60){const hours=Math.floor(minutes/60),rest=minutes%60;return rest?`${hours} h ${rest} min`:`${hours} h`}return `${minutes} min`}
+function signedMinutes(value){const rounded=Math.round(Number(value)||0);return `${rounded>0?'+':''}${rounded} min`}
+function grams(value,type){const number=Number(value)||0;return type==='dry_yeast'?number.toFixed(2):type==='sourdough'?number.toFixed(0):number.toFixed(1)}
+function signedGrams(value,type){const number=Number(value)||0;return `${number>0?'+':''}${grams(number,type)} g`}
+
+function renderTemperature(){
+  const correction=temperatureCorrection,profile=env(),type=$('#yeastType').value;
+  const warnings=correction.warnings.length?`<ul class="warning-list">${correction.warnings.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:'';
+  $('#temperatureInfo').innerHTML=`
+    <div class="temperature-head">
+      <div><strong>Correzione temperatura</strong><br><span class="muted">${esc(profile?.name||'Riferimento senza profilo')} · ${correction.room_temperature_c.toFixed(1)} °C rispetto a ${correction.reference_temperature_c.toFixed(1)} °C</span></div>
+      <span class="temperature-badge">${esc(correction.classification_label.toUpperCase())}</span>
+    </div>
+    <p>${esc(correction.explanation)}</p>
+    <div class="adjustments">
+      <div class="adjustment"><span>Puntata</span><strong>${minutesLabel(correction.baseline.bulk_minutes)} → ${minutesLabel(correction.corrected.bulk_minutes)}</strong><small>${signedMinutes(correction.changes.bulk_minutes)}</small></div>
+      <div class="adjustment"><span>Appretto</span><strong>${minutesLabel(correction.baseline.proof_minutes)} → ${minutesLabel(correction.corrected.proof_minutes)}</strong><small>${signedMinutes(correction.changes.proof_minutes)}</small></div>
+      <div class="adjustment"><span>Lievito</span><strong>${grams(correction.baseline.yeast_weight_g,type)} g → ${grams(correction.corrected.yeast_weight_g,type)} g</strong><small>${signedGrams(correction.changes.yeast_weight_g,type)}</small></div>
+    </div>
+    <p class="muted" style="margin-bottom:0">${esc(correction.note)} I valori sono una proposta prudenziale e i controlli visivi della Sessione Guidata restano prioritari.</p>${warnings}`;
+}
+function renderTimeline(){
+  const events=schedule.events;
+  $('#timeline').innerHTML=events.map(event=>`<div class="step ${event.attention==='passive'?'passive':''} ${event.parallel?'parallel':''}"><strong>${fmt(event.start_at)}–${onlyTime(event.end_at)} — ${esc(event.title)}</strong>${event.parallel?'<span class="tag">IN PARALLELO</span>':''}<small>${minutesLabel(event.duration_minutes)} · ${event.attention==='passive'?'attesa/controllo':'presenza richiesta'}${event.note?' · '+esc(event.note):''}</small></div>`).join('');
+  const warnings=schedule.warnings.length?`<ul class="warning-list">${schedule.warnings.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:'';
+  $('#timelineInfo').innerHTML=`<strong>Calcolo a ritroso dall’orario del pasto</strong><br>Il preriscaldamento viene sovrapposto alla parte finale dell’appretto: risparmi circa ${minutesLabel(schedule.summary.overlap_minutes)} senza accorciare la fermentazione.${warnings}`;
+}
+function generate(){
+  try{
+    const preset=presets[$('#style').value],flour=Number($('#flourWeight').value),target=new Date($('#targetMeal').value);
+    if(!flour||flour<100)throw new Error('Inserisci almeno 100 g di farina.');
+    if(Number.isNaN(target.getTime()))throw new Error('Scegli data e ora del pasto.');
+    const hours=(target-Date.now())/3600000;
+    if(hours<4)throw new Error('Servono almeno 4 ore.');
+    const environment=env(),room=Number(environment?.room_temperature_c??22),device=appliances[$('#ovenType').value];
+    const oven=Math.min(preset.ideal,device.max),bake=preset.bake+(oven<preset.ideal?3:0);
+
+    const fixedCritical=10+18+preset.proof+bake+5;
+    let baseBulk=preset.bulk,cold=Math.max(0,Math.floor(hours*60)-fixedCritical-baseBulk);
+    if(hours<10||cold<240){cold=0;baseBulk=Math.max(90,Math.floor(hours*60)-fixedCritical)}
+
+    let baseYeastPercent=preset.base*(24/Math.max(hours,4));
+    if($('#yeastType').value==='dry_yeast')baseYeastPercent*=.4;
+    if($('#yeastType').value==='sourdough')baseYeastPercent=Math.min(25,Math.max(10,15*(24/Math.max(hours,4))));
+    const baseYeast=flour*baseYeastPercent/100;
+
+    temperatureCorrection=CucinaHubTemperatureCorrectionEngine.calculate({
+      roomTemperatureC:room,
+      referenceTemperatureC:22,
+      bulkMinutes:baseBulk,
+      proofMinutes:preset.proof,
+      yeastWeightG:baseYeast,
+      yeastType:$('#yeastType').value
+    });
+    const correctionValidation=CucinaHubTemperatureCorrectionEngine.validate(temperatureCorrection);
+    if(!correctionValidation.valid)throw new Error(correctionValidation.errors.join(' '));
+
+    const water=flour*preset.hydration/100,salt=flour*preset.salt/100;
+    plan={
+      owner_user_id:owner,environment_profile_id:$('#environmentProfile').value||null,title:`${preset.name} — ${fmt(target)}`,product_style:$('#style').value,status:'planned',
+      flour_name:$('#flourName').value.trim()||null,flour_weight_g:flour,yeast_type:$('#yeastType').value,target_meal_at:target.toISOString(),
+      hydration_percent:preset.hydration,water_weight_g:+water.toFixed(1),salt_weight_g:+salt.toFixed(1),yeast_weight_g:temperatureCorrection.corrected.yeast_weight_g,
+      bulk_fermentation_minutes:temperatureCorrection.corrected.bulk_minutes,cold_fermentation_minutes:cold,final_proof_minutes:temperatureCorrection.corrected.proof_minutes,
+      target_dough_temperature_c:24,oven_type:$('#ovenType').value,oven_temperature_c:oven,preheat_minutes:device.preheat,bake_minutes:bake,
+      guidance_mode:$('#guidanceMode').value,temperature_correction:temperatureCorrection
+    };
+    workflow=CucinaHubSessionWorkflowBuilder.build(plan);
+    workflow.context=workflow.context||{};
+    workflow.context.temperature_correction=temperatureCorrection;
+    workflow.context.environment_snapshot={profile_id:environment?.id||null,name:environment?.name||null,room_temperature_c:room};
+    schedule=CucinaHubTimelineEngine.build({workflow,targetAt:target});
+    const validation=CucinaHubTimelineEngine.validate(schedule);
+    if(!validation.valid)throw new Error(validation.errors.join(' '));
+    plan.generated_plan=schedule.events;
+    workflow.timeline={version:schedule.version,target_at:schedule.target_at,start_at:schedule.start_at,summary:schedule.summary};
+    plan.workflow_definition=workflow;
+
+    $('#summary').textContent=`${preset.name}, ${flour} g di farina, ${hours.toFixed(1)} ore disponibili, ambiente ${room.toFixed(1)} °C. Per mangiare alle ${onlyTime(target)}, inizia alle ${onlyTime(schedule.start_at)}.`;
+    $('#startAt').textContent=fmt(schedule.start_at);$('#activeTime').textContent=minutesLabel(schedule.summary.active_minutes);
+    $('#water').textContent=plan.water_weight_g+' g';$('#salt').textContent=plan.salt_weight_g+' g';$('#yeast').textContent=grams(plan.yeast_weight_g,$('#yeastType').value)+' g';
+    $('#hydration').textContent=preset.hydration+'%';$('#bake').textContent=oven+' °C · '+bake+' min';$('#phases').textContent=workflow.phases.length+' fasi · '+schedule.events.length+' eventi';
+    $('#ovenNote').textContent=device.note;renderTemperature();renderTimeline();$('#proposal').hidden=false;$('#start').hidden=true;
+    msg('Temperatura e timeline calcolate. Controlla le correzioni e salva.','ok');
+  }catch(error){msg(error.message,'error')}
+}
+async function save(){
+  try{
+    if(!plan)generate();
+    if(!plan||!workflow||!schedule||!temperatureCorrection)throw new Error('Genera prima la sessione.');
+    const payload={...plan};delete payload.preheat_minutes;delete payload.bake_minutes;delete payload.temperature_correction;
+    const{data,error}=await c.from('baking_sessions').insert(payload).select('id').single();
+    if(error)throw error;
+    $('#start').href=`../workflow-engine/guided-session.html?session=${encodeURIComponent(data.id)}&v=9`;$('#start').hidden=false;
+    msg('Sessione, correzione temperatura e timeline salvate. Ora puoi avviare la guida.','ok');
+  }catch(error){msg(error.message,'error')}
+}
+async function init(){
+  try{
+    const{data,error}=await c.auth.getSession();if(error)throw error;if(!data.session?.user)throw new Error('Accedi prima di continuare.');owner=data.session.user.id;
+    const result=await c.from('fermentation_environment_profiles').select('*').eq('owner_user_id',owner).order('is_default',{ascending:false}).order('name');if(result.error)throw result.error;
+    environments=result.data||[];
+    $('#environmentProfile').innerHTML='<option value="">Nessun profilo — usa 22 °C</option>'+environments.map(item=>`<option value="${item.id}">${esc(item.name)} · ${item.room_temperature_c} °C${item.is_default?' — predefinito':''}</option>`).join('');
+    $('#environmentProfile').value=environments.find(item=>item.is_default)?.id||'';defaultDate();msg('Pronto.','ok');
+  }catch(error){msg(error.message,'error')}
+}
+$('#generate').onclick=generate;$('#save').onclick=save;
+$('#reset').onclick=()=>{plan=null;workflow=null;schedule=null;temperatureCorrection=null;$('#proposal').hidden=true;$('#start').hidden=true;$('#flourName').value='';$('#flourWeight').value=1000;defaultDate();msg('Nuova sessione.')};
+init();
+</script>
+</body>
+</html>
