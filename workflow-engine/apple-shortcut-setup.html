@@ -30,14 +30,14 @@
   <div class="card">
     <h2>Azioni da inserire</h2>
     <div class="step"><strong>1. Rinomina il comando</strong><br>Usa esattamente <code>Cucina Hub Calendario</code>.</div>
-    <div class="step"><strong>2. Leggi il testo ricevuto</strong><br>Aggiungi <strong>Ottieni dizionario dall’input</strong>. Prima dell’apertura, Cucina Hub copia il JSON negli appunti e lo passa al comando come input.</div>
+    <div class="step"><strong>2. Leggi gli appunti</strong><br>Aggiungi <strong>Ottieni dizionario dagli appunti</strong>. Cucina Hub copia il JSON negli appunti prima di aprire il comando. Su iPad non usare “Ottieni dizionario dall’input”, perché il valore può risultare vuoto.</div>
     <div class="step"><strong>3. Estrai l’elenco degli eventi</strong><br>Aggiungi <strong>Ottieni valore dizionario</strong> e usa la chiave minuscola <code>events</code>.</div>
     <div class="step"><strong>4. Ripeti per ogni evento</strong><br>Aggiungi <strong>Ripeti con ogni elemento</strong> usando l’elenco ottenuto nel passaggio precedente.</div>
     <div class="step"><strong>5. Dentro “Ripeti”, estrai i campi</strong><br>Dal <em>Elemento ripetuto</em> ricava i campi minuscoli <code>title</code>, <code>start</code>, <code>end</code> e <code>notes</code>. Per <code>start</code> ed <code>end</code> usa poi <strong>Ottieni date dall’input</strong>.</div>
     <div class="step"><strong>6. Crea l’appuntamento</strong><br>Aggiungi <strong>Aggiungi nuovo evento</strong> e collega: titolo = <code>title</code>, inizio = data ottenuta da <code>start</code>, fine = data ottenuta da <code>end</code>, note = <code>notes</code>. Seleziona il calendario iCloud, imposta per ora un avviso fisso di 5 minuti e disattiva <strong>Mostra foglio di composizione</strong>.</div>
     <div class="step"><strong>7. Conferma finale</strong><br>Dopo “Fine ripetizione”, aggiungi <strong>Mostra notifica</strong> con il testo “Eventi Cucina Hub aggiunti al Calendario”.</div>
 
-    <div class="note"><strong>Nota sugli appunti:</strong> premendo il test o l’aggiunta diretta, il contenuto attuale degli appunti viene sostituito temporaneamente dal JSON della timeline. Non devi aggiungere l’azione “Ottieni appunti”: l’input viene passato automaticamente dal collegamento di Comandi Rapidi.</div>
+    <div class="note"><strong>Nota sugli appunti:</strong> premendo il test o l’aggiunta diretta, il contenuto attuale degli appunti viene sostituito temporaneamente dal JSON della timeline. La prima azione del comando deve quindi leggere direttamente il dizionario dagli Appunti.</div>
   </div>
 
   <div class="card">
