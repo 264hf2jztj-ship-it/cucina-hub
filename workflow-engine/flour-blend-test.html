@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="it">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Test blend farine — Cucina Hub</title><style>body{font-family:system-ui;margin:0;background:#f6f3ee;color:#26221d}main{max-width:760px;margin:auto;padding:24px}.card{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:18px}button{border:0;border-radius:10px;padding:12px 15px;background:#365d44;color:#fff;font:inherit;font-weight:800}.ok{color:#1b6b36}.error{color:#a62424}pre{white-space:pre-wrap;background:#faf8f4;border-radius:10px;padding:12px}</style></head>
+<body><main><div class="card"><h1>Test blend farine</h1><p>Verifica percentuali, pesi, snapshot, medie ponderate e farine duplicate.</p><button id="run">ESEGUI TEST</button><pre id="out">In attesa.</pre></div></main><script src="./flour-blend-engine.js?v=2"></script><script>
+const out=document.querySelector('#out');
+function profile(id,name,type,w,protein,absorption,cereal='soft_wheat'){return{id,name,brand:'Test',product_line:null,cereal,flour_type:type,strength_w:w,pl_ratio:.6,protein_percent:protein,ash_percent:null,absorption_percent:absorption,falling_number:null,milling_method:'roller',is_malted:false,contains_improvers:false,recommended_uses:[]}}
+function mustFail(factory,message){let failed=false;try{factory()}catch(error){failed=true}if(!failed)throw new Error(message)}
+document.querySelector('#run').onclick=()=>{try{
+  const flourA=profile('a','Farina 0','0',300,13,65),flourB=profile('b','Semola rimacinata','semola_rimacinata',220,12,60,'durum_wheat');
+  const blend=CucinaHubFlourBlendEngine.build({totalFlourG:1000,components:[{profile:flourA,percentage:80},{profile:flourB,percentage:20}]});
+  const validation=CucinaHubFlourBlendEngine.validate(blend);if(!validation.valid)throw new Error(validation.errors.join(' '));
+  if(blend.components[0].weight_g!==800||blend.components[1].weight_g!==200)throw new Error('Pesi componenti errati.');
+  if(Math.round(blend.metrics.strength_w.value)!==284)throw new Error('Media W errata.');
+  if(blend.composition.durum_percent!==20)throw new Error('Quota grano duro errata.');
+  mustFail(()=>CucinaHubFlourBlendEngine.build({totalFlourG:1000,components:[{profile:flourA,percentage:70},{profile:flourB,percentage:20}]}),'Il controllo del totale percentuale non è intervenuto.');
+  mustFail(()=>CucinaHubFlourBlendEngine.build({totalFlourG:1000,components:[{profile:flourA,percentage:80},{profile:flourA,percentage:20}]}),'Il controllo delle farine duplicate non è intervenuto.');
+  out.className='ok';out.textContent=`Test completato: 80/20, pesi 800/200 g, W medio ${blend.metrics.strength_w.value}, snapshot, percentuali e duplicati funzionano.\n\n${JSON.stringify(blend,null,2)}`;
+}catch(error){out.className='error';out.textContent='Errore: '+error.message}}
+</script></body></html>
