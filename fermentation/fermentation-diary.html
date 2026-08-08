@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Diario fermentazione — Cucina Hub</title>
+  <style>
+    :root{--bg:#f6f3ee;--card:#fff;--line:#ddd5ca;--green:#365d44;--muted:#6d655c;--blue:#245987;--warning:#8d4b12;--danger:#a62424}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:#26221d;font-family:system-ui,-apple-system,sans-serif}main{max-width:980px;margin:auto;padding:24px}.head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:18px}.head h1{margin:0}.head-actions,.actions{display:flex;gap:9px;flex-wrap:wrap}.button,button{display:inline-block;border:0;border-radius:11px;padding:12px 15px;background:var(--green);color:#fff;text-decoration:none;font:inherit;font-weight:800;cursor:pointer}.secondary{background:#eee8df;color:#26221d}.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.summary-card{background:#faf8f4;border-radius:12px;padding:12px}.summary-card span{display:block;color:var(--muted);font-size:.84rem}.summary-card strong{display:block;margin-top:4px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.full{grid-column:1/-1}.rating-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}label{display:block;font-weight:800;margin-bottom:6px}input,select,textarea{width:100%;border:1px solid #bbb2a6;border-radius:10px;padding:11px;font:inherit;background:#fff}textarea{min-height:105px;resize:vertical}.helper,.muted{color:var(--muted);font-size:.92rem}.timing-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.timing-card{background:#faf8f4;border:1px solid #e5ded5;border-radius:13px;padding:13px}.timing-card .planned{color:var(--muted);font-size:.88rem;margin-bottom:8px}.delta{display:inline-block;margin-top:8px;padding:4px 8px;border-radius:999px;background:#eee8df;font-size:.82rem;font-weight:800}.delta.changed{background:#fff0d8;color:var(--warning)}.note{background:#fff8df;border:1px solid #e4cf7d;border-radius:12px;padding:11px 13px;margin:10px 0}.status{margin-top:12px;color:var(--muted)}.ok{color:#176b35}.error{color:var(--danger)}button:disabled{opacity:.5;cursor:not-allowed}@media(max-width:760px){main{padding:16px}.head{flex-direction:column}.summary{grid-template-columns:repeat(2,minmax(0,1fr))}.rating-grid,.timing-grid,.grid{grid-template-columns:1fr}.full{grid-column:auto}.head-actions,.actions{width:100%}.head-actions a,.actions button,.actions a{flex:1;text-align:center}}@media(max-width:430px){.summary{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main>
+  <div class="head">
+    <div><h1>Diario fermentazione</h1><p class="muted">Registra il risultato reale senza modificare la ricetta o la pianificazione originale.</p></div>
+    <div class="head-actions"><a class="button secondary" href="./baking-sessions.html?v=6">← SESSIONI</a><a class="button secondary" href="./baking-session-history.html?v=3">STORICO</a></div>
+  </div>
+
+  <section class="panel">
+    <h2 id="sessionTitle">Caricamento sessione…</h2>
+    <div id="sessionSummary" class="summary"></div>
+    <div id="sessionWarning"></div>
+  </section>
+
+  <form id="form">
+    <section class="panel">
+      <h2>1. Tempi realmente eseguiti</h2>
+      <p class="helper">I valori sono precompilati con la pianificazione. Modificali soltanto quando la sessione reale è durata diversamente.</p>
+      <div class="timing-grid">
+        <div class="timing-card"><label for="actualBulk">Puntata reale (min)</label><div class="planned">Prevista: <strong id="plannedBulk">—</strong></div><input id="actualBulk" type="number" min="0" step="1"><span id="deltaBulk" class="delta">—</span></div>
+        <div class="timing-card"><label for="actualCold">Frigorifero reale (min)</label><div class="planned">Previsto: <strong id="plannedCold">—</strong></div><input id="actualCold" type="number" min="0" step="1"><span id="deltaCold" class="delta">—</span></div>
+        <div class="timing-card"><label for="actualProof">Appretto reale (min)</label><div class="planned">Previsto: <strong id="plannedProof">—</strong></div><input id="actualProof" type="number" min="0" step="1"><span id="deltaProof" class="delta">—</span></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>2. Valutazione del risultato</h2>
+      <p class="helper">Per croccantezza, morbidezza e struttura valuta quanto il risultato corrispondeva al tuo obiettivo, non l’intensità assoluta della caratteristica.</p>
+      <div class="rating-grid">
+        <div><label for="overallRating">Valutazione complessiva</label><select id="overallRating" required></select></div>
+        <div><label for="fermentationOutcome">Esito fermentazione</label><select id="fermentationOutcome" required><option value="">Seleziona…</option><option value="underfermented">Impasto indietro</option><option value="balanced">Fermentazione equilibrata</option><option value="overfermented">Impasto oltre fermentazione</option><option value="uncertain">Non sono sicuro</option></select></div>
+        <div><label for="fermentationRating">Riuscita fermentazione</label><select id="fermentationRating" required></select></div>
+        <div><label for="workabilityRating">Lavorabilità</label><select id="workabilityRating" required></select></div>
+        <div><label for="structureRating">Struttura / alveolatura</label><select id="structureRating" required></select></div>
+        <div><label for="crispnessRating">Croccantezza raggiunta</label><select id="crispnessRating" required></select></div>
+        <div><label for="softnessRating">Morbidezza raggiunta</label><select id="softnessRating" required></select></div>
+        <div><label for="digestibilityRating">Digeribilità percepita</label><select id="digestibilityRating" required></select></div>
+        <div><label for="wouldRepeat">La rifaresti uguale?</label><select id="wouldRepeat"><option value="">Non indicato</option><option value="yes">Sì</option><option value="no">No</option></select></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>3. Osservazioni</h2>
+      <div class="grid">
+        <div class="full"><label for="changesMade">Cosa hai cambiato durante l’esecuzione?</label><textarea id="changesMade" placeholder="Es. ho prolungato l’appretto di 30 minuti, aggiunto una piega, abbassato il forno…"></textarea></div>
+        <div class="full"><label for="resultNotes">Com’è venuto il risultato?</label><textarea id="resultNotes" placeholder="Aspetto, sapore, fondo, bordo, alveolatura, consistenza…"></textarea></div>
+        <div class="full"><label for="nextTimeNotes">Cosa cambieresti la prossima volta?</label><textarea id="nextTimeNotes" placeholder="Indicazioni concrete per la prova successiva."></textarea></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="actions"><button id="save" type="submit">SALVA VALUTAZIONE</button><a class="button secondary" href="./baking-session-history.html?v=3">APRI STORICO</a></div>
+      <p id="status" class="status">In attesa.</p>
+    </section>
+  </form>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script>
+<script>
+const c=window.cucinaHubSupabase,$=s=>document.querySelector(s);let owner=null,session=null,evaluation=null;const sessionId=new URLSearchParams(location.search).get('session');
+const ratingOptions='<option value="">Seleziona…</option><option value="1">1 — Scarso</option><option value="2">2 — Da migliorare</option><option value="3">3 — Buono</option><option value="4">4 — Molto buono</option><option value="5">5 — Eccellente</option>';
+['overallRating','fermentationRating','workabilityRating','structureRating','crispnessRating','softnessRating','digestibilityRating'].forEach(id=>{$('#'+id).innerHTML=ratingOptions});
+function esc(value){return String(value??'').replace(/[&<>\'\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
+function fmt(value){if(!value)return '—';return new Date(value).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+function minutesLabel(value){const n=Number(value);if(!Number.isFinite(n))return '—';const h=Math.floor(n/60),m=Math.round(n%60);return h?`${h} h ${m} min`:`${m} min`}
+function numberOrNull(value){if(value===''||value===null||value===undefined)return null;const n=Number(value);return Number.isFinite(n)?n:null}
+function msg(text,kind='status'){$('#status').className=kind;$('#status').textContent=text}
+function planned(key){return Number(session?.[key]??0)}
+function deltaLabel(actual,baseline){const a=numberOrNull(actual);if(a===null)return 'Non indicato';const delta=a-baseline;if(delta===0)return 'Come previsto';return `${delta>0?'+':''}${delta} min rispetto al previsto`}
+function updateDeltas(){[['actualBulk','bulk_fermentation_minutes','deltaBulk'],['actualCold','cold_fermentation_minutes','deltaCold'],['actualProof','final_proof_minutes','deltaProof']].forEach(([input,key,node])=>{const el=$('#'+node),baseline=planned(key),actual=$('#'+input).value;el.textContent=deltaLabel(actual,baseline);el.classList.toggle('changed',numberOrNull(actual)!==null&&numberOrNull(actual)!==baseline)})}
+function renderSession(){const context=session.workflow_definition?.context||{};$('#sessionTitle').textContent=session.title;$('#sessionSummary').innerHTML=`<div class="summary-card"><span>Preparazione</span><strong>${esc(session.product_style)}</strong></div><div class="summary-card"><span>Farine</span><strong>${esc(session.flour_name||'Non indicate')}</strong></div><div class="summary-card"><span>Idratazione</span><strong>${esc(session.hydration_percent??'—')}%</strong></div><div class="summary-card"><span>Completata</span><strong>${fmt(session.completed_at)}</strong></div>`;const environment=context.environment_snapshot;$('#sessionWarning').innerHTML=session.status==='completed'?(environment?`<div class="note"><strong>Ambiente usato:</strong> ${esc(environment.name||'profilo senza nome')} · ${esc(environment.room_temperature_c)} °C · ${esc(environment.relative_humidity_percent)}% UR · frigo ${esc(environment.fridge_temperature_c)} °C.</div>`:''):'<div class="note"><strong>Sessione non ancora completata.</strong> Termina prima la Sessione Guidata per salvare una valutazione finale.</div>';$('#save').disabled=session.status!=='completed';$('#plannedBulk').textContent=minutesLabel(planned('bulk_fermentation_minutes'));$('#plannedCold').textContent=minutesLabel(planned('cold_fermentation_minutes'));$('#plannedProof').textContent=minutesLabel(planned('final_proof_minutes'))}
+function fillForm(){const e=evaluation||{};$('#actualBulk').value=e.actual_bulk_minutes??session.bulk_fermentation_minutes??'';$('#actualCold').value=e.actual_cold_minutes??session.cold_fermentation_minutes??'';$('#actualProof').value=e.actual_proof_minutes??session.final_proof_minutes??'';$('#overallRating').value=e.overall_rating??'';$('#fermentationOutcome').value=e.fermentation_outcome??'';$('#fermentationRating').value=e.fermentation_rating??'';$('#workabilityRating').value=e.workability_rating??'';$('#structureRating').value=e.structure_rating??'';$('#crispnessRating').value=e.crispness_rating??'';$('#softnessRating').value=e.softness_rating??'';$('#digestibilityRating').value=e.digestibility_rating??'';$('#wouldRepeat').value=e.would_repeat===true?'yes':e.would_repeat===false?'no':'';$('#changesMade').value=e.changes_made||'';$('#resultNotes').value=e.result_notes||'';$('#nextTimeNotes').value=e.next_time_notes||'';updateDeltas()}
+function plannedSnapshot(){const context=session.workflow_definition?.context||{};return{session_id:session.id,title:session.title,product_style:session.product_style,flour_name:session.flour_name,flour_weight_g:session.flour_weight_g,hydration_percent:session.hydration_percent,yeast_type:session.yeast_type,yeast_weight_g:session.yeast_weight_g,bulk_fermentation_minutes:session.bulk_fermentation_minutes,cold_fermentation_minutes:session.cold_fermentation_minutes,final_proof_minutes:session.final_proof_minutes,target_meal_at:session.target_meal_at,oven_type:session.oven_type,oven_temperature_c:session.oven_temperature_c,environment_snapshot:context.environment_snapshot||null,flour_blend:context.flour_blend||null}}
+async function load(){try{if(!sessionId)throw new Error('Sessione non indicata.');msg('Caricamento…');const auth=await c.auth.getSession();if(auth.error)throw auth.error;if(!auth.data.session?.user)throw new Error('Accedi prima di continuare.');owner=auth.data.session.user.id;const sessionResult=await c.from('baking_sessions').select('*').eq('id',sessionId).single();if(sessionResult.error)throw sessionResult.error;session=sessionResult.data;const evaluationResult=await c.from('baking_session_evaluations').select('*').eq('session_id',sessionId).maybeSingle();if(evaluationResult.error)throw evaluationResult.error;evaluation=evaluationResult.data||null;renderSession();fillForm();msg(evaluation?'Valutazione caricata. Puoi aggiornarla.':'Compila la valutazione finale.',evaluation?'ok':'status')}catch(error){msg(error.message,'error');$('#save').disabled=true}}
+$('#form').onsubmit=async event=>{event.preventDefault();try{if(!session||session.status!=='completed')throw new Error('La sessione deve essere completata prima della valutazione.');const required=['overallRating','fermentationOutcome','fermentationRating','workabilityRating','structureRating','crispnessRating','softnessRating','digestibilityRating'];for(const id of required)if(!$('#'+id).value)throw new Error('Completa tutti i campi di valutazione obbligatori.');const now=new Date().toISOString();const payload={owner_user_id:owner,session_id:session.id,evaluation_version:1,overall_rating:Number($('#overallRating').value),fermentation_outcome:$('#fermentationOutcome').value,fermentation_rating:Number($('#fermentationRating').value),workability_rating:Number($('#workabilityRating').value),structure_rating:Number($('#structureRating').value),crispness_rating:Number($('#crispnessRating').value),softness_rating:Number($('#softnessRating').value),digestibility_rating:Number($('#digestibilityRating').value),would_repeat:$('#wouldRepeat').value===''?null:$('#wouldRepeat').value==='yes',actual_bulk_minutes:numberOrNull($('#actualBulk').value),actual_cold_minutes:numberOrNull($('#actualCold').value),actual_proof_minutes:numberOrNull($('#actualProof').value),changes_made:$('#changesMade').value.trim()||null,result_notes:$('#resultNotes').value.trim()||null,next_time_notes:$('#nextTimeNotes').value.trim()||null,planned_snapshot:plannedSnapshot(),updated_at:now};msg('Salvataggio…');let result;if(evaluation?.id)result=await c.from('baking_session_evaluations').update(payload).eq('id',evaluation.id).select('*').single();else result=await c.from('baking_session_evaluations').insert({...payload,created_at:now}).select('*').single();if(result.error)throw result.error;evaluation=result.data;msg('Valutazione salvata nel Diario fermentazioni.','ok')}catch(error){msg(error.message,'error')}};
+['actualBulk','actualCold','actualProof'].forEach(id=>$('#'+id).addEventListener('input',updateDeltas));load();
+</script>
+</body>
+</html>
