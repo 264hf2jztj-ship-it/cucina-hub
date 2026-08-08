@@ -46,7 +46,14 @@ function lastEnd(events){
 
 function addMilestone(list,{id,title,at,description,alertMinutes=5,durationMinutes=10}){
   if(!at)return;
-  list.push({id,title,at:asDate(at).toISOString(),description,alert_minutes:Math.max(0,Number(alertMinutes)||0),duration_minutes:Math.max(1,Number(durationMinutes)||10)});
+  list.push({
+    id,
+    title,
+    at:asDate(at).toISOString(),
+    description,
+    alert_minutes:Math.max(0,Number(alertMinutes)||0),
+    duration_minutes:Math.max(1,Number(durationMinutes)||10)
+  });
 }
 
 function buildMilestones(schedule,options={}){
@@ -136,14 +143,14 @@ function eventLines(milestone,index,options){
     `SUMMARY:${escapeIcs(milestone.title)}`,
     `DESCRIPTION:${escapeIcs(milestone.description)}`,
     'STATUS:CONFIRMED',
-    'TRANSP:OPAQUE'
+    'TRANSP:OPAQUE',
+    'BEGIN:VALARM',
+    `TRIGGER:${milestone.alert_minutes>0?`-PT${milestone.alert_minutes}M`:'PT0M'}`,
+    'ACTION:DISPLAY',
+    `DESCRIPTION:${escapeIcs(milestone.title)}`,
+    'END:VALARM',
+    'END:VEVENT'
   ];
-  lines.push('BEGIN:VALARM');
-  lines.push(`TRIGGER:${milestone.alert_minutes>0?`-PT${milestone.alert_minutes}M`:'PT0M'}`);
-  lines.push('ACTION:DISPLAY');
-  lines.push(`DESCRIPTION:${escapeIcs(milestone.title)}`);
-  lines.push('END:VALARM');
-  lines.push('END:VEVENT');
   return lines;
 }
 
@@ -187,8 +194,10 @@ function validateShortcutPayload(payload){
   if(!payload||!Array.isArray(payload.events)||payload.events.length===0)errors.push('Payload del Comando Rapido senza eventi.');
   for(const event of payload?.events||[]){
     if(!event.title)errors.push('Titolo evento mancante.');
-    if(Number.isNaN(asDate(event.start).getTime())||Number.isNaN(asDate(event.end).getTime()))errors.push(`Date non valide per ${event.title||event.id}.`);
-    if(asDate(event.end)<=asDate(event.start))errors.push(`Intervallo non valido per ${event.title||event.id}.`);
+    try{
+      const start=asDate(event.start),end=asDate(event.end);
+      if(end<=start)errors.push(`Intervallo non valido per ${event.title||event.id}.`);
+    }catch(error){errors.push(error.message)}
   }
   return{valid:errors.length===0,errors};
 }
@@ -199,12 +208,12 @@ function buildShortcutUrl(calendar,options={}){
   const validation=validateShortcutPayload(payload);
   if(!validation.valid)throw new Error(validation.errors.join(' '));
   const text=JSON.stringify(payload);
-  return{
-    shortcut_name:shortcutName,
-    payload,
-    text,
-    url:`shortcuts://run-shortcut?name=${encodeURIComponent(shortcutName)}&input=text&text=${encodeURIComponent(text)}`
-  };
+  const transport=options.transport==='text'?'text':'clipboard';
+  const base=`shortcuts://run-shortcut?name=${encodeURIComponent(shortcutName)}`;
+  const url=transport==='clipboard'
+    ?`${base}&input=clipboard`
+    :`${base}&input=text&text=${encodeURIComponent(text)}`;
+  return{shortcut_name:shortcutName,payload,text,transport,url};
 }
 
 function isAppleMobile(){
@@ -220,14 +229,52 @@ function updateWizardStatus(text,kind='ok'){
   status.textContent=text;
 }
 
+function copyTextSynchronously(text){
+  const document=global.document;
+  if(!document?.body||typeof document.execCommand!=='function')return false;
+  const area=document.createElement('textarea');
+  area.value=text;
+  area.setAttribute('readonly','');
+  area.style.position='fixed';
+  area.style.opacity='0';
+  area.style.pointerEvents='none';
+  area.style.left='-9999px';
+  document.body.appendChild(area);
+  area.focus();
+  area.select();
+  area.setSelectionRange(0,area.value.length);
+  let copied=false;
+  try{copied=document.execCommand('copy')}catch(error){copied=false}
+  area.remove();
+  return copied;
+}
+
+async function copyShortcutInput(text){
+  if(copyTextSynchronously(text))return{method:'execCommand'};
+  if(global.navigator?.clipboard?.writeText){
+    await global.navigator.clipboard.writeText(text);
+    return{method:'clipboard-api'};
+  }
+  throw new Error('Il browser non consente di copiare i dati negli appunti. Usa il file .ics come alternativa.');
+}
+
 async function runShortcut(calendar,options={}){
-  const shortcut=buildShortcutUrl(calendar,options);
+  const shortcut=buildShortcutUrl(calendar,{...options,transport:'clipboard'});
+  updateWizardStatus('Preparo i dati della timeline negli appunti…','ok');
+  const copied=await copyShortcutInput(shortcut.text);
   updateWizardStatus(`Apro il Comando Rapido “${shortcut.shortcut_name}”…`,'ok');
   global.location.href=shortcut.url;
   global.setTimeout(()=>{
-    if(!global.document?.hidden)updateWizardStatus('Comando Rapido avviato. Se non è installato, apri “CONFIGURA COMANDO RAPIDO” e crealo una sola volta.','ok');
+    if(!global.document?.hidden)updateWizardStatus('Comando Rapido avviato. Se non è installato, apri “CONFIGURA COMANDO RAPIDO”.','ok');
   },500);
-  return{mode:'shortcut',shortcut_name:shortcut.shortcut_name,event_count:shortcut.payload.events.length,url_length:shortcut.url.length};
+  return{
+    mode:'shortcut',
+    transport:'clipboard',
+    clipboard_method:copied.method,
+    shortcut_name:shortcut.shortcut_name,
+    event_count:shortcut.payload.events.length,
+    url_length:shortcut.url.length
+  };
 }
 
 async function downloadIcs(calendar){
@@ -236,8 +283,12 @@ async function downloadIcs(calendar){
   const blob=new Blob([calendar.content],{type:calendar.mime_type});
   const url=URL.createObjectURL(blob);
   const anchor=document.createElement('a');
-  anchor.href=url;anchor.download=calendar.filename;anchor.style.display='none';
-  document.body.appendChild(anchor);anchor.click();anchor.remove();
+  anchor.href=url;
+  anchor.download=calendar.filename;
+  anchor.style.display='none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1500);
   return{mode:'downloaded'};
 }
@@ -275,7 +326,7 @@ function enhanceWizardUi(){
     const setup=document.createElement('a');
     setup.id='shortcutSetup';
     setup.className='button secondary';
-    setup.href='../workflow-engine/apple-shortcut-setup.html?v=1';
+    setup.href='../workflow-engine/apple-shortcut-setup.html?v=2';
     setup.target='_blank';
     setup.rel='noopener';
     setup.textContent='CONFIGURA COMANDO RAPIDO';
@@ -303,7 +354,7 @@ function enhanceWizardUi(){
   }
 
   const info=document.querySelector('#calendarInfo');
-  if(info)info.innerHTML=`<strong>Aggiunta diretta su iPhone e iPad</strong><br><span class="muted">Il pulsante principale avvia il Comando Rapido “${DEFAULT_SHORTCUT_NAME}” e crea gli appuntamenti senza passare da Mail. Il file .ics resta disponibile come riserva.</span>`;
+  if(info)info.innerHTML=`<strong>Aggiunta diretta su iPhone e iPad</strong><br><span class="muted">Cucina Hub copia temporaneamente i dati della timeline negli appunti e avvia il Comando Rapido “${DEFAULT_SHORTCUT_NAME}”. Il file .ics resta disponibile come riserva.</span>`;
 }
 
 function scheduleUiEnhancement(){
@@ -328,13 +379,13 @@ function build(options){
   milestones.forEach((milestone,index)=>lines.push(...eventLines(milestone,index,{workflowId:schedule.workflow_id,uidBase:options?.uidBase,generatedAt})));
   lines.push('END:VCALENDAR');
   const calendar={
-    version:2,
+    version:3,
     title,
     filename:safeFilename(title),
     mime_type:'text/calendar;charset=utf-8',
     content:lines.join('\r\n')+'\r\n',
     milestones,
-    shortcut:{name:DEFAULT_SHORTCUT_NAME,event_count:milestones.length}
+    shortcut:{name:DEFAULT_SHORTCUT_NAME,event_count:milestones.length,transport:'clipboard'}
   };
   lastCalendar=calendar;
   scheduleUiEnhancement();
@@ -344,7 +395,7 @@ function build(options){
 global.CucinaHubCalendarExportEngine={
   buildMilestones,build,validate,
   buildShortcutPayload,validateShortcutPayload,buildShortcutUrl,
-  runShortcut,downloadIcs,shareIcs,shareOrDownload,
+  copyShortcutInput,runShortcut,downloadIcs,shareIcs,shareOrDownload,
   enhanceWizardUi,isAppleMobile,
   DEFAULT_SHORTCUT_NAME
 };
