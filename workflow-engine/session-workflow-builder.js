@@ -1,7 +1,7 @@
 (function(global){
 'use strict';
 function phase(id,type,title,description,estimated,goal,why,activities,metadata={}){
-  return {id,version:2,type,title,description,estimated_minutes:estimated,goal,why,activities,metadata};
+  return {id,version:3,type,title,description,estimated_minutes:estimated,goal,why,activities,metadata};
 }
 function build(plan){
   const firstWater=Math.round(plan.water_weight_g*(plan.hydration_percent>=75?.7:.8));
@@ -21,7 +21,7 @@ function build(plan){
       {id:'yeast',kind:'action',label:`Pesa ${plan.yeast_weight_g} g di lievito. ${yeastInstruction}`},
       {id:'tools',kind:'action',label:'Prepara gancio, spatola, contenitore leggermente unto e coperchio.'},
       {id:'ready',kind:'check',label:'Tutto è pesato, separato e a portata di mano.',success_criteria:'Nessun ingrediente manca e l’acqua è già divisa.'}
-    ]),
+    ],{timeline_role:'preparation',attention:'active'}),
     phase('session_mixing','mixing','Impasto con impastatrice DCG','Segui le attività nell’ordine indicato.',18,'Ottenere un impasto elastico senza surriscaldarlo.','La sequenza favorisce assorbimento e formazione della maglia glutinica',[
       {id:'hook',kind:'action',label:'1. Monta il gancio impastatore sulla DCG.'},
       {id:'load',kind:'action',label:`2. Metti in ciotola farina e ${firstWater} g d’acqua.`},
@@ -36,25 +36,25 @@ function build(plan){
       {id:'heat_warning',kind:'warning',label:'Non superare la velocità 2. Ferma la macchina se l’impasto si strappa, si avvolge troppo sul gancio o supera circa 26 °C.'},
       {id:'window',kind:'check',label:'11. Controlla elasticità e prova del velo.',success_criteria:'Impasto più liscio, elastico e capace di formare un velo senza strapparsi subito.'},
       {id:'temperature',kind:'check',label:`12. Controlla una temperatura finale vicina a ${plan.target_dough_temperature_c||24} °C.`,success_criteria:'Indicativamente 22–26 °C.'}
-    ],{appliance:'DCG KM1401R',speed_min:1,speed_max:2}),
+    ],{appliance:'DCG KM1401R',speed_min:1,speed_max:2,timeline_role:'mixing',attention:'active'}),
     phase('session_bulk','fermentation','Puntata','Prima fermentazione dell’impasto.',plan.bulk_fermentation_minutes,'Avviare fermentazione e rilassamento dell’impasto.','Questa fase sviluppa struttura, aromi e gas',[
       {id:'transfer',kind:'action',label:'1. Trasferisci l’impasto nel contenitore leggermente unto.'},
       {id:'cover',kind:'action',label:'2. Copri bene il contenitore.'},
       {id:'bulk_timer',kind:'timer',label:`3. Lascia fermentare ${plan.bulk_fermentation_minutes} minuti.`,seconds:plan.bulk_fermentation_minutes*60},
       {id:'bulk_check',kind:'check',label:'4. Controlla lo sviluppo.',success_criteria:'Impasto più rilassato e aumentato di volume, senza segni di collasso.'}
-    ])
+    ],{timeline_role:'bulk',attention:'passive'})
   ];
   if(plan.cold_fermentation_minutes>0){phases.push(phase('session_cold','fermentation','Fermentazione in frigorifero','Maturazione controllata a freddo.',plan.cold_fermentation_minutes,'Rallentare la fermentazione e sviluppare aroma.','Il freddo rende la gestione più prevedibile',[
     {id:'refrigerate',kind:'action',label:'Metti il contenitore ben coperto in frigorifero.'},
     {id:'cold_timer',kind:'timer',label:`Lascia in frigo per circa ${(plan.cold_fermentation_minutes/60).toFixed(1)} ore.`,seconds:plan.cold_fermentation_minutes*60},
     {id:'cold_check',kind:'check',label:'Controlla che l’impasto sia vivo ma non collassato.',success_criteria:'Volume aumentato e superficie ancora sostenuta.'}
-  ]));}
+  ],{timeline_role:'cold',attention:'passive'}));}
   phases.push(
     phase('session_proof','fermentation','Formatura e appretto','Forma o stendi senza sgonfiare eccessivamente.',plan.final_proof_minutes,'Preparare l’impasto alla cottura.','L’appretto permette l’ultimo sviluppo prima del forno',[
       {id:'shape',kind:'action',label:'Forma o stendi delicatamente l’impasto.'},
       {id:'proof_timer',kind:'timer',label:`Lascia in appretto ${plan.final_proof_minutes} minuti.`,seconds:plan.final_proof_minutes*60},
       {id:'proof_check',kind:'check',label:'Controlla che l’impasto sia rilassato e leggermente gonfio.',success_criteria:'Risponde al tocco lentamente senza sgonfiarsi.'}
-    ]),
+    ],{timeline_role:'proof',attention:'passive'}),
     phase('session_bake','baking',`Cottura con ${ovenLabel}`,'Preriscalda, inforna e controlla il risultato.',(plan.preheat_minutes||30)+(plan.bake_minutes||15),'Cuocere fondo, struttura e superficie in modo uniforme.','Il preriscaldamento completo stabilizza la temperatura reale',[
       {id:'set_oven',kind:'action',label:`1. Imposta ${ovenLabel} a ${plan.oven_temperature_c} °C.`},
       {id:'preheat_timer',kind:'timer',label:`2. Preriscalda per ${plan.preheat_minutes||30} minuti.`,seconds:(plan.preheat_minutes||30)*60},
@@ -62,14 +62,14 @@ function build(plan){
       {id:'load_oven',kind:'action',label:'4. Inforna nella posizione prevista dalla sessione.'},
       {id:'bake_timer',kind:'timer',label:`5. Cuoci per circa ${plan.bake_minutes||15} minuti.`,seconds:(plan.bake_minutes||15)*60},
       {id:'bake_check',kind:'check',label:'6. Controlla la cottura.',success_criteria:'Fondo dorato, superficie ben colorita e struttura cotta.'}
-    ],{appliance:ovenLabel}),
+    ],{appliance:ovenLabel,timeline_role:'baking',attention:'active',preheat_minutes:plan.preheat_minutes||30,bake_minutes:plan.bake_minutes||15,preheat_title:`Preriscaldamento ${ovenLabel}`,bake_title:`Cottura con ${ovenLabel}`}),
     phase('session_finish','finishing','Riposo e valutazione','Lascia assestare e registra il risultato.',5,'Concludere la sessione e raccogliere dati utili.','Il feedback alimenterà il Laboratorio e le correzioni future',[
       {id:'rest',kind:'timer',label:'Lascia assestare prima del taglio.',seconds:180},
       {id:'photo',kind:'photo',label:'Scatta una foto del risultato finale.'},
       {id:'evaluate',kind:'check',label:'Valuta fondo, struttura, alveolatura e sapore.'}
-    ])
+    ],{timeline_role:'finish',attention:'active'})
   );
-  return {id:`workflow_${Date.now()}`,title:plan.title,version:2,status:'planned',context:{baking_session:true},phases,estimated_minutes:phases.reduce((sum,p)=>sum+p.estimated_minutes,0),created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+  return {id:`workflow_${Date.now()}`,title:plan.title,version:3,status:'planned',context:{baking_session:true,timeline_engine:true},phases,estimated_minutes:phases.reduce((sum,p)=>sum+p.estimated_minutes,0),created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
 }
 global.CucinaHubSessionWorkflowBuilder={build};
 })(window);
