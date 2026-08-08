@@ -2,6 +2,8 @@
 'use strict';
 
 const MINUTE_MS=60000;
+const DEFAULT_SHORTCUT_NAME='Cucina Hub Calendario';
+let lastCalendar=null;
 
 function asDate(value,label){
   const date=value instanceof Date?new Date(value.getTime()):new Date(value);
@@ -145,6 +147,170 @@ function eventLines(milestone,index,options){
   return lines;
 }
 
+function validate(calendar){
+  const errors=[];
+  if(!calendar?.content?.startsWith('BEGIN:VCALENDAR'))errors.push('Intestazione VCALENDAR mancante.');
+  if(!calendar?.content?.includes('END:VCALENDAR'))errors.push('Chiusura VCALENDAR mancante.');
+  if(!Array.isArray(calendar?.milestones)||calendar.milestones.length===0)errors.push('Nessun promemoria calendario generato.');
+  const eventCount=(calendar?.content?.match(/BEGIN:VEVENT/g)||[]).length;
+  if(eventCount!==calendar?.milestones?.length)errors.push('Il numero di eventi non corrisponde ai promemoria generati.');
+  if((calendar?.content?.match(/BEGIN:VALARM/g)||[]).length!==eventCount)errors.push('Uno o più eventi non hanno un avviso.');
+  return{valid:errors.length===0,errors};
+}
+
+function buildShortcutPayload(calendar,options={}){
+  const validation=validate(calendar);
+  if(!validation.valid)throw new Error(validation.errors.join(' '));
+  const events=calendar.milestones.map(milestone=>{
+    const start=asDate(milestone.at);
+    const end=new Date(start.getTime()+milestone.duration_minutes*MINUTE_MS);
+    return{
+      id:milestone.id,
+      title:milestone.title,
+      start:start.toISOString(),
+      end:end.toISOString(),
+      notes:milestone.description,
+      alert:milestone.alert_minutes
+    };
+  });
+  return{
+    version:1,
+    source:'Cucina Hub',
+    session_title:String(options.title||calendar.title||'Sessione Cucina Hub'),
+    generated_at:new Date().toISOString(),
+    events
+  };
+}
+
+function validateShortcutPayload(payload){
+  const errors=[];
+  if(!payload||!Array.isArray(payload.events)||payload.events.length===0)errors.push('Payload del Comando Rapido senza eventi.');
+  for(const event of payload?.events||[]){
+    if(!event.title)errors.push('Titolo evento mancante.');
+    if(Number.isNaN(asDate(event.start).getTime())||Number.isNaN(asDate(event.end).getTime()))errors.push(`Date non valide per ${event.title||event.id}.`);
+    if(asDate(event.end)<=asDate(event.start))errors.push(`Intervallo non valido per ${event.title||event.id}.`);
+  }
+  return{valid:errors.length===0,errors};
+}
+
+function buildShortcutUrl(calendar,options={}){
+  const shortcutName=String(options.shortcutName||DEFAULT_SHORTCUT_NAME);
+  const payload=buildShortcutPayload(calendar,{title:options.title});
+  const validation=validateShortcutPayload(payload);
+  if(!validation.valid)throw new Error(validation.errors.join(' '));
+  const text=JSON.stringify(payload);
+  return{
+    shortcut_name:shortcutName,
+    payload,
+    text,
+    url:`shortcuts://run-shortcut?name=${encodeURIComponent(shortcutName)}&input=text&text=${encodeURIComponent(text)}`
+  };
+}
+
+function isAppleMobile(){
+  const navigator=global.navigator||{};
+  const userAgent=String(navigator.userAgent||'');
+  return /iPhone|iPad|iPod/i.test(userAgent)||(navigator.platform==='MacIntel'&&Number(navigator.maxTouchPoints)>1);
+}
+
+function updateWizardStatus(text,kind='ok'){
+  const status=global.document?.querySelector?.('#status');
+  if(!status)return;
+  status.className=kind;
+  status.textContent=text;
+}
+
+async function runShortcut(calendar,options={}){
+  const shortcut=buildShortcutUrl(calendar,options);
+  updateWizardStatus(`Apro il Comando Rapido “${shortcut.shortcut_name}”…`,'ok');
+  global.location.href=shortcut.url;
+  global.setTimeout(()=>{
+    if(!global.document?.hidden)updateWizardStatus('Comando Rapido avviato. Se non è installato, apri “CONFIGURA COMANDO RAPIDO” e crealo una sola volta.','ok');
+  },500);
+  return{mode:'shortcut',shortcut_name:shortcut.shortcut_name,event_count:shortcut.payload.events.length,url_length:shortcut.url.length};
+}
+
+async function downloadIcs(calendar){
+  const validation=validate(calendar);
+  if(!validation.valid)throw new Error(validation.errors.join(' '));
+  const blob=new Blob([calendar.content],{type:calendar.mime_type});
+  const url=URL.createObjectURL(blob);
+  const anchor=document.createElement('a');
+  anchor.href=url;anchor.download=calendar.filename;anchor.style.display='none';
+  document.body.appendChild(anchor);anchor.click();anchor.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  return{mode:'downloaded'};
+}
+
+async function shareIcs(calendar){
+  const validation=validate(calendar);
+  if(!validation.valid)throw new Error(validation.errors.join(' '));
+  const file=new File([calendar.content],calendar.filename,{type:calendar.mime_type});
+  if(global.navigator?.share&&global.navigator?.canShare&&global.navigator.canShare({files:[file]})){
+    try{
+      await global.navigator.share({title:'Timeline Cucina Hub',text:'Aggiungi gli avvisi della sessione al calendario.',files:[file]});
+      return{mode:'shared'};
+    }catch(error){
+      if(error?.name==='AbortError')return{mode:'cancelled'};
+    }
+  }
+  return downloadIcs(calendar);
+}
+
+async function shareOrDownload(calendar){
+  if(isAppleMobile())return runShortcut(calendar);
+  return shareIcs(calendar);
+}
+
+function enhanceWizardUi(){
+  const document=global.document;
+  const button=document?.querySelector?.('#calendar');
+  if(!button||button.dataset.shortcutEnhanced==='true')return;
+  button.dataset.shortcutEnhanced='true';
+  button.textContent='AGGIUNGI DIRETTAMENTE';
+  button.title=`Esegue il Comando Rapido “${DEFAULT_SHORTCUT_NAME}”`;
+
+  const actions=button.parentElement;
+  if(actions){
+    const setup=document.createElement('a');
+    setup.id='shortcutSetup';
+    setup.className='button secondary';
+    setup.href='../workflow-engine/apple-shortcut-setup.html?v=1';
+    setup.target='_blank';
+    setup.rel='noopener';
+    setup.textContent='CONFIGURA COMANDO RAPIDO';
+
+    const fallback=document.createElement('button');
+    fallback.id='calendarIcs';
+    fallback.className='secondary';
+    fallback.type='button';
+    fallback.textContent='SCARICA FILE .ICS';
+    fallback.onclick=async()=>{
+      try{
+        if(!lastCalendar)throw new Error('Genera prima la sessione.');
+        await downloadIcs(lastCalendar);
+        updateWizardStatus('File .ics scaricato come alternativa di emergenza.','ok');
+      }catch(error){
+        updateWizardStatus('Download calendario non riuscito: '+error.message,'error');
+      }
+    };
+
+    button.insertAdjacentElement('afterend',setup);
+    setup.insertAdjacentElement('afterend',fallback);
+    const mirrorVisibility=()=>{setup.hidden=button.hidden;fallback.hidden=button.hidden};
+    mirrorVisibility();
+    new MutationObserver(mirrorVisibility).observe(button,{attributes:true,attributeFilter:['hidden']});
+  }
+
+  const info=document.querySelector('#calendarInfo');
+  if(info)info.innerHTML=`<strong>Aggiunta diretta su iPhone e iPad</strong><br><span class="muted">Il pulsante principale avvia il Comando Rapido “${DEFAULT_SHORTCUT_NAME}” e crea gli appuntamenti senza passare da Mail. Il file .ics resta disponibile come riserva.</span>`;
+}
+
+function scheduleUiEnhancement(){
+  if(!global.document)return;
+  global.setTimeout(enhanceWizardUi,0);
+}
+
 function build(options){
   const schedule=options?.schedule;
   const title=String(options?.title||'Sessione Cucina Hub');
@@ -161,46 +327,30 @@ function build(options){
   ];
   milestones.forEach((milestone,index)=>lines.push(...eventLines(milestone,index,{workflowId:schedule.workflow_id,uidBase:options?.uidBase,generatedAt})));
   lines.push('END:VCALENDAR');
-  return{
-    version:1,
+  const calendar={
+    version:2,
+    title,
     filename:safeFilename(title),
     mime_type:'text/calendar;charset=utf-8',
     content:lines.join('\r\n')+'\r\n',
-    milestones
+    milestones,
+    shortcut:{name:DEFAULT_SHORTCUT_NAME,event_count:milestones.length}
   };
+  lastCalendar=calendar;
+  scheduleUiEnhancement();
+  return calendar;
 }
 
-function validate(calendar){
-  const errors=[];
-  if(!calendar?.content?.startsWith('BEGIN:VCALENDAR'))errors.push('Intestazione VCALENDAR mancante.');
-  if(!calendar?.content?.includes('END:VCALENDAR'))errors.push('Chiusura VCALENDAR mancante.');
-  if(!Array.isArray(calendar?.milestones)||calendar.milestones.length===0)errors.push('Nessun promemoria calendario generato.');
-  const eventCount=(calendar?.content?.match(/BEGIN:VEVENT/g)||[]).length;
-  if(eventCount!==calendar?.milestones?.length)errors.push('Il numero di eventi non corrisponde ai promemoria generati.');
-  if((calendar?.content?.match(/BEGIN:VALARM/g)||[]).length!==eventCount)errors.push('Uno o più eventi non hanno un avviso.');
-  return{valid:errors.length===0,errors};
-}
+global.CucinaHubCalendarExportEngine={
+  buildMilestones,build,validate,
+  buildShortcutPayload,validateShortcutPayload,buildShortcutUrl,
+  runShortcut,downloadIcs,shareIcs,shareOrDownload,
+  enhanceWizardUi,isAppleMobile,
+  DEFAULT_SHORTCUT_NAME
+};
 
-async function shareOrDownload(calendar){
-  const validation=validate(calendar);
-  if(!validation.valid)throw new Error(validation.errors.join(' '));
-  const file=new File([calendar.content],calendar.filename,{type:calendar.mime_type});
-  if(global.navigator?.share&&global.navigator?.canShare&&global.navigator.canShare({files:[file]})){
-    try{
-      await global.navigator.share({title:'Timeline Cucina Hub',text:'Aggiungi gli avvisi della sessione al calendario.',files:[file]});
-      return{mode:'shared'};
-    }catch(error){
-      if(error?.name==='AbortError')return{mode:'cancelled'};
-    }
-  }
-  const blob=new Blob([calendar.content],{type:calendar.mime_type});
-  const url=URL.createObjectURL(blob);
-  const anchor=document.createElement('a');
-  anchor.href=url;anchor.download=calendar.filename;anchor.style.display='none';
-  document.body.appendChild(anchor);anchor.click();anchor.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1500);
-  return{mode:'downloaded'};
+if(global.document){
+  if(global.document.readyState==='loading')global.document.addEventListener('DOMContentLoaded',scheduleUiEnhancement,{once:true});
+  else scheduleUiEnhancement();
 }
-
-global.CucinaHubCalendarExportEngine={buildMilestones,build,validate,shareOrDownload};
 })(window);
