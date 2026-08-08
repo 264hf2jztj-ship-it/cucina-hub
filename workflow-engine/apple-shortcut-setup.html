@@ -71,7 +71,7 @@ document.querySelector('#testShortcut').onclick=async()=>{
     const now=Date.now();
     const calendar={
       title:'Test Cucina Hub',filename:'test-cucina-hub.ics',mime_type:'text/calendar;charset=utf-8',
-      content:'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n',
+      content:'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nBEGIN:VALARM\r\nEND:VALARM\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nBEGIN:VALARM\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n',
       milestones:[
         {id:'test_1',title:'Test Cucina Hub — primo avviso',at:new Date(now+10*60000).toISOString(),description:'Primo evento di prova del Comando Rapido.',alert_minutes:1,duration_minutes:5},
         {id:'test_2',title:'Test Cucina Hub — secondo avviso',at:new Date(now+20*60000).toISOString(),description:'Secondo evento di prova del Comando Rapido.',alert_minutes:1,duration_minutes:5}
