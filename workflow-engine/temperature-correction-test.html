@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Test correzione temperatura — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}
+    main{max-width:850px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:20px}
+    button{border:0;border-radius:11px;padding:13px 17px;background:#365d44;color:#fff;font-weight:800}.ok{color:#176b35}.error{color:#a62424}
+    pre{white-space:pre-wrap;background:#faf8f4;border-radius:12px;padding:14px;overflow:auto}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Test correzione temperatura</h1>
+  <section class="panel">
+    <button id="run">ESEGUI TEST</button>
+    <p id="status">In attesa.</p>
+    <pre id="output"></pre>
+  </section>
+</main>
+<script src="./temperature-correction-engine.js?v=1"></script>
+<script>
+const status=document.querySelector('#status'),output=document.querySelector('#output');
+function assert(condition,message){if(!condition)throw new Error(message)}
+document.querySelector('#run').onclick=()=>{
+  try{
+    const base={bulkMinutes:120,proofMinutes:180,yeastWeightG:3,yeastType:'fresh_yeast'};
+    const reference=CucinaHubTemperatureCorrectionEngine.calculate({...base,roomTemperatureC:22});
+    const warm=CucinaHubTemperatureCorrectionEngine.calculate({...base,roomTemperatureC:28});
+    const cold=CucinaHubTemperatureCorrectionEngine.calculate({...base,roomTemperatureC:16});
+    assert(reference.corrected.bulk_minutes===120,'A 22 °C la puntata deve restare invariata.');
+    assert(reference.corrected.proof_minutes===180,'A 22 °C l’appretto deve restare invariato.');
+    assert(reference.corrected.yeast_weight_g===3,'A 22 °C il lievito deve restare invariato.');
+    assert(warm.corrected.bulk_minutes<120&&warm.corrected.proof_minutes<180,'Con ambiente caldo i tempi devono ridursi.');
+    assert(warm.corrected.yeast_weight_g<3,'Con ambiente caldo il lievito deve ridursi.');
+    assert(cold.corrected.bulk_minutes>120&&cold.corrected.proof_minutes>180,'Con ambiente fresco i tempi devono aumentare.');
+    assert(cold.corrected.yeast_weight_g>3,'Con ambiente fresco il lievito deve aumentare.');
+    assert(!warm.cold_fermentation_adjusted&&!cold.cold_fermentation_adjusted,'Il frigorifero non deve essere corretto in questo step.');
+    [reference,warm,cold].forEach(x=>assert(CucinaHubTemperatureCorrectionEngine.validate(x).valid,'La correzione deve essere valida.'));
+    status.className='ok';
+    status.textContent='Test completato: temperatura di riferimento, ambiente caldo e ambiente fresco funzionano.';
+    output.textContent=JSON.stringify({reference,warm,cold},null,2);
+  }catch(error){status.className='error';status.textContent=error.message;output.textContent='';}
+};
+</script>
+</body>
+</html>
