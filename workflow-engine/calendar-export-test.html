@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Test esportazione calendario — Cucina Hub</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;background:#f6f3ee;color:#26221d;margin:0}main{max-width:760px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:18px}button{padding:12px 16px;border:0;border-radius:11px;background:#365d44;color:#fff;font:inherit;font-weight:800}.ok{color:#1b6b36}.error{color:#a62424}pre{white-space:pre-wrap;background:#faf8f4;border-radius:10px;padding:12px;max-height:360px;overflow:auto}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Test esportazione calendario</h1>
+  <section class="panel">
+    <p>Verifica la generazione degli eventi essenziali, degli avvisi e del file iCalendar.</p>
+    <button id="run" type="button">ESEGUI TEST</button>
+    <p id="status">In attesa.</p>
+    <pre id="output"></pre>
+  </section>
+</main>
+<script src="./calendar-export-engine.js?v=1"></script>
+<script>
+const $=selector=>document.querySelector(selector);
+function assert(condition,message){if(!condition)throw new Error(message)}
+function fixedSchedule(withCold=true){
+  const events=[
+    {id:'session_preparation',title:'Preparazione ingredienti',source_phase_id:'session_preparation',kind:'phase',start_at:'2030-01-10T08:00:00.000Z',end_at:'2030-01-10T08:10:00.000Z'},
+    {id:'session_mixing',title:'Impasto',source_phase_id:'session_mixing',kind:'phase',start_at:'2030-01-10T08:10:00.000Z',end_at:'2030-01-10T08:28:00.000Z'},
+    {id:'session_bulk',title:'Puntata',source_phase_id:'session_bulk',kind:'phase',start_at:'2030-01-10T08:28:00.000Z',end_at:'2030-01-10T10:28:00.000Z'}
+  ];
+  if(withCold)events.push({id:'session_cold',title:'Fermentazione in frigorifero',source_phase_id:'session_cold',kind:'phase',start_at:'2030-01-10T10:28:00.000Z',end_at:'2030-01-11T15:00:00.000Z'});
+  events.push(
+    {id:'session_proof',title:'Appretto',source_phase_id:'session_proof',kind:'phase',start_at:withCold?'2030-01-11T15:00:00.000Z':'2030-01-10T10:28:00.000Z',end_at:'2030-01-11T18:00:00.000Z'},
+    {id:'session_bake:preheat',title:'Preriscaldamento Forno Samsung',source_phase_id:'session_bake',kind:'preheat',start_at:'2030-01-11T17:15:00.000Z',end_at:'2030-01-11T18:00:00.000Z'},
+    {id:'session_bake:bake',title:'Cottura con Forno Samsung',source_phase_id:'session_bake',kind:'bake',start_at:'2030-01-11T18:00:00.000Z',end_at:'2030-01-11T18:20:00.000Z'},
+    {id:'session_finish',title:'Riposo e valutazione',source_phase_id:'session_finish',kind:'phase',start_at:'2030-01-11T18:20:00.000Z',end_at:'2030-01-11T18:25:00.000Z'}
+  );
+  return{workflow_id:'workflow_test',start_at:'2030-01-10T08:00:00.000Z',target_at:'2030-01-11T18:25:00.000Z',events};
+}
+$('#run').onclick=()=>{
+  try{
+    const calendar=CucinaHubCalendarExportEngine.build({schedule:fixedSchedule(true),title:'Pizza test',generatedAt:'2029-12-01T10:00:00.000Z'});
+    const validation=CucinaHubCalendarExportEngine.validate(calendar);
+    assert(validation.valid,validation.errors.join(' '));
+    assert(calendar.milestones.some(item=>item.id==='cold_in'),'Ingresso frigorifero mancante.');
+    assert(calendar.milestones.some(item=>item.id==='cold_out'),'Uscita frigorifero mancante.');
+    assert(calendar.milestones.some(item=>item.id==='preheat'),'Preriscaldamento mancante.');
+    assert(calendar.milestones.some(item=>item.id==='bake'),'Infornata mancante.');
+    assert((calendar.content.match(/BEGIN:VEVENT/g)||[]).length===calendar.milestones.length,'Numero VEVENT errato.');
+    assert((calendar.content.match(/BEGIN:VALARM/g)||[]).length===calendar.milestones.length,'Numero VALARM errato.');
+    const noCold=CucinaHubCalendarExportEngine.build({schedule:fixedSchedule(false),title:'Pizza senza frigo'});
+    assert(noCold.milestones.some(item=>item.id==='bulk_end'),'Controllo fine puntata senza frigorifero mancante.');
+    assert(!noCold.milestones.some(item=>item.id==='cold_out'),'Uscita frigorifero presente senza fase a freddo.');
+    $('#status').className='ok';
+    $('#status').textContent='Test completato: calendario con e senza frigorifero, eventi essenziali e avvisi funzionano.';
+    $('#output').textContent=calendar.content;
+  }catch(error){$('#status').className='error';$('#status').textContent='Test fallito: '+error.message}
+};
+</script>
+</body>
+</html>
