@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Test Comando Rapido — Cucina Hub</title>
+  <style>body{font-family:system-ui;margin:0;background:#f6f3ee;color:#26221d}main{max-width:760px;margin:auto;padding:24px}.card{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:18px}button,a{display:inline-block;border:0;border-radius:10px;padding:12px 15px;background:#365d44;color:#fff;font:inherit;font-weight:800;text-decoration:none;margin:4px}.secondary{background:#eee8df;color:#26221d}.ok{color:#1b6b36}.error{color:#a62424}pre{white-space:pre-wrap;background:#faf8f4;border-radius:10px;padding:12px}</style>
+</head>
+<body>
+<main><div class="card"><h1>Test integrazione Comando Rapido</h1><p>Verifica payload JSON, URL <code>shortcuts://</code> e appuntamenti essenziali.</p><button id="run">ESEGUI TEST</button><button id="open">APRI TEST DIRETTO</button><a class="secondary" href="./apple-shortcut-setup.html?v=1">CONFIGURAZIONE</a><pre id="out">In attesa.</pre></div></main>
+<script src="./calendar-export-engine.js?v=2"></script>
+<script>
+const out=document.querySelector('#out');
+function schedule(){
+  const now=Date.now(),m=60000;
+  return{
+    workflow_id:'shortcut_test',
+    start_at:new Date(now+10*m).toISOString(),
+    target_at:new Date(now+80*m).toISOString(),
+    events:[
+      {id:'bulk',source_phase_id:'session_bulk',kind:'phase',title:'Puntata',start_at:new Date(now+10*m).toISOString(),end_at:new Date(now+30*m).toISOString()},
+      {id:'preheat',source_phase_id:'session_bake',kind:'preheat',title:'Preriscaldamento Forno Samsung',start_at:new Date(now+45*m).toISOString(),end_at:new Date(now+60*m).toISOString()},
+      {id:'bake',source_phase_id:'session_bake',kind:'bake',title:'Cottura con Forno Samsung',start_at:new Date(now+60*m).toISOString(),end_at:new Date(now+75*m).toISOString()}
+    ]
+  };
+}
+function make(){return CucinaHubCalendarExportEngine.build({schedule:schedule(),title:'Test diretto Cucina Hub',uidBase:'shortcut-test'})}
+document.querySelector('#run').onclick=()=>{
+  try{
+    const calendar=make();
+    const payload=CucinaHubCalendarExportEngine.buildShortcutPayload(calendar);
+    const validation=CucinaHubCalendarExportEngine.validateShortcutPayload(payload);
+    if(!validation.valid)throw new Error(validation.errors.join(' '));
+    const shortcut=CucinaHubCalendarExportEngine.buildShortcutUrl(calendar);
+    if(!shortcut.url.startsWith('shortcuts://run-shortcut?'))throw new Error('Schema URL non valido.');
+    if(!shortcut.url.includes('input=text'))throw new Error('Input testuale mancante.');
+    const decoded=JSON.parse(decodeURIComponent(shortcut.url.split('&text=')[1]));
+    if(decoded.events.length!==calendar.milestones.length)throw new Error('Numero eventi non coerente.');
+    if(!decoded.events.every(event=>event.title&&event.start&&event.end&&Number.isFinite(event.alert)))throw new Error('Payload incompleto.');
+    out.className='ok';out.textContent=`Test completato: ${decoded.events.length} eventi, payload JSON valido, URL Comandi Rapidi valido. Lunghezza URL: ${shortcut.url.length} caratteri.`;
+  }catch(error){out.className='error';out.textContent='Errore: '+error.message}
+};
+document.querySelector('#open').onclick=async()=>{
+  try{out.className='ok';out.textContent='Apro il Comando Rapido…';await CucinaHubCalendarExportEngine.runShortcut(make())}
+  catch(error){out.className='error';out.textContent='Errore: '+error.message}
+};
+</script>
+</body>
+</html>
