@@ -11,6 +11,7 @@
     label{display:block;font-weight:700;margin-bottom:6px}input,select,button,a.button{width:100%;box-sizing:border-box;padding:12px;border-radius:11px;border:1px solid #bbb2a6;font:inherit}
     button,a.button{border:0;background:#365d44;color:#fff;font-weight:800;text-decoration:none;text-align:center}.secondary{background:#eee8df!important;color:#26221d!important}
     .actions{display:flex;gap:10px;flex-wrap:wrap}.actions button,.actions a{width:auto}.muted{color:#6d655c}.ok{color:#1b6b36}.error{color:#a62424}
+    .environment-box{background:#faf8f4;border:1px solid #e4ddd3;border-radius:14px;padding:13px}.environment-tools{display:flex;gap:9px;flex-wrap:wrap;margin-top:9px}.environment-tools a,.environment-tools button{width:auto;padding:10px 12px}.environment-snapshot{margin-top:9px;padding:9px 11px;background:#fff;border:1px solid #e5ded5;border-radius:10px}
     .proposal{background:#f2f7f3;border:1px solid #bdd1c2;border-radius:14px;padding:16px;margin-top:16px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}
     .metric{background:#fff;border:1px solid #d7e4da;border-radius:10px;padding:10px}.metric strong{display:block;font-size:1.15rem}.timeline{display:grid;gap:9px}
     .step{border-left:4px solid #365d44;padding:10px 12px;background:#faf8f4;border-radius:8px}.step.passive{border-left-color:#3479a5}.step.parallel{background:#f4f0f8;border-left-color:#8058a5}
@@ -19,7 +20,8 @@
     .temperature-info{background:#f4f0f8;border:1px solid #d4c6df;border-radius:12px;padding:14px;margin:12px 0}.temperature-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
     .temperature-badge{padding:4px 9px;border-radius:999px;background:#fff;font-size:.82rem;font-weight:800}.adjustments{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}
     .adjustment{background:#fff;border-radius:10px;padding:10px}.adjustment span{display:block;color:#6d655c;font-size:.85rem}.adjustment strong{display:block;margin-top:3px}.adjustment small{display:block;margin-top:3px;color:#6d655c}
-    .warning-list{margin:8px 0 0;padding-left:20px;color:#8d4b12}@media(max-width:720px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.adjustments{grid-template-columns:1fr}}
+    .warning-list{margin:8px 0 0;padding-left:20px;color:#8d4b12}
+    @media(max-width:720px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.adjustments{grid-template-columns:1fr}.environment-tools a,.environment-tools button{width:100%}}
   </style>
 </head>
 <body>
@@ -31,7 +33,15 @@
       <div class="full"><label>Cosa vuoi preparare?</label><select id="style"><option value="roman_pan">Pizza in teglia romana</option><option value="neapolitan">Pizza napoletana</option><option value="home_round">Pizza tonda nel forno di casa</option><option value="focaccia">Focaccia</option><option value="bread">Pane</option></select></div>
       <div><label>Farina</label><input id="flourName" placeholder="Es. Caputo Nuvola"></div>
       <div><label>Farina totale (g)</label><input id="flourWeight" type="number" min="100" step="10" value="1000"></div>
-      <div><label>Ambiente</label><select id="environmentProfile"></select></div>
+      <div class="full environment-box">
+        <label>Ambiente</label>
+        <select id="environmentProfile"></select>
+        <div class="environment-tools">
+          <a class="button secondary" href="./environment-profiles.html?from=wizard" target="_blank" rel="noopener">AGGIORNA PROFILO AMBIENTE</a>
+          <button id="reloadEnvironments" class="secondary" type="button">RICARICA DATI</button>
+        </div>
+        <div id="environmentSnapshot" class="environment-snapshot muted">Caricamento dati ambiente…</div>
+      </div>
       <div><label>Lievito</label><select id="yeastType"><option value="fresh_yeast">Lievito fresco</option><option value="dry_yeast">Lievito secco</option><option value="sourdough">Lievito madre</option></select></div>
       <div><label>Quando vuoi mangiare?</label><input id="targetMeal" type="datetime-local"></div>
       <div><label>Cottura</label><select id="ovenType"><option value="samsung_oven">Forno Samsung</option><option value="weber_kettle">Weber Kettle</option><option value="air_fryer">Friggitrice ad aria</option><option value="other">Altro</option></select></div>
@@ -71,7 +81,7 @@
 <script src="../workflow-engine/timeline-engine.js?v=1"></script>
 <script>
 const c=window.cucinaHubSupabase,$=s=>document.querySelector(s);
-let owner,environments=[],plan=null,workflow=null,schedule=null,temperatureCorrection=null;
+let owner,environments=[],plan=null,workflow=null,schedule=null,temperatureCorrection=null,environmentRefreshToken=0,lastAutoRefresh=0;
 const presets={
   roman_pan:{name:'Pizza in teglia romana',hydration:80,salt:2.5,base:.15,bulk:120,proof:180,ideal:280,bake:16},
   neapolitan:{name:'Pizza napoletana',hydration:65,salt:2.8,base:.10,bulk:120,proof:240,ideal:300,bake:7},
@@ -96,6 +106,38 @@ function minutesLabel(value){const minutes=Math.round(Number(value)||0);if(minut
 function signedMinutes(value){const rounded=Math.round(Number(value)||0);return `${rounded>0?'+':''}${rounded} min`}
 function grams(value,type){const number=Number(value)||0;return type==='dry_yeast'?number.toFixed(2):type==='sourdough'?number.toFixed(0):number.toFixed(1)}
 function signedGrams(value,type){const number=Number(value)||0;return `${number>0?'+':''}${grams(number,type)} g`}
+function environmentFingerprint(){return JSON.stringify(environments.map(item=>[item.id,item.name,item.room_temperature_c,item.relative_humidity_percent,item.fridge_temperature_c,item.is_default]))}
+function invalidateProposal(message){plan=null;workflow=null;schedule=null;temperatureCorrection=null;$('#proposal').hidden=true;$('#start').hidden=true;if(message)msg(message)}
+function renderEnvironmentSnapshot(){
+  const profile=env(),node=$('#environmentSnapshot');
+  if(!profile){node.innerHTML='<strong>Nessun profilo selezionato.</strong> Verrà usato il riferimento neutro di 22 °C.';return}
+  const fridge=profile.fridge_temperature_c==null?'frigorifero non indicato':`${profile.fridge_temperature_c} °C frigorifero`;
+  node.innerHTML=`<strong>${esc(profile.name)}</strong> · ${profile.room_temperature_c} °C · ${profile.relative_humidity_percent}% UR · ${esc(fridge)}`;
+}
+async function loadEnvironments({preserve=true}={}){
+  const select=$('#environmentProfile'),previous=preserve?select.value:'',token=++environmentRefreshToken;
+  const result=await c.from('fermentation_environment_profiles').select('*').eq('owner_user_id',owner).order('is_default',{ascending:false}).order('name');
+  if(result.error)throw result.error;if(token!==environmentRefreshToken)return;
+  environments=result.data||[];
+  select.innerHTML='<option value="">Nessun profilo — usa 22 °C</option>'+environments.map(item=>`<option value="${item.id}">${esc(item.name)} · ${item.room_temperature_c} °C · ${item.relative_humidity_percent}% UR${item.is_default?' — predefinito':''}</option>`).join('');
+  const selected=previous&&environments.some(item=>item.id===previous)?previous:(environments.find(item=>item.is_default)?.id||'');
+  select.value=selected;renderEnvironmentSnapshot();
+}
+async function refreshEnvironmentData({automatic=false}={}){
+  if(!owner)return;
+  try{
+    const before=environmentFingerprint();
+    await loadEnvironments({preserve:true});
+    const changed=before!==environmentFingerprint();
+    if(changed)invalidateProposal('Dati ambiente aggiornati. Genera di nuovo la proposta per applicare i valori reali.');
+    else if(!automatic)msg('I dati ambiente sono già aggiornati.','ok');
+  }catch(error){if(!automatic)msg('Impossibile aggiornare i profili: '+error.message,'error')}
+}
+async function refreshOnReturn(){
+  if(!owner||document.hidden||Date.now()-lastAutoRefresh<800)return;
+  lastAutoRefresh=Date.now();
+  await refreshEnvironmentData({automatic:true});
+}
 
 function renderTemperature(){
   const correction=temperatureCorrection,profile=env(),type=$('#yeastType').value;
@@ -161,7 +203,7 @@ function generate(){
     workflow=CucinaHubSessionWorkflowBuilder.build(plan);
     workflow.context=workflow.context||{};
     workflow.context.temperature_correction=temperatureCorrection;
-    workflow.context.environment_snapshot={profile_id:environment?.id||null,name:environment?.name||null,room_temperature_c:room};
+    workflow.context.environment_snapshot={profile_id:environment?.id||null,name:environment?.name||null,room_temperature_c:room,relative_humidity_percent:environment?.relative_humidity_percent??null,fridge_temperature_c:environment?.fridge_temperature_c??null};
     schedule=CucinaHubTimelineEngine.build({workflow,targetAt:target});
     const validation=CucinaHubTimelineEngine.validate(schedule);
     if(!validation.valid)throw new Error(validation.errors.join(' '));
@@ -191,14 +233,15 @@ async function save(){
 async function init(){
   try{
     const{data,error}=await c.auth.getSession();if(error)throw error;if(!data.session?.user)throw new Error('Accedi prima di continuare.');owner=data.session.user.id;
-    const result=await c.from('fermentation_environment_profiles').select('*').eq('owner_user_id',owner).order('is_default',{ascending:false}).order('name');if(result.error)throw result.error;
-    environments=result.data||[];
-    $('#environmentProfile').innerHTML='<option value="">Nessun profilo — usa 22 °C</option>'+environments.map(item=>`<option value="${item.id}">${esc(item.name)} · ${item.room_temperature_c} °C${item.is_default?' — predefinito':''}</option>`).join('');
-    $('#environmentProfile').value=environments.find(item=>item.is_default)?.id||'';defaultDate();msg('Pronto.','ok');
+    await loadEnvironments({preserve:false});defaultDate();msg('Pronto. I valori del profilo selezionato verranno usati nella sessione.','ok');
   }catch(error){msg(error.message,'error')}
 }
 $('#generate').onclick=generate;$('#save').onclick=save;
+$('#environmentProfile').onchange=()=>{renderEnvironmentSnapshot();invalidateProposal('Profilo ambiente cambiato. Genera la proposta con i nuovi valori.')};
+$('#reloadEnvironments').onclick=()=>refreshEnvironmentData({automatic:false});
 $('#reset').onclick=()=>{plan=null;workflow=null;schedule=null;temperatureCorrection=null;$('#proposal').hidden=true;$('#start').hidden=true;$('#flourName').value='';$('#flourWeight').value=1000;defaultDate();msg('Nuova sessione.')};
+window.addEventListener('focus',refreshOnReturn);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshOnReturn()});
 init();
 </script>
 </body>
