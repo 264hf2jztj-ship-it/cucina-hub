@@ -29,6 +29,7 @@
       modulePaths.push("./diary-notes.js?v=1");
     } else if (path.endsWith("/fermentation/baking-wizard.html")) {
       modulePaths.push("./dough-sizing-ui.js?v=1");
+      modulePaths.push("./chat-recipe-import-ui.js?v=1");
       modulePaths.push("./calendar-ui-cleanup.js?v=1");
       modulePaths.push("./assistant-link.js?v=2");
     } else if (path.endsWith("/fermentation/baking-sessions.html")) {
