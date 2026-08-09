@@ -89,7 +89,7 @@
     panel.id = "diaryPhotosPanel";
     panel.className = "panel diary-photos";
     panel.innerHTML = `
-      <h2>4. Foto della sessione e del risultato</h2>
+      <h2>5. Foto della sessione e del risultato</h2>
       <p class="helper">Le foto scattate durante la Sessione Guidata e quelle caricate qui appartengono allo stesso diario. Aggiungi una categoria e una breve didascalia utile per i confronti futuri.</p>
       <div class="diary-photo-upload">
         <div>
