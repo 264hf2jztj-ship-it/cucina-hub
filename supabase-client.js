@@ -17,10 +17,14 @@
     window.cucinaHubSupabaseError = null;
     const path = window.location.pathname;
     const modulePaths = [];
-    if (path.endsWith("/workflow-engine/guided-session.html")) modulePaths.push("./photo-diary-v2.js?v=2");
-    else if (path.endsWith("/fermentation/baking-session-history.html")) modulePaths.push("./history-photos.js?v=1");
-    else if (path.endsWith("/fermentation/fermentation-diary.html")) modulePaths.push("./diary-photos.js?v=1");
-    else if (path.endsWith("/fermentation/baking-wizard.html")) {
+    if (path.endsWith("/workflow-engine/guided-session.html")) {
+      modulePaths.push("./photo-diary-v2.js?v=2");
+      modulePaths.push("./guided-session-notes.js?v=1");
+    } else if (path.endsWith("/fermentation/baking-session-history.html")) modulePaths.push("./history-photos.js?v=1");
+    else if (path.endsWith("/fermentation/fermentation-diary.html")) {
+      modulePaths.push("./diary-photos.js?v=2");
+      modulePaths.push("./diary-notes.js?v=1");
+    } else if (path.endsWith("/fermentation/baking-wizard.html")) {
       modulePaths.push("./dough-sizing-ui.js?v=1");
       modulePaths.push("./calendar-ui-cleanup.js?v=1");
     } else if (path.endsWith("/fermentation/baking-sessions.html")) modulePaths.push("./dough-sizing-ui.js?v=1");
