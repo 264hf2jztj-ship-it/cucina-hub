@@ -29,11 +29,16 @@
       modulePaths.push("./diary-notes.js?v=1");
     } else if (path.endsWith("/fermentation/baking-wizard.html")) {
       modulePaths.push("./dough-sizing-ui.js?v=1");
-      modulePaths.push("./chat-recipe-import-ui.js?v=1");
+      modulePaths.push("../workflow-engine/chat-recipe-import-engine-v2.js?v=2");
+      modulePaths.push("./fried-dough-workflow-loader.js?v=1");
+      modulePaths.push("./fried-dough-ui.js?v=1");
+      modulePaths.push("./chat-recipe-import-ui.js?v=2");
+      modulePaths.push("./fried-dough-example-ui.js?v=1");
       modulePaths.push("./calendar-ui-cleanup.js?v=1");
       modulePaths.push("./assistant-link.js?v=2");
     } else if (path.endsWith("/fermentation/baking-sessions.html")) {
       modulePaths.push("./dough-sizing-ui.js?v=1");
+      modulePaths.push("./fried-dough-session-ui.js?v=1");
       modulePaths.push("./history-learning-link.js?v=1");
       modulePaths.push("./assistant-link.js?v=2");
     } else if (path.endsWith("/fermentation/fermentation-learning.html")) {
@@ -46,7 +51,7 @@
     modulePaths.forEach(modulePath => {
       const script = document.createElement("script");
       script.src = modulePath;
-      script.defer = true;
+      script.async = false;
       document.head.appendChild(script);
     });
   } catch (error) {
