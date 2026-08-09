@@ -6,7 +6,7 @@
     const actions = document.querySelector(".head-actions");
     if (!actions) return false;
     const link = document.createElement("a");
-    link.href = "./fermentation-learning.html?v=1";
+    link.href = "./fermentation-learning.html?v=2";
     link.textContent = "LEARNING";
     link.dataset.fermentationLearningLink = "true";
     link.className = location.pathname.endsWith("/baking-session-history.html")
