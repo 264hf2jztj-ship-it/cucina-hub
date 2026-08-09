@@ -30,7 +30,7 @@
     } else if (path.endsWith("/fermentation/baking-wizard.html")) {
       modulePaths.push("./dough-sizing-ui.js?v=1");
       modulePaths.push("../workflow-engine/chat-recipe-import-engine-v2.js?v=2");
-      modulePaths.push("../workflow-engine/fried-dough-workflow-builder.js?v=1");
+      modulePaths.push("./fried-dough-workflow-loader.js?v=1");
       modulePaths.push("./fried-dough-ui.js?v=1");
       modulePaths.push("./chat-recipe-import-ui.js?v=2");
       modulePaths.push("./calendar-ui-cleanup.js?v=1");
