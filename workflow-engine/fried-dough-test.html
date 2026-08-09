@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Test impasti fritti — Cucina Hub</title>
+  <style>body{font-family:system-ui,-apple-system,sans-serif;background:#f6f3ee;color:#26221d;margin:0}main{max-width:850px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:18px}button{padding:12px 16px;border:0;border-radius:11px;background:#365d44;color:#fff;font-weight:800}.test{padding:10px;margin:8px 0;border-radius:10px;background:#faf8f4}.pass{border-left:4px solid #176b35}.fail{border-left:4px solid #a62424}.summary{margin-top:14px;padding:12px;border-radius:11px;background:#eef5f0}.error{background:#fff0f0}</style>
+</head>
+<body><main><h1>Test impasti fritti</h1><section class="panel"><p>Controlla contratto v2, guardrail, profilo KitchenCraft e workflow senza frigorifero.</p><button id="run">ESEGUI TEST</button><div id="results"></div></section></main>
+<script src="./session-workflow-builder.js?v=5"></script>
+<script src="./fried-dough-workflow-builder.js?v=1"></script>
+<script src="./chat-recipe-import-engine-v2.js?v=2"></script>
+<script>
+const results=document.querySelector('#results');
+function assert(name,condition,detail=''){const node=document.createElement('div');node.className=`test ${condition?'pass':'fail'}`;node.innerHTML=`<strong>${condition?'✓':'✗'} ${name}</strong>${detail?`<br>${detail}`:''}`;results.appendChild(node);if(!condition)throw new Error(name);}
+document.querySelector('#run').onclick=()=>{results.innerHTML='';let passed=0;try{
+  const engine=window.CucinaHubChatRecipeImportEngine;
+  const packet=engine.buildFriedExample(new Date(Date.now()+8*3600000));
+  const validation=engine.validate(packet);
+  assert('Pacchetto pizzonde conforme al contratto v2',validation.valid,validation.errors.map(item=>item.message).join(' '));passed++;
+  assert('Prodotto e metodo corretti',validation.packet.recipe.product_style==='fried_dough'&&validation.packet.cooking.method==='deep_fry');passed++;
+  assert('KitchenCraft Ø20 senza cestello',validation.packet.cooking.frying.vessel_diameter_cm===20&&validation.packet.cooking.frying.basket_used===false);passed++;
+  assert('Farine al 100%',validation.metrics.flour_percentage_total===100);passed++;
+  const unsafe=JSON.parse(JSON.stringify(packet));unsafe.guardrails.automatic_save=true;
+  const unsafeValidation=engine.validate(unsafe);
+  assert('Blocco del salvataggio automatico',!unsafeValidation.valid&&unsafeValidation.errors.some(item=>item.code==='automatic_save'));passed++;
+  const wrongCold=JSON.parse(JSON.stringify(packet));wrongCold.fermentation.cold_strategy='auto_fit_to_target';
+  const coldValidation=engine.validate(wrongCold);
+  assert('Blocco frigorifero per impasto fritto',!coldValidation.valid&&coldValidation.errors.some(item=>item.code==='fried_cold_strategy'));passed++;
+  const plan={title:'Pizzonde test',product_style:'fried_dough',cooking_method:'deep_fry',oven_type:'induction_deep_fry',flour_name:'Farina 0',flour_weight_g:1000,water_weight_g:610,salt_weight_g:24,yeast_weight_g:8,oil_weight_g:30,sugar_weight_g:8,hydration_percent:61,bulk_fermentation_minutes:75,cold_fermentation_minutes:0,final_proof_minutes:60,target_dough_temperature_c:24,portion_count:18,portion_weight_g:93.3,dough_total_weight_g:1680,cooking_profile:packet.cooking.frying,humidity_correction:{relative_humidity_percent:60,classification_label:'umido',operational:{covering_strategy:'Copri bene.',final_check:'Superficie morbida.'}}};
+  const workflow=window.CucinaHubSessionWorkflowBuilder.build(plan);
+  assert('Workflow fritto versione 6',workflow.version===6&&workflow.context.fried_dough===true);passed++;
+  assert('Nessuna fase frigorifero',!workflow.phases.some(phase=>phase.id==='session_cold'));passed++;
+  const frying=workflow.phases.find(phase=>phase.id==='session_bake');
+  assert('Fase frittura con riscaldamento olio',frying?.type==='frying'&&frying.metadata.preheat_title==='Riscaldamento olio');passed++;
+  assert('Frittura una alla volta e termometro',frying.activities.some(item=>item.id==='temperature_check')&&frying.activities.some(item=>item.id==='fry_one'));passed++;
+  const normal=engine.buildExample(new Date(Date.now()+24*3600000));normal.version=1;normal.cooking={oven_type:'samsung_oven',ideal_temperature_c:250,bake_minutes:16,notes:[]};
+  const legacy=engine.validate(normal);
+  assert('Compatibilità con pacchetti v1 da forno',legacy.valid,legacy.errors.map(item=>item.message).join(' '));passed++;
+  results.insertAdjacentHTML('beforeend',`<div class="summary"><strong>${passed} test superati.</strong><br>Contratto v2 e workflow impasti fritti pronti per il test nel Wizard.</div>`);
+}catch(error){results.insertAdjacentHTML('beforeend',`<div class="summary error"><strong>Test interrotto:</strong> ${error.message}</div>`);}};
+</script></body></html>
