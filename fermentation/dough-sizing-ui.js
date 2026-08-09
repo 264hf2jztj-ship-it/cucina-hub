@@ -46,7 +46,7 @@
   }
 
   function initSessionsSupport() {
-    waitFor(() => document.querySelector("#list")).then(() => {
+    waitFor(() => document.querySelector("#list") && typeof duplicateFields !== "undefined" && typeof sessions !== "undefined").then(() => {
       try {
         if (typeof duplicateFields !== "undefined" && Array.isArray(duplicateFields)) {
           sizingFields.forEach(field => { if (!duplicateFields.includes(field)) duplicateFields.push(field); });
@@ -252,6 +252,7 @@
     generateButton.onclick = () => {
       try {
         const sizing = prepareFlourFromSizing();
+        if (typeof invalidateProposal === "function") invalidateProposal();
         originalGenerate.call(generateButton);
         attachSizingToGeneratedPlan(sizing);
       } catch (error) {
@@ -271,7 +272,8 @@
     nodes.profile.addEventListener("change", () => { syncLoadingFromProfile(); updatePreview(); if (typeof invalidateProposal === "function") invalidateProposal("Spessore modificato. Genera nuovamente la proposta."); });
     nodes.loading.addEventListener("input", () => { nodes.profile.value = "custom"; updatePreview(); if (typeof invalidateProposal === "function") invalidateProposal("Carico impasto modificato. Genera nuovamente la proposta."); });
     [nodes.count,nodes.width,nodes.length,nodes.diameter].forEach(input => input.addEventListener("input", () => { updatePreview(); if (typeof invalidateProposal === "function") invalidateProposal("Formato o quantità modificati. Genera nuovamente la proposta."); }));
-    [document.querySelector("#targetMeal"),document.querySelector("#yeastType"),document.querySelector("#environmentProfile")].forEach(input => input?.addEventListener("change", updatePreview));
+    [document.querySelector("#targetMeal"),document.querySelector("#yeastType")].forEach(input => input?.addEventListener("change", () => { updatePreview(); if (typeof invalidateProposal === "function") invalidateProposal("Orario o lievito modificato. Genera nuovamente la proposta."); }));
+    document.querySelector("#environmentProfile")?.addEventListener("change", updatePreview);
 
     setDefaultValues();
     window.CucinaHubDoughSizingWizard = { calculateSizing, prepareFlourFromSizing, updatePreview, fields: sizingFields };
