@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test contesto AI Fermentation Assistant — Cucina Hub</title>
+<style>body{font-family:system-ui;margin:0;background:#f6f3ee;color:#26221d}main{max-width:820px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:20px}button{border:0;border-radius:11px;padding:12px 16px;background:#365d44;color:#fff;font-weight:800}.ok{color:#176b35}.error{color:#a62424}pre{white-space:pre-wrap;background:#faf8f4;padding:14px;border-radius:12px;max-height:520px;overflow:auto}</style>
+</head>
+<body><main><section class="panel"><h1>Test contesto AI Fermentation Assistant</h1><p>Verifica pacchetto strutturato, provenienza, avvisi, anteprima e conferma obbligatoria.</p><button id="run">ESEGUI TEST</button><p id="status">In attesa.</p><pre id="output"></pre></section></main>
+<script src="./fermentation-assistant-context-engine.js?v=1"></script>
+<script>
+const environment={id:'env1',name:'Casa — Estate',room_temperature_c:25,relative_humidity_percent:58,fridge_temperature_c:4};
+const flours=[{id:'f1',brand:'Mulino Test',name:'Tipo 0',flour_type:'0',cereal:'soft_wheat',strength_w:300,pl_ratio:.6,protein_percent:13,absorption_percent:65,is_default:true}];
+const learning={sample_count:1,confidence:{level:'insufficient',label:'Dati insufficienti'},data_quality:{score:80,missing:[]},insights:[],methodology:{statement:'Non dimostra causalità.'}};
+document.querySelector('#run').onclick=()=>{try{
+  const engine=window.CucinaHubFermentationAssistantContextEngine;
+  const packet=engine.buildRequest({input:{product_style:'roman_pan',result_goal:'airy',target_meal_at:'2026-08-10T20:00:00+02:00',oven_type:'samsung_oven',shape:'tray',portion_count:2,tray_width_cm:30,tray_length_cm:40},environment,flours,learning});
+  const validation=engine.validate(packet);if(!validation.valid)throw new Error(validation.errors.join(' '));
+  if(packet.readiness.level!=='ready')throw new Error('La richiesta completa dovrebbe risultare pronta.');
+  if(packet.guardrails.automatic_writes!==false||packet.guardrails.requires_user_confirmation!==true)throw new Error('Guardrail di conferma non validi.');
+  if(!packet.sources.some(source=>source.id==='laboratory.learning'&&source.status==='insufficient'))throw new Error('Stato Learning insufficiente non dichiarato.');
+  if(!packet.readiness.warnings.some(item=>item.includes('Learning personale insufficiente')))throw new Error('Avviso sul campione Learning mancante.');
+  const prompt=engine.buildPrompt(packet);if(!prompt.includes('Non creare, aggiornare o salvare'))throw new Error('Vincolo di anteprima mancante nel prompt.');
+  const partial=engine.buildRequest({input:{product_style:'focaccia',result_goal:'soft'},learning:null});
+  if(partial.readiness.level!=='partial'||partial.readiness.warnings.length<3)throw new Error('Gestione dati mancanti non valida.');
+  document.querySelector('#status').className='ok';
+  document.querySelector('#status').textContent='Test completato: contesto personale, provenienza, Learning insufficiente, avvisi, anteprima e conferma obbligatoria funzionano.';
+  document.querySelector('#output').textContent=JSON.stringify({readiness:packet.readiness,sources:packet.sources,guardrails:packet.guardrails,partial_readiness:partial.readiness},null,2);
+}catch(error){document.querySelector('#status').className='error';document.querySelector('#status').textContent=error.message}}
+</script></body></html>
