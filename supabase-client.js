@@ -23,15 +23,20 @@
     } else if (path.endsWith("/fermentation/baking-session-history.html")) {
       modulePaths.push("./history-photos.js?v=1");
       modulePaths.push("./history-learning-link.js?v=1");
+      modulePaths.push("./assistant-link.js?v=1");
     } else if (path.endsWith("/fermentation/fermentation-diary.html")) {
       modulePaths.push("./diary-photos.js?v=2");
       modulePaths.push("./diary-notes.js?v=1");
     } else if (path.endsWith("/fermentation/baking-wizard.html")) {
       modulePaths.push("./dough-sizing-ui.js?v=1");
       modulePaths.push("./calendar-ui-cleanup.js?v=1");
+      modulePaths.push("./assistant-link.js?v=1");
     } else if (path.endsWith("/fermentation/baking-sessions.html")) {
       modulePaths.push("./dough-sizing-ui.js?v=1");
       modulePaths.push("./history-learning-link.js?v=1");
+      modulePaths.push("./assistant-link.js?v=1");
+    } else if (path.endsWith("/fermentation/fermentation-learning.html")) {
+      modulePaths.push("./assistant-link.js?v=1");
     }
 
     modulePaths.forEach(modulePath => {
