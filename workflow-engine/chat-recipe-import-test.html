@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test importazione ricetta chat — Cucina Hub</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}main{max-width:850px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:18px}button{border:0;border-radius:11px;padding:12px 15px;background:#365d44;color:#fff;font:inherit;font-weight:800}.ok{color:#176b35}.error{color:#a62424}.test{padding:10px;border-radius:10px;background:#faf8f4;margin-top:8px}.test.pass{border-left:4px solid #176b35}.test.fail{border-left:4px solid #a62424}
+</style>
+</head>
+<body><main><h1>Test importazione Chat → Wizard</h1><section class="panel"><p>Verifica contratto JSON, guardrail, formula, formato, parsing da blocco codice e collegamento ai profili.</p><button id="run" type="button">ESEGUI TEST</button><div id="result"></div></section></main>
+<script src="./chat-recipe-import-engine.js?v=1"></script>
+<script>
+const result=document.querySelector('#result');
+function row(name,pass,detail=''){return `<div class="test ${pass?'pass':'fail'}"><strong>${pass?'✓':'✗'} ${name}</strong>${detail?`<br>${detail}`:''}</div>`}
+function run(){
+  const engine=window.CucinaHubChatRecipeImportEngine,rows=[];
+  try{
+    const example=engine.buildExample(new Date(Date.now()+30*3600000));
+    example.environment={profile_id:'env-1',profile_name:'Casa'};
+    example.flours=[{profile_id:'flour-1',label:'Caputo · Nuvola',percentage:100}];
+    const valid=engine.validate(example);
+    rows.push(row('Pacchetto valido',valid.valid,valid.errors.map(item=>item.message).join(' ')));
+    const fenced=engine.parse('```json\n'+JSON.stringify(example)+'\n```');
+    rows.push(row('Parsing da blocco JSON della chat',fenced.schema===engine.SCHEMA));
+    const profiles=[{id:'flour-1',brand:'Caputo',name:'Nuvola',product_line:null}];
+    const flourMatch=engine.matchFlours(example,profiles);
+    rows.push(row('Collegamento profilo farina',flourMatch.complete&&flourMatch.matched[0].profile.id==='flour-1'));
+    const environments=[{id:'env-1',name:'Casa'}];
+    const environmentMatch=engine.matchEnvironment(example,environments);
+    rows.push(row('Collegamento profilo ambiente',environmentMatch.profile?.id==='env-1'));
+    const badTotal=JSON.parse(JSON.stringify(example));badTotal.flours=[{label:'A',percentage:70},{label:'B',percentage:20}];
+    rows.push(row('Blocco percentuali farine errate',!engine.validate(badTotal).valid));
+    const badGuardrail=JSON.parse(JSON.stringify(example));badGuardrail.guardrails.automatic_save=true;
+    rows.push(row('Blocco salvataggio automatico',!engine.validate(badGuardrail).valid));
+    const badShape=JSON.parse(JSON.stringify(example));badShape.format.shape='round';
+    rows.push(row('Blocco formato incoerente',!engine.validate(badShape).valid));
+    const overrides=engine.wizardOverrides(example);
+    rows.push(row('Conversione nei parametri Wizard',overrides.hydration_percent===80&&overrides.bulk_minutes===120&&overrides.style==='roman_pan'));
+    const snapshot=engine.sessionSnapshot(example,{environmentProfileId:'env-1',flours:[{profile_id:'flour-1',percentage:100}]});
+    rows.push(row('Snapshot separato dalla sessione',snapshot.guardrails.automatic_save===false&&snapshot.recipe.title===example.recipe.title));
+    const passed=rows.every(item=>item.includes('class="test pass"'));
+    result.innerHTML=`<h2 class="${passed?'ok':'error'}">${passed?'Test completato':'Test non superato'}</h2>${rows.join('')}${passed?'<p class="ok"><strong>Contratto, guardrail, formula, formato e collegamenti funzionano.</strong></p>':''}`;
+  }catch(error){result.innerHTML=`<h2 class="error">Errore del test</h2><p>${error.message}</p>${rows.join('')}`;}
+}
+document.querySelector('#run').onclick=run;
+</script></body></html>
