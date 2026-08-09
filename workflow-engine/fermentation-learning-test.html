@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test Learning fermentazioni — Cucina Hub</title>
+<style>body{font-family:system-ui;margin:0;background:#f6f3ee;color:#26221d}main{max-width:760px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:20px}button{border:0;border-radius:11px;padding:12px 16px;background:#365d44;color:#fff;font-weight:800}.ok{color:#176b35}.error{color:#a62424}pre{white-space:pre-wrap;background:#faf8f4;padding:14px;border-radius:12px}</style>
+</head>
+<body><main><section class="panel"><h1>Test Learning fermentazioni</h1><p>Verifica campione minimo, affidabilità, confronti, condizioni migliori e assenza di correzioni automatiche.</p><button id="run">ESEGUI TEST</button><p id="status">In attesa.</p><pre id="output"></pre></section></main>
+<script src="./fermentation-learning-engine.js?v=1"></script>
+<script>
+const sessions=[
+{id:'1',title:'A',product_style:'roman_pan',hydration_percent:80,bulk_fermentation_minutes:120,cold_fermentation_minutes:600,final_proof_minutes:180,workflow_definition:{context:{environment_snapshot:{room_temperature_c:24,relative_humidity_percent:55,fridge_temperature_c:4},flour_blend:{components:[{percentage:100,profile_snapshot:{name:'Farina A'}}]}}}},
+{id:'2',title:'B',product_style:'roman_pan',hydration_percent:78,bulk_fermentation_minutes:120,cold_fermentation_minutes:600,final_proof_minutes:180,workflow_definition:{context:{environment_snapshot:{room_temperature_c:23,relative_humidity_percent:58,fridge_temperature_c:4},flour_blend:{components:[{percentage:100,profile_snapshot:{name:'Farina A'}}]}}}},
+{id:'3',title:'C',product_style:'roman_pan',hydration_percent:72,bulk_fermentation_minutes:120,cold_fermentation_minutes:600,final_proof_minutes:180,workflow_definition:{context:{environment_snapshot:{room_temperature_c:20,relative_humidity_percent:45,fridge_temperature_c:5},flour_blend:{components:[{percentage:100,profile_snapshot:{name:'Farina B'}}]}}}},
+{id:'4',title:'D',product_style:'roman_pan',hydration_percent:70,bulk_fermentation_minutes:120,cold_fermentation_minutes:600,final_proof_minutes:180,workflow_definition:{context:{environment_snapshot:{room_temperature_c:19,relative_humidity_percent:42,fridge_temperature_c:5},flour_blend:{components:[{percentage:100,profile_snapshot:{name:'Farina B'}}]}}}}
+];
+const evaluations={
+'1':{id:'e1',overall_rating:5,fermentation_rating:5,workability_rating:4,structure_rating:5,crispness_rating:4,softness_rating:5,digestibility_rating:5,fermentation_outcome:'balanced',would_repeat:true,actual_bulk_minutes:120,actual_cold_minutes:600,actual_proof_minutes:200},
+'2':{id:'e2',overall_rating:4,fermentation_rating:4,workability_rating:4,structure_rating:4,crispness_rating:4,softness_rating:4,digestibility_rating:4,fermentation_outcome:'balanced',would_repeat:true,actual_bulk_minutes:120,actual_cold_minutes:600,actual_proof_minutes:200},
+'3':{id:'e3',overall_rating:3,fermentation_rating:3,workability_rating:3,structure_rating:3,crispness_rating:3,softness_rating:3,digestibility_rating:3,fermentation_outcome:'underfermented',would_repeat:false,actual_bulk_minutes:120,actual_cold_minutes:600,actual_proof_minutes:160},
+'4':{id:'e4',overall_rating:2,fermentation_rating:2,workability_rating:2,structure_rating:2,crispness_rating:2,softness_rating:2,digestibility_rating:2,fermentation_outcome:'underfermented',would_repeat:false,actual_bulk_minutes:120,actual_cold_minutes:600,actual_proof_minutes:160}
+};
+document.querySelector('#run').onclick=()=>{try{const engine=window.CucinaHubFermentationLearningEngine;const result=engine.analyze({sessions,evaluations,productStyle:'roman_pan'});const validation=engine.validate(result);if(!validation.valid)throw new Error(validation.errors.join(' '));if(result.sample_count!==4)throw new Error('Campione errato.');if(!result.insights.some(item=>item.title.includes('Idratazione')))throw new Error('Confronto idratazione mancante.');if(!result.methodology.statement.includes('Non dimostra causalità'))throw new Error('Avvertenza metodologica mancante.');if(result.corrected||result.adjustments)throw new Error('Il Learning non deve generare correzioni automatiche.');document.querySelector('#status').className='ok';document.querySelector('#status').textContent='Test completato: 4 sessioni analizzate, affidabilità, qualità dati, confronto idratazione, condizioni migliori e vincolo non causale funzionano.';document.querySelector('#output').textContent=JSON.stringify({confidence:result.confidence,data_quality:result.data_quality,best_conditions:result.best_conditions,insights:result.insights},null,2)}catch(error){document.querySelector('#status').className='error';document.querySelector('#status').textContent=error.message}};
+</script></body></html>
