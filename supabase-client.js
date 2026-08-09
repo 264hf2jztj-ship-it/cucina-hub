@@ -20,6 +20,7 @@
     if (path.endsWith("/workflow-engine/guided-session.html")) modulePath = "./photo-diary-v2.js?v=2";
     else if (path.endsWith("/fermentation/baking-session-history.html")) modulePath = "./history-photos.js?v=1";
     else if (path.endsWith("/fermentation/fermentation-diary.html")) modulePath = "./diary-photos.js?v=1";
+    else if (path.endsWith("/fermentation/baking-wizard.html") || path.endsWith("/fermentation/baking-sessions.html")) modulePath = "./dough-sizing-ui.js?v=1";
     if (modulePath) {
       const script = document.createElement("script");
       script.src = modulePath;
