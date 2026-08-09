@@ -33,6 +33,7 @@
       modulePaths.push("./fried-dough-workflow-loader.js?v=1");
       modulePaths.push("./fried-dough-ui.js?v=1");
       modulePaths.push("./chat-recipe-import-ui.js?v=2");
+      modulePaths.push("./fried-dough-example-ui.js?v=1");
       modulePaths.push("./calendar-ui-cleanup.js?v=1");
       modulePaths.push("./assistant-link.js?v=2");
     } else if (path.endsWith("/fermentation/baking-sessions.html")) {
