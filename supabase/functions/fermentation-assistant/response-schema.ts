@@ -1,0 +1,133 @@
+export const RESPONSE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "schema",
+    "version",
+    "state",
+    "proposal_id",
+    "summary",
+    "requires_user_confirmation",
+    "automatic_writes",
+    "proposal",
+    "explanations",
+    "assumptions",
+    "source_usage",
+    "uncertainties",
+    "confidence",
+  ],
+  properties: {
+    schema: { type: "string", enum: ["cucina-hub.fermentation-assistant.response"] },
+    version: { type: "integer", enum: [1] },
+    state: { type: "string", enum: ["preview"] },
+    proposal_id: { type: "string" },
+    summary: { type: "string" },
+    requires_user_confirmation: { type: "boolean", enum: [true] },
+    automatic_writes: { type: "boolean", enum: [false] },
+    proposal: {
+      type: "object",
+      additionalProperties: false,
+      required: [
+        "product_style",
+        "format",
+        "hydration_percent",
+        "dough_total_weight_g",
+        "ingredients",
+        "fermentation",
+        "oven",
+      ],
+      properties: {
+        product_style: { type: "string", enum: ["roman_pan", "neapolitan", "home_round", "focaccia", "bread"] },
+        format: {
+          type: "object",
+          additionalProperties: false,
+          required: ["shape", "portion_count", "portion_weight_g", "tray_width_cm", "tray_length_cm", "round_diameter_cm"],
+          properties: {
+            shape: { type: "string", enum: ["tray", "round", "loaf"] },
+            portion_count: { type: "integer" },
+            portion_weight_g: { type: "number" },
+            tray_width_cm: { anyOf: [{ type: "number" }, { type: "null" }] },
+            tray_length_cm: { anyOf: [{ type: "number" }, { type: "null" }] },
+            round_diameter_cm: { anyOf: [{ type: "number" }, { type: "null" }] },
+          },
+        },
+        hydration_percent: { type: "number" },
+        dough_total_weight_g: { type: "number" },
+        ingredients: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["role", "name", "grams", "source_id"],
+            properties: {
+              role: { type: "string", enum: ["flour", "water", "salt", "yeast", "oil", "sugar", "other"] },
+              name: { type: "string" },
+              grams: { type: "number" },
+              source_id: { type: "string" },
+            },
+          },
+        },
+        fermentation: {
+          type: "object",
+          additionalProperties: false,
+          required: ["phases"],
+          properties: {
+            phases: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                required: ["name", "duration_minutes", "temperature_c"],
+                properties: {
+                  name: { type: "string" },
+                  duration_minutes: { type: "integer" },
+                  temperature_c: { anyOf: [{ type: "number" }, { type: "null" }] },
+                },
+              },
+            },
+          },
+        },
+        oven: {
+          type: "object",
+          additionalProperties: false,
+          required: ["type", "temperature_c", "preheat_minutes", "bake_minutes"],
+          properties: {
+            type: { type: "string", enum: ["samsung_oven", "weber_kettle", "air_fryer", "other"] },
+            temperature_c: { type: "number" },
+            preheat_minutes: { type: "integer" },
+            bake_minutes: { type: "integer" },
+          },
+        },
+      },
+    },
+    explanations: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["topic", "text"],
+        properties: { topic: { type: "string" }, text: { type: "string" } },
+      },
+    },
+    assumptions: { type: "array", items: { type: "string" } },
+    source_usage: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["source_id", "usage"],
+        properties: { source_id: { type: "string" }, usage: { type: "string" } },
+      },
+    },
+    uncertainties: { type: "array", items: { type: "string" } },
+    confidence: {
+      type: "object",
+      additionalProperties: false,
+      required: ["level", "reason"],
+      properties: {
+        level: { type: "string", enum: ["low", "medium", "high"] },
+        reason: { type: "string" },
+      },
+    },
+  },
+} as const;
