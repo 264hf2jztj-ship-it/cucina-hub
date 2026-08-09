@@ -1,0 +1,4 @@
+project_id = "cucina-hub"
+
+[functions.fermentation-assistant]
+verify_jwt = true

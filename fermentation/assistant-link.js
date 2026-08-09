@@ -4,7 +4,7 @@
   function addLink() {
     if (document.querySelector("[data-fermentation-assistant-link]")) return true;
     const link = document.createElement("a");
-    link.href = "./fermentation-assistant.html?v=1";
+    link.href = "./fermentation-assistant.html?v=4";
     link.textContent = "ASSISTENTE AI";
     link.dataset.fermentationAssistantLink = "true";
 

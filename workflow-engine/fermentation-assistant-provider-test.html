@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test provider AI — Cucina Hub</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#f6f3ee;color:#26221d}main{max-width:760px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:18px}button{width:100%;padding:13px;border:0;border-radius:11px;background:#365d44;color:#fff;font:inherit;font-weight:800}.muted{color:#6d655c}.ok{color:#176b35}.error{color:#a62424}.result{margin-top:14px;padding:13px;border-radius:12px;background:#faf8f4;border:1px solid #e4ddd3;white-space:pre-wrap}.result.ok{background:#eef5f0;border-color:#bdd1c2}.result.error{background:#fff0f0;border-color:#e3b4b4}
+</style>
+</head>
+<body><main><h1>Test provider AI</h1><p class="muted">Controlla autenticazione, disponibilità della Edge Function, provider, modello e guardrail senza generare una ricetta e senza consumare token OpenAI.</p><section class="panel"><button id="run" type="button">VERIFICA EDGE FUNCTION</button><div id="result" class="result muted">In attesa.</div></section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script>
+<script src="../supabase-client.js?v=16"></script>
+<script>
+const result=document.querySelector('#result'),button=document.querySelector('#run');
+function show(text,kind='muted'){result.className=`result ${kind}`;result.textContent=text}
+async function errorMessage(error){if(error?.context instanceof Response){try{const body=await error.context.clone().json();if(body?.message)return body.message}catch{}}return error?.message||'Errore sconosciuto.'}
+button.addEventListener('click',async()=>{button.disabled=true;show('Verifica in corso…');try{const client=window.cucinaHubSupabase;if(!client)throw new Error('Supabase non inizializzato.');const auth=await client.auth.getSession();if(auth.error)throw auth.error;if(!auth.data.session?.user)throw new Error('Accedi a Cucina Hub prima di eseguire il test.');const{data,error}=await client.functions.invoke('fermentation-assistant',{body:{action:'health'}});if(error)throw new Error(await errorMessage(error));const failures=[];if(data?.ok!==true)failures.push('ok non è true');if(data?.provider!=='openai')failures.push('provider diverso da openai');if(data?.preview_only!==true)failures.push('preview_only non è true');if(data?.automatic_writes!==false)failures.push('automatic_writes non è false');if(data?.configured!==true)failures.push('OPENAI_API_KEY non configurata');if(failures.length)throw new Error(failures.join(' · '));show(`Test completato: Edge Function autenticata, provider ${data.provider}, modello ${data.model}, chiave configurata, anteprima obbligatoria e scritture automatiche disattivate.`, 'ok')}catch(error){show(error.message,'error')}finally{button.disabled=false}});
+</script></body></html>

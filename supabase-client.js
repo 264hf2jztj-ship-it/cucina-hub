@@ -23,22 +23,23 @@
     } else if (path.endsWith("/fermentation/baking-session-history.html")) {
       modulePaths.push("./history-photos.js?v=1");
       modulePaths.push("./history-learning-link.js?v=1");
-      modulePaths.push("./assistant-link.js?v=1");
+      modulePaths.push("./assistant-link.js?v=2");
     } else if (path.endsWith("/fermentation/fermentation-diary.html")) {
       modulePaths.push("./diary-photos.js?v=2");
       modulePaths.push("./diary-notes.js?v=1");
     } else if (path.endsWith("/fermentation/baking-wizard.html")) {
       modulePaths.push("./dough-sizing-ui.js?v=1");
       modulePaths.push("./calendar-ui-cleanup.js?v=1");
-      modulePaths.push("./assistant-link.js?v=1");
+      modulePaths.push("./assistant-link.js?v=2");
     } else if (path.endsWith("/fermentation/baking-sessions.html")) {
       modulePaths.push("./dough-sizing-ui.js?v=1");
       modulePaths.push("./history-learning-link.js?v=1");
-      modulePaths.push("./assistant-link.js?v=1");
+      modulePaths.push("./assistant-link.js?v=2");
     } else if (path.endsWith("/fermentation/fermentation-learning.html")) {
-      modulePaths.push("./assistant-link.js?v=1");
+      modulePaths.push("./assistant-link.js?v=2");
     } else if (path.endsWith("/fermentation/fermentation-assistant.html")) {
-      modulePaths.push("./assistant-response-ui.js?v=1");
+      modulePaths.push("./assistant-response-ui.js?v=2");
+      modulePaths.push("./assistant-provider-ui.js?v=1");
     }
 
     modulePaths.forEach(modulePath => {
