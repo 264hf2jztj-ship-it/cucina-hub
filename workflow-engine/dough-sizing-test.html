@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Test calcolo impasto da formato — Cucina Hub</title>
+  <style>body{font-family:system-ui;margin:0;background:#f6f3ee;color:#26221d}main{max-width:820px;margin:auto;padding:24px}.panel{background:#fff;border:1px solid #ddd5ca;border-radius:18px;padding:20px}button{padding:12px 16px;border:0;border-radius:10px;background:#365d44;color:#fff;font-weight:800}.result{margin-top:14px;padding:13px;border-radius:11px;background:#faf8f4;white-space:pre-wrap}.ok{background:#eef5f0;color:#176b35}.error{background:#fff0ed;color:#a62424}</style>
+</head>
+<body><main><section class="panel"><h1>Test calcolo impasto da formato</h1><p>Verifica teglie 30×40, panetti rotondi e derivazione della formula.</p><button id="run">ESEGUI TEST</button><div id="result" class="result">In attesa.</div></section></main>
+<script src="./dough-sizing-engine.js?v=1"></script>
+<script>
+const out=document.querySelector('#result');
+function assert(condition,message){if(!condition)throw new Error(message)}
+document.querySelector('#run').onclick=()=>{try{
+  const e=window.CucinaHubDoughSizingEngine;
+  const tray=e.calculate({style:'roman_pan',count:2,widthCm:30,lengthCm:40,profile:'standard'});
+  assert(tray.portion_weight_g===600,'Una teglia 30×40 standard deve richiedere 600 g.');
+  assert(tray.total_dough_weight_g===1200,'Due teglie devono richiedere 1200 g.');
+  const round=e.calculate({style:'neapolitan',count:3,diameterCm:30,profile:'standard'});
+  assert(Math.abs(round.portion_weight_g-247.4)<0.1,'Il panetto tondo Ø30 deve essere circa 247,4 g.');
+  const formula=e.deriveFormula({totalDoughWeightG:tray.total_dough_weight_g,hydrationPercent:80,saltPercent:2.5,stylePreset:{base:.15},hours:24,yeastType:'fresh_yeast',roomTemperatureC:22});
+  assert(Math.abs(formula.calculated_dough_weight_g-1200)<=0.2,'La formula deve ricostruire il peso totale target.');
+  assert(formula.flour_weight_g>650&&formula.flour_weight_g<660,'La farina attesa deve essere circa 657 g.');
+  const manual=e.calculate({style:'bread',manualFlourG:800});
+  assert(manual.shape==='manual'&&manual.manual_flour_g===800,'Il pane deve mantenere la modalità manuale.');
+  out.className='result ok';out.textContent=`Test completato: 2 teglie 30×40 = 2 panetti da 600 g, pizza tonda Ø30 = ${round.portion_weight_g} g per panetto, formula ingredienti e modalità pane manuale funzionano.`;
+}catch(error){out.className='result error';out.textContent='Test non superato: '+error.message}}
+</script></body></html>
