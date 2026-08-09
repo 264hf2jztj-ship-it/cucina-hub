@@ -3,6 +3,8 @@
 (() => {
   if (!window.location.pathname.endsWith("/fermentation/baking-wizard.html")) return;
 
+  const BUTTON_TEXT = "AGGIUNGI AL CALENDARIO";
+  const BUTTON_TITLE = "Aggiunge gli appuntamenti della timeline al Calendario tramite il Comando Rapido Cucina Hub Calendario.";
   const DIRECT_INFO = '<strong>Aggiunta diretta su iPhone e iPad</strong><br><span class="muted">Cucina Hub avvia il Comando Rapido “Cucina Hub Calendario” con gli appuntamenti della timeline.</span>';
 
   function simplifyCalendarUi() {
@@ -11,8 +13,8 @@
 
     const calendarButton = document.querySelector("#calendar");
     if (calendarButton) {
-      calendarButton.textContent = "AGGIUNGI AL CALENDARIO";
-      calendarButton.title = "Aggiunge gli appuntamenti della timeline al Calendario tramite il Comando Rapido Cucina Hub Calendario.";
+      if (calendarButton.textContent !== BUTTON_TEXT) calendarButton.textContent = BUTTON_TEXT;
+      if (calendarButton.title !== BUTTON_TITLE) calendarButton.title = BUTTON_TITLE;
     }
 
     const calendarInfo = document.querySelector("#calendarInfo");
