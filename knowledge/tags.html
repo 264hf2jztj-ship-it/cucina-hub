@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6b4f">
+  <meta name="description" content="Tag Engine di Cucina Hub.">
+  <title>Tag Engine — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../style.css?v=13">
+  <link rel="stylesheet" href="knowledge.css?v=2">
+</head>
+<body>
+  <a class="skip-link" href="#tagMain">Vai al contenuto</a>
+
+  <header class="knowledge-topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">🏷️</div>
+      <div>
+        <p class="eyebrow">Milestone C</p>
+        <h1>Tag Engine</h1>
+      </div>
+    </div>
+    <div class="knowledge-topbar-actions">
+      <nav class="knowledge-nav" aria-label="Knowledge">
+        <a class="knowledge-nav-link" href="index.html?v=2">Oggetti</a>
+        <a class="knowledge-nav-link is-active" href="tags.html?v=1" aria-current="page">Tag</a>
+      </nav>
+      <a class="button secondary" href="../index.html?v=13">← Cucina Hub</a>
+    </div>
+  </header>
+
+  <main id="tagMain" class="knowledge-main" tabindex="-1">
+    <section class="knowledge-intro tag-intro">
+      <div>
+        <p class="eyebrow">Tassonomia personale</p>
+        <h2>Una parola, contenuti diversi.</h2>
+        <p>
+          Crea tag riutilizzabili e applicali a Knowledge Object, ricette, manuali,
+          corsi, elettrodomestici e sessioni senza modificare i contenuti originali.
+        </p>
+      </div>
+      <div class="knowledge-principle" role="note" aria-label="Principio del Tag Engine">
+        <strong>Classifica, non duplica</strong>
+        <span>Ogni tag è personale e ogni collegamento rimanda al contenuto originale.</span>
+      </div>
+    </section>
+
+    <p id="pageStatus" class="knowledge-status" role="status" aria-live="polite">
+      Caricamento…
+    </p>
+
+    <section id="authGate" class="knowledge-panel knowledge-gate" hidden>
+      <h2>Accedi prima di continuare</h2>
+      <p>La sessione privata non è disponibile. Torna alla dashboard ed effettua l’accesso.</p>
+      <a class="button" href="../index.html?v=13">Vai all’accesso</a>
+    </section>
+
+    <div id="tagWorkspace" class="knowledge-workspace" hidden>
+      <div class="knowledge-column">
+        <section class="knowledge-panel" aria-labelledby="tagFormTitle">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Catalogo</p>
+              <h2 id="tagFormTitle">Nuovo tag</h2>
+            </div>
+          </div>
+
+          <form id="tagForm" class="knowledge-form">
+            <input id="tagId" type="hidden">
+
+            <label for="tagName">Nome</label>
+            <input
+              id="tagName"
+              name="name"
+              type="text"
+              maxlength="80"
+              placeholder="Es. pizza, colazione, barbecue"
+              autocomplete="off"
+              required
+            >
+
+            <div class="form-actions">
+              <button id="saveTag" class="button" type="submit">SALVA TAG</button>
+              <button id="cancelTagEdit" class="button secondary" type="button" hidden>ANNULLA</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="knowledge-panel" aria-labelledby="tagListTitle">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Tassonomia</p>
+              <h2 id="tagListTitle">I tuoi tag</h2>
+            </div>
+            <span id="tagCount" class="badge">0</span>
+          </div>
+          <div id="tagList" class="tag-list"></div>
+        </section>
+      </div>
+
+      <section id="tagDetail" class="knowledge-panel knowledge-detail" aria-live="polite">
+        <div class="knowledge-empty">
+          <span aria-hidden="true">🏷️</span>
+          <h2>Seleziona un tag</h2>
+          <p>Qui vedrai e gestirai tutti i contenuti collegati.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js?v=12"></script>
+  <script src="../supabase-client.js?v=12"></script>
+  <script src="tag-engine.js?v=1"></script>
+</body>
+</html>

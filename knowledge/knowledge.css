@@ -22,6 +22,37 @@
   font-size: clamp(1.2rem, 3vw, 1.6rem);
 }
 
+.knowledge-topbar-actions,
+.knowledge-nav {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.knowledge-nav {
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.knowledge-nav-link {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 13px;
+  border-radius: 9px;
+  color: var(--muted);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.knowledge-nav-link.is-active {
+  background: var(--primary);
+  color: #fff;
+}
+
 .knowledge-main {
   width: min(1240px, 100%);
   margin: 0 auto;
@@ -212,6 +243,12 @@
   gap: 10px;
 }
 
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .object-card {
   display: grid;
   gap: 6px;
@@ -238,6 +275,44 @@
 .object-card span {
   color: var(--muted);
   font-size: 0.84rem;
+}
+
+.tag-card {
+  display: grid;
+  gap: 5px;
+  min-height: 68px;
+  min-width: min(150px, 100%);
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: #fff;
+  color: var(--text);
+  text-align: left;
+}
+
+.tag-card:hover,
+.tag-card.is-selected {
+  border-color: var(--primary);
+  background: var(--panel-soft);
+}
+
+.tag-card strong {
+  font-size: 0.98rem;
+}
+
+.tag-card span,
+.tag-delete-note {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.tag-delete-note {
+  margin: 9px 0 0;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
 }
 
 .knowledge-empty {
@@ -352,10 +427,15 @@
 
 @media (max-width: 620px) {
   .knowledge-topbar {
-    align-items: flex-start;
+    align-items: stretch;
+    flex-direction: column;
   }
 
-  .knowledge-topbar .button {
+  .knowledge-topbar-actions {
+    justify-content: space-between;
+  }
+
+  .knowledge-topbar-actions > .button {
     padding-inline: 12px;
   }
 
@@ -384,6 +464,15 @@
   .knowledge-topbar .brand-mark {
     width: 40px;
     height: 40px;
+  }
+
+  .knowledge-topbar-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .knowledge-nav-link {
+    flex: 1;
   }
 
   .source-row {
