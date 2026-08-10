@@ -18,7 +18,10 @@
 - ✅ 8.4.4 Timeline intelligente
 - ✅ 8.4.5 Diario fermentazioni
 - ✅ 8.4.6A Importazione Chat progetto Cucina → Wizard
+- ✅ 8.4.6B Supporto impasti fritti / contratto Chat→Wizard v2
 - ⏸️ 8.4.6 AI Fermentation Assistant — infrastruttura prototipata; configurazione del provider, consumo API e attivazione operativa rinviati alla fase AI finale del progetto
+
+> Stato del supporto impasti fritti: validati trasferimento dalla chat, salvataggio sessione, Sessione Guidata, frittura, gestione piastra a induzione e più lavorazioni. Il numero di lavorazioni (`mixing_batches`) è attualmente fornito dal pacchetto JSON; la suddivisione automatica in base alla capacità dell’impastatrice non è implementata.
 
 ### Milestone C — Knowledge
 - Knowledge Objects
@@ -53,6 +56,6 @@
 
 ---
 
-**Aggiornato:** 9 agosto 2026  
-**Step completato:** 8.4.6A — Importazione Chat progetto Cucina → Wizard  
+**Aggiornato:** 10 agosto 2026  
+**Step completato:** 8.4.6B — Supporto impasti fritti / Chat→Wizard v2  
 **Prossimo macro-step:** Milestone C — Knowledge Objects
