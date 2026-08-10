@@ -501,7 +501,8 @@ async function initialize() {
 
     state.ownerUserId = user.id;
     setStatus("Caricamento Knowledge Objects e fonti…");
-    await Promise.all([loadCatalogs(), loadKnowledgeData(null)]);
+    const requestedObjectId = new URLSearchParams(window.location.search).get("object");
+    await Promise.all([loadCatalogs(), loadKnowledgeData(requestedObjectId)]);
     renderAll();
     elements.workspace.hidden = false;
     setStatus(

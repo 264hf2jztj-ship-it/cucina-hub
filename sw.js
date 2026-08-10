@@ -1,4 +1,4 @@
-const CACHE_NAME = "cucina-hub-v12";
+const CACHE_NAME = "cucina-hub-v13";
 
 const APP_SHELL = [
   "./",
