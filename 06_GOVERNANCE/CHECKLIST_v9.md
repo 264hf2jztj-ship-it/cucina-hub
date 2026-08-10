@@ -108,7 +108,16 @@
   - [x] UI iPad-first e accesso dalla navigazione principale
   - [x] Test iPad completato
   - [x] Merge PR #114
-- [ ] Tag Engine
+- [x] Tag Engine MVP
+  - [x] Riuso del catalogo `tags` e dei collegamenti ricetta `recipe_tags`
+  - [x] Tabella `tag_links` per Knowledge Object, manuali, corsi, elettrodomestici e sessioni
+  - [x] Creazione, rinomina ed eliminazione dei tag
+  - [x] Applicazione e rimozione dei tag sui sei tipi di contenuto
+  - [x] Vincolo a singolo target e blocco dei collegamenti duplicati
+  - [x] RLS per proprietario e verifica della proprietà delle fonti
+  - [x] UI iPad-first e navigazione Knowledge
+  - [x] Test iPad completato
+  - [x] Merge PR #116
 - [ ] Ricerca globale
 - [ ] Knowledge Graph
 
@@ -130,4 +139,4 @@
 ---
 
 **Aggiornato:** 10 agosto 2026  
-**Stato corrente:** Knowledge Objects MVP completati e validati su iPad (PR #114); prossimo step operativo `Milestone C — Tag Engine`.
+**Stato corrente:** Tag Engine MVP completato e validato su iPad (PR #116); prossimo step operativo `Milestone C — Ricerca globale`.
