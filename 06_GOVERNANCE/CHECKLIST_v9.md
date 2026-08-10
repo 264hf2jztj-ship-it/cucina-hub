@@ -99,7 +99,15 @@
 > La configurazione e l’uso del provider AI sono intenzionalmente sospesi per evitare costi e consumo API durante lo sviluppo delle sezioni principali.
 
 ## Milestone C
-- [ ] Knowledge Objects
+- [x] Knowledge Objects MVP
+  - [x] Tabelle `knowledge_objects` e `knowledge_object_links`
+  - [x] CRUD dei Knowledge Object
+  - [x] Collegamenti tipizzati a ricette, manuali, corsi, elettrodomestici e sessioni
+  - [x] Integrità referenziale e blocco dei collegamenti duplicati
+  - [x] RLS per proprietario e verifica della proprietà delle fonti
+  - [x] UI iPad-first e accesso dalla navigazione principale
+  - [x] Test iPad completato
+  - [x] Merge PR #114
 - [ ] Tag Engine
 - [ ] Ricerca globale
 - [ ] Knowledge Graph
@@ -122,4 +130,4 @@
 ---
 
 **Aggiornato:** 10 agosto 2026  
-**Stato corrente:** Milestone B completata nella modalità senza provider AI; prossimo step operativo `Milestone C — Knowledge Objects`.
+**Stato corrente:** Knowledge Objects MVP completati e validati su iPad (PR #114); prossimo step operativo `Milestone C — Tag Engine`.
