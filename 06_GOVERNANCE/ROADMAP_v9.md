@@ -24,7 +24,7 @@
 > Stato del supporto impasti fritti: validati trasferimento dalla chat, salvataggio sessione, Sessione Guidata, frittura, gestione piastra a induzione e più lavorazioni. Il numero di lavorazioni (`mixing_batches`) è attualmente fornito dal pacchetto JSON; la suddivisione automatica in base alla capacità dell’impastatrice non è implementata.
 
 ### Milestone C — Knowledge
-- Knowledge Objects
+- ✅ Knowledge Objects — MVP con CRUD, collegamenti tipizzati alle fonti, RLS e test iPad completato (PR #114)
 - Tag Engine
 - Ricerca globale
 - Knowledge Graph
@@ -57,5 +57,5 @@
 ---
 
 **Aggiornato:** 10 agosto 2026  
-**Step completato:** 8.4.6B — Supporto impasti fritti / Chat→Wizard v2  
-**Prossimo macro-step:** Milestone C — Knowledge Objects
+**Step completato:** Milestone C — Knowledge Objects MVP (PR #114)  
+**Prossimo macro-step:** Milestone C — Tag Engine
