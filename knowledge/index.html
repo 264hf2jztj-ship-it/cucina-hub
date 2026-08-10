@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="utf-8">
@@ -8,7 +8,7 @@
   <title>Knowledge Objects — Cucina Hub</title>
   <link rel="icon" href="../icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../style.css?v=13">
-  <link rel="stylesheet" href="knowledge.css?v=1">
+  <link rel="stylesheet" href="knowledge.css?v=2">
 </head>
 <body>
   <a class="skip-link" href="#knowledgeMain">Vai al contenuto</a>
@@ -21,7 +21,13 @@
         <h1>Knowledge Objects</h1>
       </div>
     </div>
-    <a class="button secondary" href="../index.html?v=13">← Cucina Hub</a>
+    <div class="knowledge-topbar-actions">
+      <nav class="knowledge-nav" aria-label="Knowledge">
+        <a class="knowledge-nav-link is-active" href="index.html?v=2" aria-current="page">Oggetti</a>
+        <a class="knowledge-nav-link" href="tags.html?v=1">Tag</a>
+      </nav>
+      <a class="button secondary" href="../index.html?v=13">← Cucina Hub</a>
+    </div>
   </header>
 
   <main id="knowledgeMain" class="knowledge-main" tabindex="-1">
@@ -34,7 +40,7 @@
           Le fonti originali restano separate e non vengono duplicate o modificate.
         </p>
       </div>
-      <div class="knowledge-principle" aria-label="Principio architetturale">
+      <div class="knowledge-principle" role="note" aria-label="Principio architetturale">
         <strong>Aggrega, non sostituisce</strong>
         <span>Ogni collegamento rimanda sempre al dato originale.</span>
       </div>
@@ -67,6 +73,7 @@
             <input
               id="objectTitle"
               name="title"
+              type="text"
               maxlength="160"
               placeholder="Es. Pizza in teglia romana"
               autocomplete="off"
@@ -114,6 +121,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js?v=12"></script>
   <script src="../supabase-client.js?v=12"></script>
-  <script src="knowledge-objects.js?v=1"></script>
+  <script src="knowledge-objects.js?v=2"></script>
 </body>
 </html>
