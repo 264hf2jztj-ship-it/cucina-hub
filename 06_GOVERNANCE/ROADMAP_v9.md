@@ -25,7 +25,7 @@
 
 ### Milestone C — Knowledge
 - ✅ Knowledge Objects — MVP con CRUD, collegamenti tipizzati alle fonti, RLS e test iPad completato (PR #114)
-- Tag Engine
+- ✅ Tag Engine — MVP con catalogo condiviso, collegamenti tipizzati ai contenuti, RLS e test iPad completato (PR #116)
 - Ricerca globale
 - Knowledge Graph
 
@@ -57,5 +57,5 @@
 ---
 
 **Aggiornato:** 10 agosto 2026  
-**Step completato:** Milestone C — Knowledge Objects MVP (PR #114)  
-**Prossimo macro-step:** Milestone C — Tag Engine
+**Step completato:** Milestone C — Tag Engine MVP (PR #116)  
+**Prossimo macro-step:** Milestone C — Ricerca globale
