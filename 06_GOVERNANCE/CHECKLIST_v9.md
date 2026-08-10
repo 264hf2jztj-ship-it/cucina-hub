@@ -67,6 +67,26 @@
 - [x] Test iPad completato
 - [x] Merge PR #110
 
+### 8.4.6B Supporto impasti fritti / Chat→Wizard v2
+- [x] Contratto `cucina-hub.chat-recipe` versione 2
+- [x] `product_style: fried_dough`
+- [x] `cooking.method: deep_fry`
+- [x] Profilo KitchenCraft inox Ø20 cm senza cestello
+- [x] Piastra a induzione IKEA con potenze operative
+- [x] Temperatura olio e tempo per lato
+- [x] Nessuna fase frigorifero
+- [x] Timeline con riscaldamento olio e frittura
+- [x] Gestione olio e zucchero/miele nell’impasto
+- [x] Più lavorazioni tramite `mixing_batches`
+- [x] Salvataggio della sessione validato
+- [x] Sessione Guidata validata
+- [x] Flusso frittura e impostazioni induzione validati
+- [x] Compatibilità pacchetti v1 da forno
+- [x] Blocco di sicurezza validato
+- [x] Merge PR #112
+
+> Nota: `mixing_batches` è attualmente un input del pacchetto Chat→Wizard. La divisione automatica in base alla quantità di farina o alla capacità dell’impastatrice non è implementata e non va considerata una funzione completata.
+
 ### 8.4.6 AI Fermentation Assistant — rinviato alla fase AI finale
 - [x] Richiesta strutturata in anteprima
 - [x] Contratto e validatore della risposta
@@ -101,5 +121,5 @@
 
 ---
 
-**Aggiornato:** 9 agosto 2026  
+**Aggiornato:** 10 agosto 2026  
 **Stato corrente:** Milestone B completata nella modalità senza provider AI; prossimo step operativo `Milestone C — Knowledge Objects`.
