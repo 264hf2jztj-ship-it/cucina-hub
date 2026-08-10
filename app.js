@@ -74,7 +74,17 @@ async function init() {
     elements.loading.hidden = true;
     elements.root.hidden = false;
     bindEvents();
-    renderView("dashboard");
+    const parameters = new URLSearchParams(window.location.search);
+    const requestedView = parameters.get("view");
+    const allowedViews = new Set([
+      "dashboard", "recipes", "hurom", "ninja", "pizza", "appliances", "changelog"
+    ]);
+    renderView(allowedViews.has(requestedView) ? requestedView : "dashboard");
+
+    const requestedRecipe = parameters.get("recipe");
+    if (requestedRecipe && state.recipes.some(recipe => recipe.id === requestedRecipe)) {
+      window.setTimeout(() => openRecipe(requestedRecipe), 0);
+    }
     registerServiceWorker();
   } catch (error) {
     console.error(error);
