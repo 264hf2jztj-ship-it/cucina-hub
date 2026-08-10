@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6b4f">
+  <meta name="description" content="Knowledge Graph personale di Cucina Hub.">
+  <title>Knowledge Graph — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../style.css?v=13">
+  <link rel="stylesheet" href="knowledge.css?v=3">
+  <link rel="stylesheet" href="knowledge-graph.css?v=1">
+</head>
+<body>
+  <a class="skip-link" href="#graphMain">Vai al contenuto</a>
+
+  <header class="knowledge-topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">🕸️</div>
+      <div>
+        <p class="eyebrow">Milestone C</p>
+        <h1>Knowledge Graph</h1>
+      </div>
+    </div>
+    <div class="knowledge-topbar-actions">
+      <nav class="knowledge-nav" aria-label="Knowledge">
+        <a class="knowledge-nav-link" href="index.html?v=3">Oggetti</a>
+        <a class="knowledge-nav-link" href="tags.html?v=2">Tag</a>
+        <a class="knowledge-nav-link" href="search.html?v=1">Cerca</a>
+        <a class="knowledge-nav-link is-active" href="graph.html?v=1" aria-current="page">Grafo</a>
+      </nav>
+      <a class="button secondary" href="../index.html?v=14">← Cucina Hub</a>
+    </div>
+  </header>
+
+  <main id="graphMain" class="knowledge-main graph-main" tabindex="-1">
+    <section class="knowledge-intro graph-intro">
+      <div>
+        <p class="eyebrow">Relazioni esplicite</p>
+        <h2>Collega i concetti, senza confondere le fonti.</h2>
+        <p>
+          Crea relazioni tipizzate tra Knowledge Object e osserva il vicinato di ogni concetto.
+          Ricette, manuali, corsi, elettrodomestici e sessioni restano nelle fonti originali.
+        </p>
+      </div>
+      <div class="knowledge-principle" role="note" aria-label="Principio del Knowledge Graph">
+        <strong>Relazioni dichiarate, non inventate</strong>
+        <span>Il grafo mostra soltanto i collegamenti creati esplicitamente da te.</span>
+      </div>
+    </section>
+
+    <p id="pageStatus" class="knowledge-status" role="status" aria-live="polite">
+      Caricamento…
+    </p>
+
+    <section id="authGate" class="knowledge-panel knowledge-gate" hidden>
+      <h2>Accedi prima di continuare</h2>
+      <p>La sessione privata non è disponibile. Torna alla dashboard ed effettua l’accesso.</p>
+      <a class="button" href="../index.html?v=14">Vai all’accesso</a>
+    </section>
+
+    <div id="graphWorkspace" class="graph-workspace" hidden>
+      <div class="graph-controls-column">
+        <section class="knowledge-panel" aria-labelledby="relationFormTitle">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Nuovo arco</p>
+              <h2 id="relationFormTitle">Crea una relazione</h2>
+            </div>
+          </div>
+
+          <form id="relationForm" class="knowledge-form graph-form">
+            <label for="sourceObject">Partenza</label>
+            <select id="sourceObject" required></select>
+
+            <label for="relationType">Relazione</label>
+            <select id="relationType" required></select>
+
+            <label for="targetObject">Arrivo</label>
+            <select id="targetObject" required></select>
+
+            <label for="relationNote">Nota facoltativa</label>
+            <textarea
+              id="relationNote"
+              maxlength="1000"
+              rows="3"
+              placeholder="Perché questa relazione è utile o in quali condizioni vale."
+            ></textarea>
+
+            <button id="saveRelation" class="button" type="submit">AGGIUNGI RELAZIONE</button>
+          </form>
+
+          <p id="relationFormHint" class="graph-hint">
+            Servono almeno due Knowledge Object per creare una relazione.
+          </p>
+        </section>
+
+        <section class="knowledge-panel" aria-labelledby="focusTitle">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Punto di vista</p>
+              <h2 id="focusTitle">Oggetto al centro</h2>
+            </div>
+          </div>
+
+          <label class="graph-focus-label" for="focusObject">Knowledge Object</label>
+          <select id="focusObject"></select>
+
+          <div class="graph-stats" aria-label="Statistiche del grafo">
+            <div>
+              <strong id="objectCount">0</strong>
+              <span>oggetti</span>
+            </div>
+            <div>
+              <strong id="relationCount">0</strong>
+              <span>relazioni</span>
+            </div>
+            <div>
+              <strong id="neighborCount">0</strong>
+              <span>collegati</span>
+            </div>
+          </div>
+
+          <a class="button secondary graph-create-object" href="index.html?v=3">GESTISCI OGGETTI</a>
+        </section>
+      </div>
+
+      <div class="graph-content-column">
+        <section class="knowledge-panel graph-panel" aria-labelledby="graphTitle">
+          <div class="panel-heading graph-panel-heading">
+            <div>
+              <p class="eyebrow">Vicinato diretto</p>
+              <h2 id="graphTitle">Grafo personale</h2>
+            </div>
+            <span id="focusBadge" class="badge">Nessun oggetto</span>
+          </div>
+
+          <p id="graphSummary" class="graph-summary">
+            Seleziona un Knowledge Object per visualizzare le sue relazioni dirette.
+          </p>
+
+          <div id="graphStage" class="graph-stage">
+            <svg
+              id="knowledgeGraph"
+              class="knowledge-graph"
+              viewBox="0 0 900 520"
+              role="img"
+              aria-labelledby="graphTitle graphSummary"
+            ></svg>
+          </div>
+        </section>
+
+        <section class="knowledge-panel" aria-labelledby="relationListTitle">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Dettaglio accessibile</p>
+              <h2 id="relationListTitle">Relazioni dell’oggetto</h2>
+            </div>
+            <span id="visibleRelationCount" class="badge">0</span>
+          </div>
+          <div id="relationList" class="graph-relation-list" aria-live="polite"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js?v=12"></script>
+  <script src="../supabase-client.js?v=12"></script>
+  <script src="knowledge-graph-engine.js?v=1"></script>
+  <script src="knowledge-graph.js?v=1"></script>
+</body>
+</html>
