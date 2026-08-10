@@ -118,7 +118,16 @@
   - [x] UI iPad-first e navigazione Knowledge
   - [x] Test iPad completato
   - [x] Merge PR #116
-- [ ] Ricerca globale
+- [x] Ricerca globale MVP
+  - [x] Indice unificato derivato al caricamento dai dati autorizzati via RLS
+  - [x] Knowledge Object, ricette, manuali, corsi, elettrodomestici e sessioni
+  - [x] Ricerca in titoli, ingredienti, tag, note e metadati
+  - [x] Normalizzazione degli accenti e ordinamento per rilevanza
+  - [x] Filtri per tipo e tag
+  - [x] Azzeramento dei filtri e navigazione alle sezioni originali
+  - [x] Nessuna copia persistente e nessuna migration aggiuntiva
+  - [x] UI iPad-first e test iPad completato
+  - [x] Merge PR #118
 - [ ] Knowledge Graph
 
 ## Milestone D
@@ -139,4 +148,4 @@
 ---
 
 **Aggiornato:** 10 agosto 2026  
-**Stato corrente:** Tag Engine MVP completato e validato su iPad (PR #116); prossimo step operativo `Milestone C — Ricerca globale`.
+**Stato corrente:** Ricerca globale MVP completata e validata su iPad (PR #118); prossimo step operativo `Milestone C — Knowledge Graph`.
