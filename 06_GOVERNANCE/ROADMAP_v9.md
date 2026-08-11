@@ -39,6 +39,8 @@
 > Decisione operativa: durante lo sviluppo delle sezioni non-AI, le ricette vengono preparate e perfezionate nella chat del progetto Cucina e trasferite in Cucina Hub tramite pacchetti strutturati e validati. L’AI interna verrà attivata soltanto quando Biblioteca, Laboratorio, Planner e Learning saranno sufficientemente completi.
 
 ### Milestone E — Planner
+- ✅ Planner Core MVP — pianificazione manuale collegata alle ricette della Biblioteca, CRUD, vincoli, RLS e test iPad completato (PR #122)
+- Vista settimanale
 - Meal Prep
 - Menu
 - Lista spesa
@@ -56,7 +58,10 @@
 
 ---
 
-**Aggiornato:** 11 agosto 2026  
-**Step completato:** Milestone C — Knowledge Graph MVP (PR #120)  
-**Macro-step completato:** Milestone C — Knowledge  
-**Prossimo macro-step operativo:** Milestone E — Planner; Milestone D — AI resta rinviata alla fase AI finale, dopo il completamento delle sezioni principali
+**Aggiornato:** 11 agosto 2026
+
+**Step completato:** Milestone E — Planner Core MVP (PR #122), validato su iPad
+
+**Macro-step in corso:** Milestone E — Planner
+
+**Prossimo task operativo:** vista settimanale del Planner; Milestone D — AI resta rinviata alla fase AI finale, dopo il completamento delle sezioni principali
