@@ -147,6 +147,17 @@
 
 ## Milestone E
 - [ ] Planner
+  - [x] Planner Core MVP
+    - [x] Tabella personale `planned_meals` collegata alle ricette della Biblioteca tramite FK, senza duplicazione dei contenuti
+    - [x] Data, fascia del pasto, orario facoltativo, porzioni e nota
+    - [x] Vincoli, indici, blocco dei duplicati e RLS per proprietario
+    - [x] Creazione, modifica ed eliminazione dei pasti pianificati
+    - [x] Elenco cronologico raggruppato per giorno
+    - [x] Stati di caricamento, autenticazione assente, vuoto, successo ed errore
+    - [x] UI touch-first e accesso dalla navigazione principale
+    - [x] Test iPad completato
+    - [x] Merge PR #122
+  - [ ] Vista settimanale
 - [ ] Meal Prep
 - [ ] Calendario
 - [ ] Lista spesa
@@ -156,5 +167,6 @@
 
 ---
 
-**Aggiornato:** 11 agosto 2026  
-**Stato corrente:** Milestone C — Knowledge completata e validata su iPad; Knowledge Graph MVP unito con PR #120. Prossimo macro-step operativo: `Milestone E — Planner`; Milestone D — AI resta rinviata alla fase finale.
+**Aggiornato:** 11 agosto 2026
+
+**Stato corrente:** Milestone E — Planner avviata; Planner Core MVP unito con PR #122 e validato su iPad. Prossimo task operativo: vista settimanale del Planner; Milestone D — AI resta rinviata alla fase finale.
