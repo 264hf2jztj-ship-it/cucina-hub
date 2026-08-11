@@ -98,7 +98,7 @@
 
 > La configurazione e l’uso del provider AI sono intenzionalmente sospesi per evitare costi e consumo API durante lo sviluppo delle sezioni principali.
 
-## Milestone C
+## Milestone C ✅
 - [x] Knowledge Objects MVP
   - [x] Tabelle `knowledge_objects` e `knowledge_object_links`
   - [x] CRUD dei Knowledge Object
@@ -128,9 +128,18 @@
   - [x] Nessuna copia persistente e nessuna migration aggiuntiva
   - [x] UI iPad-first e test iPad completato
   - [x] Merge PR #118
-- [ ] Knowledge Graph
+- [x] Knowledge Graph MVP
+  - [x] Tabella `knowledge_relations`
+  - [x] Relazioni esplicite e tipizzate tra Knowledge Object
+  - [x] Tipi supportati: `uses`, `compatible_with`, `derives_from`, `replaces`, `requires`, `related_to`, `executed_with`, `improved_by`
+  - [x] Blocco delle auto-relazioni e dei duplicati, inclusi quelli invertiti per le relazioni simmetriche
+  - [x] RLS con verifica della proprietà di entrambi i nodi
+  - [x] Vista iPad-first con grafo visuale e lista accessibile
+  - [x] Creazione, centratura ed eliminazione delle relazioni validate
+  - [x] Test iPad completato
+  - [x] Merge PR #120
 
-## Milestone D
+## Milestone D — rinviata alla fase AI finale
 - [ ] AI operativa
 - [ ] Chat interna
 - [ ] RAG
@@ -147,5 +156,5 @@
 
 ---
 
-**Aggiornato:** 10 agosto 2026  
-**Stato corrente:** Ricerca globale MVP completata e validata su iPad (PR #118); prossimo step operativo `Milestone C — Knowledge Graph`.
+**Aggiornato:** 11 agosto 2026  
+**Stato corrente:** Milestone C — Knowledge completata e validata su iPad; Knowledge Graph MVP unito con PR #120. Prossimo macro-step operativo: `Milestone E — Planner`; Milestone D — AI resta rinviata alla fase finale.
