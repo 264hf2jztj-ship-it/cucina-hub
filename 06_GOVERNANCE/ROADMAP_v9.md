@@ -23,11 +23,11 @@
 
 > Stato del supporto impasti fritti: validati trasferimento dalla chat, salvataggio sessione, Sessione Guidata, frittura, gestione piastra a induzione e più lavorazioni. Il numero di lavorazioni (`mixing_batches`) è attualmente fornito dal pacchetto JSON; la suddivisione automatica in base alla capacità dell’impastatrice non è implementata.
 
-### Milestone C — Knowledge
+### Milestone C — Knowledge ✅
 - ✅ Knowledge Objects — MVP con CRUD, collegamenti tipizzati alle fonti, RLS e test iPad completato (PR #114)
 - ✅ Tag Engine — MVP con catalogo condiviso, collegamenti tipizzati ai contenuti, RLS e test iPad completato (PR #116)
 - ✅ Ricerca globale — MVP con indice derivato, ricerca unificata, filtri per tipo/tag e test iPad completato (PR #118)
-- Knowledge Graph
+- ✅ Knowledge Graph — MVP con relazioni esplicite e tipizzate tra Knowledge Object, vincoli di integrità, RLS, vista grafica/lista e test iPad completato (PR #120)
 
 ### Milestone D — AI
 - Assistente AI
@@ -56,6 +56,7 @@
 
 ---
 
-**Aggiornato:** 10 agosto 2026  
-**Step completato:** Milestone C — Ricerca globale MVP (PR #118)  
-**Prossimo macro-step:** Milestone C — Knowledge Graph
+**Aggiornato:** 11 agosto 2026  
+**Step completato:** Milestone C — Knowledge Graph MVP (PR #120)  
+**Macro-step completato:** Milestone C — Knowledge  
+**Prossimo macro-step operativo:** Milestone E — Planner; Milestone D — AI resta rinviata alla fase AI finale, dopo il completamento delle sezioni principali
