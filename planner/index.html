@@ -8,7 +8,7 @@
   <title>Planner — Cucina Hub</title>
   <link rel="icon" href="../icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../style.css?v=13">
-  <link rel="stylesheet" href="planner.css?v=1">
+  <link rel="stylesheet" href="planner.css?v=2">
 </head>
 <body>
   <a class="skip-link" href="#plannerMain">Vai al contenuto</a>
@@ -27,8 +27,8 @@
   <main id="plannerMain" class="planner-main" tabindex="-1">
     <section class="planner-intro">
       <div>
-        <p class="eyebrow">Planner Core MVP</p>
-        <h2>Organizza i pasti partendo dalle tue ricette.</h2>
+        <p class="eyebrow">Planner settimanale</p>
+        <h2>Organizza la settimana partendo dalle tue ricette.</h2>
         <p>
           Scegli una ricetta della Biblioteca e indica quando vuoi prepararla.
           Il Planner conserva il collegamento, senza copiare o modificare la ricetta originale.
@@ -63,6 +63,33 @@
     </section>
 
     <div id="plannerWorkspace" class="planner-workspace" hidden>
+      <section class="planner-panel planner-week-panel" aria-labelledby="weekTitle">
+        <div class="panel-heading week-panel-heading">
+          <div>
+            <p class="eyebrow">Settimana</p>
+            <h2 id="weekTitle">Programma settimanale</h2>
+          </div>
+          <span id="weekMealCount" class="badge">0</span>
+        </div>
+
+        <div class="week-toolbar">
+          <div class="week-range-copy">
+            <span>Intervallo selezionato</span>
+            <strong id="weekRange" aria-live="polite">Caricamento settimana…</strong>
+          </div>
+          <div class="week-controls" aria-label="Navigazione tra settimane">
+            <button id="previousWeek" class="button secondary" type="button" aria-label="Vai alla settimana precedente">← PRECEDENTE</button>
+            <button id="currentWeek" class="button secondary" type="button">OGGI</button>
+            <button id="nextWeek" class="button secondary" type="button" aria-label="Vai alla settimana successiva">SUCCESSIVA →</button>
+          </div>
+        </div>
+
+        <p id="weekEmptySummary" class="week-empty-summary" hidden>
+          Nessun pasto in questa settimana. Usa “Aggiungi” nel giorno che preferisci.
+        </p>
+        <div id="weekGrid" class="week-grid" role="list" aria-live="polite" aria-busy="true"></div>
+      </section>
+
       <section id="plannerEditor" class="planner-panel planner-editor" aria-labelledby="formTitle">
         <div class="panel-heading">
           <div>
@@ -132,8 +159,8 @@
       <section class="planner-panel planner-list-panel" aria-labelledby="mealListTitle">
         <div class="panel-heading">
           <div>
-            <p class="eyebrow">Programma</p>
-            <h2 id="mealListTitle">Pasti pianificati</h2>
+            <p class="eyebrow">Dettaglio</p>
+            <h2 id="mealListTitle">Pasti della settimana</h2>
           </div>
           <span id="mealCount" class="badge">0</span>
         </div>
@@ -145,7 +172,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js?v=12"></script>
   <script src="../supabase-client.js?v=12"></script>
-  <script src="planner-core.js?v=1"></script>
-  <script src="planner.js?v=1"></script>
+  <script src="planner-core.js?v=2"></script>
+  <script src="planner.js?v=2"></script>
 </body>
 </html>

@@ -9,7 +9,20 @@ const css = fs.readFileSync(path.join(__dirname, "planner.css"), "utf8");
 const js = fs.readFileSync(path.join(__dirname, "planner.js"), "utf8");
 const home = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
 
-for (const stateId of ["pageStatus", "authGate", "errorPanel", "plannerWorkspace", "mealList"]) {
+for (const stateId of [
+  "pageStatus",
+  "authGate",
+  "errorPanel",
+  "plannerWorkspace",
+  "mealList",
+  "weekGrid",
+  "weekRange",
+  "weekMealCount",
+  "weekEmptySummary",
+  "previousWeek",
+  "currentWeek",
+  "nextWeek"
+]) {
   assert.match(html, new RegExp(`id=["']${stateId}["']`));
 }
 
@@ -18,17 +31,26 @@ for (const fieldId of ["plannedDate", "mealSlot", "plannedTime", "servings", "re
 }
 
 assert.match(html, /aria-live="polite"/i);
-assert.match(html, /planner-core\.js\?v=1/i);
-assert.match(home, /href="planner\/index\.html\?v=1"/i);
+assert.match(html, /planner-core\.js\?v=2/i);
+assert.match(html, /planner\.js\?v=2/i);
+assert.match(home, /href="planner\/index\.html\?v=2"/i);
 assert.match(css, /min-height:\s*48px/i);
 assert.match(css, /@media \(max-width: 900px\)/i);
+assert.match(css, /grid-template-columns:\s*repeat\(7,\s*minmax/i);
+assert.match(css, /overflow-x:\s*auto/i);
+assert.match(css, /\.week-day-add/i);
 assert.match(js, /\.from\("recipes"\)/i);
 assert.match(js, /\.from\("planned_meals"\)/i);
+assert.match(js, /\.gte\("planned_date",\s*week\.startDate\)/i);
+assert.match(js, /\.lte\("planned_date",\s*week\.endDate\)/i);
 assert.match(js, /\.insert\(payload\)/i);
 assert.match(js, /\.update\(payload\)/i);
 assert.match(js, /\.delete\(\)/i);
 assert.match(js, /client\.auth\.getSession\(\)/i);
 assert.match(js, /owner_user_id:\s*state\.ownerUserId/i);
+assert.match(js, /core\.weekForDate\(state\.weekAnchor/i);
+assert.match(js, /function selectWeek\(anchorDate\)/i);
+assert.match(js, /function prepareNewMeal\(plannedDate\)/i);
 assert.match(js, /migration 040_planner_core\.sql/i);
 
-console.log("Planner UI: 24 controlli statici superati.");
+console.log("Planner UI settimanale: controlli statici superati.");
