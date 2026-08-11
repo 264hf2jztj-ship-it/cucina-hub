@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6b4f">
+  <meta name="description" content="Planner personale dei pasti di Cucina Hub.">
+  <title>Planner — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../style.css?v=13">
+  <link rel="stylesheet" href="planner.css?v=1">
+</head>
+<body>
+  <a class="skip-link" href="#plannerMain">Vai al contenuto</a>
+
+  <header class="planner-topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">🗓️</div>
+      <div>
+        <p class="eyebrow">Milestone E</p>
+        <h1>Planner</h1>
+      </div>
+    </div>
+    <a class="button secondary" href="../index.html?v=15">← Cucina Hub</a>
+  </header>
+
+  <main id="plannerMain" class="planner-main" tabindex="-1">
+    <section class="planner-intro">
+      <div>
+        <p class="eyebrow">Planner Core MVP</p>
+        <h2>Organizza i pasti partendo dalle tue ricette.</h2>
+        <p>
+          Scegli una ricetta della Biblioteca e indica quando vuoi prepararla.
+          Il Planner conserva il collegamento, senza copiare o modificare la ricetta originale.
+        </p>
+      </div>
+      <div class="planner-principle" role="note" aria-label="Principio architetturale">
+        <strong>Collega, non duplica</strong>
+        <span>Ogni pasto rimanda sempre alla ricetta salvata in Biblioteca.</span>
+      </div>
+    </section>
+
+    <p id="pageStatus" class="planner-status" role="status" aria-live="polite">
+      Caricamento del Planner…
+    </p>
+
+    <section id="authGate" class="planner-panel planner-gate" hidden>
+      <span class="gate-icon" aria-hidden="true">🔐</span>
+      <div>
+        <h2>Accedi prima di continuare</h2>
+        <p>La sessione privata non è disponibile. Torna a Cucina Hub ed effettua l’accesso.</p>
+      </div>
+      <a class="button" href="../index.html?v=15">Vai all’accesso</a>
+    </section>
+
+    <section id="errorPanel" class="planner-panel planner-gate planner-error" hidden>
+      <span class="gate-icon" aria-hidden="true">⚠️</span>
+      <div>
+        <h2>Il Planner non è disponibile</h2>
+        <p id="errorMessage">Non è stato possibile caricare i dati.</p>
+      </div>
+      <button id="retryLoad" class="button secondary" type="button">RIPROVA</button>
+    </section>
+
+    <div id="plannerWorkspace" class="planner-workspace" hidden>
+      <section id="plannerEditor" class="planner-panel planner-editor" aria-labelledby="formTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Pasto</p>
+            <h2 id="formTitle">Pianifica un pasto</h2>
+          </div>
+        </div>
+
+        <form id="mealForm" class="planner-form">
+          <input id="mealId" type="hidden">
+
+          <div class="form-grid">
+            <div class="planner-field">
+              <label for="plannedDate">Data</label>
+              <input id="plannedDate" name="planned_date" type="date" required>
+            </div>
+
+            <div class="planner-field">
+              <label for="mealSlot">Fascia</label>
+              <select id="mealSlot" name="meal_slot" required>
+                <option value="breakfast">Colazione</option>
+                <option value="morning_snack">Spuntino mattina</option>
+                <option value="lunch">Pranzo</option>
+                <option value="afternoon_snack">Spuntino pomeriggio</option>
+                <option value="dinner">Cena</option>
+                <option value="other">Altro</option>
+              </select>
+            </div>
+
+            <div class="planner-field">
+              <label for="plannedTime">Orario <span>facoltativo</span></label>
+              <input id="plannedTime" name="planned_time" type="time">
+            </div>
+
+            <div class="planner-field">
+              <label for="servings">Porzioni <span>facoltative</span></label>
+              <input id="servings" name="servings" type="number" min="1" max="50" step="1" inputmode="numeric">
+            </div>
+
+            <div class="planner-field form-wide">
+              <label for="recipeId">Ricetta della Biblioteca</label>
+              <select id="recipeId" name="recipe_id" required>
+                <option value="">Caricamento ricette…</option>
+              </select>
+              <p id="recipeHelp" class="field-help">Il Planner salverà soltanto il collegamento alla ricetta.</p>
+            </div>
+
+            <div class="planner-field form-wide">
+              <label for="mealNote">Nota <span>facoltativa</span></label>
+              <textarea
+                id="mealNote"
+                name="note"
+                rows="4"
+                maxlength="1000"
+                placeholder="Es. scongelare la porzione al mattino"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button id="saveMeal" class="button" type="submit">AGGIUNGI AL PLANNER</button>
+            <button id="cancelEdit" class="button secondary" type="button" hidden>ANNULLA MODIFICA</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="planner-panel planner-list-panel" aria-labelledby="mealListTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Programma</p>
+            <h2 id="mealListTitle">Pasti pianificati</h2>
+          </div>
+          <span id="mealCount" class="badge">0</span>
+        </div>
+        <div id="mealList" class="meal-list" aria-live="polite"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js?v=12"></script>
+  <script src="../supabase-client.js?v=12"></script>
+  <script src="planner-core.js?v=1"></script>
+  <script src="planner.js?v=1"></script>
+</body>
+</html>
