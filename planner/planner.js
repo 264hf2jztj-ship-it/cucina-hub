@@ -7,6 +7,7 @@ const state = {
   ownerUserId: null,
   recipes: [],
   meals: [],
+  weekAnchor: null,
   editingId: null,
   busy: false
 };
@@ -18,6 +19,13 @@ const elements = {
   errorMessage: document.querySelector("#errorMessage"),
   retry: document.querySelector("#retryLoad"),
   workspace: document.querySelector("#plannerWorkspace"),
+  weekCount: document.querySelector("#weekMealCount"),
+  weekRange: document.querySelector("#weekRange"),
+  weekEmpty: document.querySelector("#weekEmptySummary"),
+  weekGrid: document.querySelector("#weekGrid"),
+  previousWeek: document.querySelector("#previousWeek"),
+  currentWeek: document.querySelector("#currentWeek"),
+  nextWeek: document.querySelector("#nextWeek"),
   editor: document.querySelector("#plannerEditor"),
   form: document.querySelector("#mealForm"),
   formTitle: document.querySelector("#formTitle"),
@@ -67,6 +75,37 @@ function formatDate(value) {
   }).format(date);
 }
 
+function dateAtNoon(value) {
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatWeekRange(startDate, endDate) {
+  const start = dateAtNoon(startDate);
+  const end = dateAtNoon(endDate);
+  if (!start || !end) return "Settimana non disponibile";
+
+  const startLabel = new Intl.DateTimeFormat("it-IT", {
+    day: "numeric",
+    month: "short"
+  }).format(start);
+  const endLabel = new Intl.DateTimeFormat("it-IT", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  }).format(end);
+  return `${startLabel} – ${endLabel}`;
+}
+
+function formatWeekDay(value) {
+  const date = dateAtNoon(value);
+  if (!date) return { name: value, date: value };
+  return {
+    name: new Intl.DateTimeFormat("it-IT", { weekday: "short" }).format(date),
+    date: new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "short" }).format(date)
+  };
+}
+
 function recipeFor(recipeId) {
   return state.recipes.find(recipe => recipe.id === recipeId) ?? null;
 }
@@ -84,10 +123,11 @@ function updateFormAvailability() {
 function setBusy(busy) {
   state.busy = busy;
   elements.form.setAttribute("aria-busy", String(busy));
+  elements.weekGrid.setAttribute("aria-busy", String(busy));
   elements.form.querySelectorAll("input, select, textarea").forEach(field => {
     field.disabled = busy;
   });
-  elements.list.querySelectorAll("button").forEach(button => {
+  elements.workspace.querySelectorAll("button").forEach(button => {
     button.disabled = busy;
   });
   updateFormAvailability();
@@ -116,9 +156,69 @@ function emptyStateHtml() {
   return `
     <div class="planner-empty">
       <span aria-hidden="true">🍽️</span>
-      <h3>Nessun pasto pianificato</h3>
-      <p>Scegli una ricetta e aggiungi il primo pasto. Qui comparirà il tuo programma in ordine di data.</p>
+      <h3>Nessun pasto in questa settimana</h3>
+      <p>Usa “Aggiungi” nel giorno che preferisci oppure scegli una ricetta nel modulo accanto.</p>
     </div>`;
+}
+
+function weekMealCard(meal) {
+  const slot = core.MEAL_SLOTS[meal.meal_slot] ?? core.MEAL_SLOTS.other;
+  const recipe = recipeFor(meal.recipe_id);
+  const label = recipeLabel(recipe);
+  const time = core.normalizeTime(meal.planned_time);
+  const ariaLabel = `Modifica ${slot.label}: ${label}${time ? ` alle ${time}` : ""}`;
+
+  return `
+    <button
+      class="week-meal"
+      type="button"
+      data-action="edit"
+      data-meal-id="${escapeHtml(meal.id)}"
+      aria-label="${escapeHtml(ariaLabel)}"
+    >
+      <span class="week-meal-slot">
+        <span>${escapeHtml(slot.icon)} ${escapeHtml(slot.label)}</span>
+        ${time ? `<time datetime="${escapeHtml(time)}">${escapeHtml(time)}</time>` : ""}
+      </span>
+      <span class="week-meal-title">${escapeHtml(label)}</span>
+    </button>`;
+}
+
+function weekDayCard(day, today) {
+  const formatted = formatWeekDay(day.date);
+  const isToday = day.date === today;
+  const countLabel = `${day.entries.length} ${day.entries.length === 1 ? "pasto" : "pasti"}`;
+
+  return `
+    <article class="week-day${isToday ? " is-today" : ""}" role="listitem" aria-label="${escapeHtml(formatDate(day.date))}">
+      <div class="week-day-header">
+        <time datetime="${escapeHtml(day.date)}">
+          <span class="week-day-name">${escapeHtml(formatted.name)}</span>
+          <strong class="week-day-date">${escapeHtml(formatted.date)}</strong>
+        </time>
+        <span class="week-day-count" aria-label="${escapeHtml(countLabel)}">${day.entries.length}</span>
+      </div>
+      ${day.entries.length
+        ? `<div class="week-day-meals">${day.entries.map(weekMealCard).join("")}</div>`
+        : '<p class="week-day-empty">Nessun pasto pianificato.</p>'}
+      <button
+        class="week-day-add"
+        type="button"
+        data-action="add"
+        data-date="${escapeHtml(day.date)}"
+        aria-label="Aggiungi un pasto il ${escapeHtml(formatDate(day.date))}"
+      >+ AGGIUNGI</button>
+    </article>`;
+}
+
+function renderWeek() {
+  const week = core.weekForDate(state.weekAnchor, state.meals);
+  const today = core.localDateValue();
+  elements.weekCount.textContent = String(week.entries.length);
+  elements.weekRange.textContent = formatWeekRange(week.startDate, week.endDate);
+  elements.weekEmpty.hidden = week.entries.length > 0;
+  elements.weekGrid.innerHTML = week.days.map(day => weekDayCard(day, today)).join("");
+  elements.weekGrid.setAttribute("aria-busy", "false");
 }
 
 function mealCard(meal) {
@@ -163,16 +263,30 @@ function renderMeals() {
     </section>`).join("");
 }
 
-function resetForm() {
+function renderPlanner() {
+  renderWeek();
+  renderMeals();
+}
+
+function resetForm(plannedDate = core.localDateValue()) {
   state.editingId = null;
   elements.mealId.value = "";
   elements.form.reset();
-  elements.date.value = core.localDateValue();
+  elements.date.value = plannedDate;
   elements.slot.value = "dinner";
   elements.formTitle.textContent = "Pianifica un pasto";
   elements.save.textContent = "AGGIUNGI AL PLANNER";
   elements.cancel.hidden = true;
   updateFormAvailability();
+}
+
+function prepareNewMeal(plannedDate) {
+  if (!core.isRealDate(plannedDate)) return;
+  resetForm(plannedDate);
+  elements.formTitle.textContent = `Pianifica per ${formatDate(plannedDate)}`;
+  elements.editor.scrollIntoView({ behavior: "smooth", block: "start" });
+  window.setTimeout(() => elements.recipe.focus(), 250);
+  setStatus(`Data selezionata: ${formatDate(plannedDate)}.`);
 }
 
 function editMeal(mealId) {
@@ -204,35 +318,67 @@ function friendlyWriteError(error) {
   return error.message;
 }
 
+async function fetchMealsForWeek(anchorDate) {
+  const week = core.weekForDate(anchorDate);
+  if (!week.startDate || !week.endDate) {
+    throw new Error("Intervallo settimanale non valido");
+  }
+
+  const { data, error } = await client
+    .from("planned_meals")
+    .select("*")
+    .eq("owner_user_id", state.ownerUserId)
+    .gte("planned_date", week.startDate)
+    .lte("planned_date", week.endDate)
+    .order("planned_date", { ascending: true });
+  assertOk(error, "Lettura pasti della settimana");
+  return data ?? [];
+}
+
 async function loadData() {
-  const [recipesResult, mealsResult] = await Promise.all([
+  const [recipesResult, meals] = await Promise.all([
     client
       .from("recipes")
       .select("id,code,title")
       .eq("owner_user_id", state.ownerUserId)
       .order("title", { ascending: true }),
-    client
-      .from("planned_meals")
-      .select("*")
-      .eq("owner_user_id", state.ownerUserId)
-      .order("planned_date", { ascending: true })
+    fetchMealsForWeek(state.weekAnchor)
   ]);
 
   assertOk(recipesResult.error, "Lettura ricette");
-  assertOk(mealsResult.error, "Lettura pasti pianificati");
   state.recipes = recipesResult.data ?? [];
-  state.meals = mealsResult.data ?? [];
+  state.meals = meals;
 }
 
 async function reloadMeals() {
-  const { data, error } = await client
-    .from("planned_meals")
-    .select("*")
-    .eq("owner_user_id", state.ownerUserId)
-    .order("planned_date", { ascending: true });
-  assertOk(error, "Aggiornamento pasti pianificati");
-  state.meals = data ?? [];
-  renderMeals();
+  state.meals = await fetchMealsForWeek(state.weekAnchor);
+  renderPlanner();
+}
+
+async function selectWeek(anchorDate) {
+  if (state.busy || !core.isRealDate(anchorDate)) return;
+  const previousAnchor = state.weekAnchor;
+  const previousMeals = state.meals;
+  setBusy(true);
+  setStatus("Caricamento della settimana…");
+
+  try {
+    const meals = await fetchMealsForWeek(anchorDate);
+    state.weekAnchor = anchorDate;
+    state.meals = meals;
+    if (state.editingId && !state.meals.some(meal => meal.id === state.editingId)) {
+      resetForm(anchorDate);
+    }
+    renderPlanner();
+    setStatus("Settimana caricata.", "ok");
+  } catch (error) {
+    state.weekAnchor = previousAnchor;
+    state.meals = previousMeals;
+    renderPlanner();
+    setStatus(error.message, "error");
+  } finally {
+    setBusy(false);
+  }
 }
 
 async function saveMeal(event) {
@@ -279,8 +425,9 @@ async function saveMeal(event) {
         .single();
 
     assertOk(result.error, wasEditing ? "Modifica pasto" : "Creazione pasto");
+    state.weekAnchor = candidate.value.planned_date;
     await reloadMeals();
-    resetForm();
+    resetForm(candidate.value.planned_date);
     setStatus(wasEditing ? "Pasto aggiornato correttamente." : "Pasto aggiunto al Planner.", "ok");
   } catch (error) {
     setStatus(friendlyWriteError(error), "error");
@@ -306,8 +453,8 @@ async function deleteMeal(mealId) {
       .eq("owner_user_id", state.ownerUserId);
     assertOk(error, "Eliminazione pasto");
     state.meals = state.meals.filter(item => item.id !== meal.id);
-    if (state.editingId === meal.id) resetForm();
-    renderMeals();
+    if (state.editingId === meal.id) resetForm(state.weekAnchor);
+    renderPlanner();
     setStatus("Pasto eliminato dal Planner.", "ok");
   } catch (error) {
     setStatus(error.message, "error");
@@ -345,10 +492,11 @@ async function initialize() {
     }
 
     state.ownerUserId = user.id;
+    state.weekAnchor = state.weekAnchor ?? core.localDateValue();
     await loadData();
     populateRecipes();
-    renderMeals();
-    resetForm();
+    renderPlanner();
+    resetForm(state.weekAnchor);
     elements.workspace.hidden = false;
     setStatus(
       state.recipes.length
@@ -363,7 +511,7 @@ async function initialize() {
 
 elements.form.addEventListener("submit", saveMeal);
 elements.cancel.addEventListener("click", () => {
-  resetForm();
+  resetForm(state.weekAnchor);
   setStatus("Modifica annullata.");
 });
 elements.list.addEventListener("click", event => {
@@ -371,6 +519,21 @@ elements.list.addEventListener("click", event => {
   if (!button) return;
   if (button.dataset.action === "edit") editMeal(button.dataset.mealId);
   if (button.dataset.action === "delete") void deleteMeal(button.dataset.mealId);
+});
+elements.weekGrid.addEventListener("click", event => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+  if (button.dataset.action === "edit") editMeal(button.dataset.mealId);
+  if (button.dataset.action === "add") prepareNewMeal(button.dataset.date);
+});
+elements.previousWeek.addEventListener("click", () => {
+  void selectWeek(core.addDays(state.weekAnchor, -7));
+});
+elements.currentWeek.addEventListener("click", () => {
+  void selectWeek(core.localDateValue());
+});
+elements.nextWeek.addEventListener("click", () => {
+  void selectWeek(core.addDays(state.weekAnchor, 7));
 });
 elements.retry.addEventListener("click", () => void initialize());
 

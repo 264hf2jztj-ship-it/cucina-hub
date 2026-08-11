@@ -65,4 +65,37 @@ assert.deepEqual(groups[1].entries.map(entry => entry.id), ["breakfast", "dinner
 
 assert.equal(core.localDateValue(new Date(2026, 7, 11, 23, 30)), "2026-08-11");
 
-console.log("Planner Core: 13 controlli superati.");
+assert.equal(core.startOfWeek("2026-08-11"), "2026-08-10");
+assert.equal(core.startOfWeek("2026-08-16"), "2026-08-10");
+assert.equal(core.startOfWeek("2027-01-01"), "2026-12-28");
+assert.equal(core.startOfWeek("not-a-date"), null);
+assert.equal(core.addDays("2026-12-31", 1), "2027-01-01");
+assert.equal(core.addDays("2026-08-11", 1.5), null);
+
+const weeklyEntries = [
+  ...entries,
+  { id: "outside", planned_date: "2026-08-17", meal_slot: "lunch", planned_time: "12:30" }
+];
+const week = core.weekForDate("2026-08-12", weeklyEntries);
+assert.equal(week.startDate, "2026-08-10");
+assert.equal(week.endDate, "2026-08-16");
+assert.equal(week.days.length, 7);
+assert.deepEqual(week.days.map(day => day.date), [
+  "2026-08-10",
+  "2026-08-11",
+  "2026-08-12",
+  "2026-08-13",
+  "2026-08-14",
+  "2026-08-15",
+  "2026-08-16"
+]);
+assert.deepEqual(week.entries.map(entry => entry.id), ["lunch", "breakfast", "dinner"]);
+assert.equal(week.days[2].entries[0].id, "lunch");
+assert.deepEqual(core.weekForDate("invalid", entries), {
+  startDate: null,
+  endDate: null,
+  days: [],
+  entries: []
+});
+
+console.log("Planner Core: 26 controlli superati.");

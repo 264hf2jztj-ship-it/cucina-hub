@@ -85,6 +85,55 @@
     return groups;
   }
 
+  function dateFromValue(value) {
+    if (!isRealDate(value)) return null;
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day, 12);
+  }
+
+  function addDays(value, amount) {
+    const date = dateFromValue(value);
+    if (!date || !Number.isInteger(amount)) return null;
+    date.setDate(date.getDate() + amount);
+    return localDateValue(date);
+  }
+
+  function startOfWeek(value) {
+    const date = dateFromValue(value);
+    if (!date) return null;
+    const daysSinceMonday = (date.getDay() + 6) % 7;
+    return addDays(value, -daysSinceMonday);
+  }
+
+  function weekForDate(value, entries = []) {
+    const startDate = startOfWeek(value);
+    if (!startDate) {
+      return { startDate: null, endDate: null, days: [], entries: [] };
+    }
+
+    const endDate = addDays(startDate, 6);
+    const weekEntries = sortEntries(entries).filter(entry => (
+      entry.planned_date >= startDate && entry.planned_date <= endDate
+    ));
+    const entriesByDate = new Map();
+
+    for (const entry of weekEntries) {
+      const dayEntries = entriesByDate.get(entry.planned_date) ?? [];
+      dayEntries.push(entry);
+      entriesByDate.set(entry.planned_date, dayEntries);
+    }
+
+    return {
+      startDate,
+      endDate,
+      days: Array.from({ length: 7 }, (_, index) => {
+        const date = addDays(startDate, index);
+        return { date, entries: entriesByDate.get(date) ?? [] };
+      }),
+      entries: weekEntries
+    };
+  }
+
   function localDateValue(date = new Date()) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -94,12 +143,15 @@
 
   const api = Object.freeze({
     MEAL_SLOTS,
+    addDays,
     groupEntriesByDate,
     isRealDate,
     localDateValue,
     normalizeEntry,
     normalizeTime,
-    sortEntries
+    startOfWeek,
+    sortEntries,
+    weekForDate
   });
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

@@ -61,6 +61,13 @@ const selectors = [
   "#errorMessage",
   "#retryLoad",
   "#plannerWorkspace",
+  "#weekMealCount",
+  "#weekRange",
+  "#weekEmptySummary",
+  "#weekGrid",
+  "#previousWeek",
+  "#currentWeek",
+  "#nextWeek",
   "#plannerEditor",
   "#mealForm",
   "#formTitle",
@@ -93,7 +100,7 @@ const database = {
       id: "meal-1",
       owner_user_id: "user-1",
       recipe_id: "recipe-1",
-      planned_date: "2026-08-12",
+      planned_date: core.localDateValue(),
       meal_slot: "dinner",
       planned_time: "20:00:00",
       servings: 3,
@@ -103,13 +110,21 @@ const database = {
   ]
 };
 
+let plannedMealsError = null;
+
 function queryFor(table) {
-  const response = Promise.resolve({ data: database[table] ?? [], error: null });
   const query = {
     select() { return query; },
     eq() { return query; },
+    gte() { return query; },
+    lte() { return query; },
     order() { return query; },
-    then(resolve, reject) { return response.then(resolve, reject); }
+    then(resolve, reject) {
+      return Promise.resolve({
+        data: database[table] ?? [],
+        error: table === "planned_meals" ? plannedMealsError : null
+      }).then(resolve, reject);
+    }
   };
   return query;
 }
@@ -138,18 +153,61 @@ global.window = {
 
 (async () => {
   require("./planner.js");
-  await new Promise(resolve => setTimeout(resolve, 0));
-  await new Promise(resolve => setTimeout(resolve, 0));
+  const settle = async () => {
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise(resolve => setTimeout(resolve, 0));
+  };
+  await settle();
 
   assert.equal(elements.get("#authGate").hidden, true);
   assert.equal(elements.get("#errorPanel").hidden, true);
   assert.equal(elements.get("#plannerWorkspace").hidden, false);
   assert.equal(elements.get("#mealCount").textContent, "1");
+  assert.equal(elements.get("#weekMealCount").textContent, "1");
+  assert.equal(elements.get("#weekEmptySummary").hidden, true);
+  assert.ok(elements.get("#weekRange").textContent.length > 0);
   assert.match(elements.get("#recipeId").innerHTML, /Pollo al forno/);
   assert.match(elements.get("#mealList").innerHTML, /Pollo al forno/);
+  assert.match(elements.get("#weekGrid").innerHTML, /Pollo al forno/);
+  assert.equal((elements.get("#weekGrid").innerHTML.match(/<article class="week-day/g) ?? []).length, 7);
   assert.match(elements.get("#mealList").innerHTML, /20:00/);
   assert.match(elements.get("#mealList").innerHTML, /3 porzioni/);
   assert.match(elements.get("#pageStatus").className, /ok/);
+
+  const initialRange = elements.get("#weekRange").textContent;
+  elements.get("#nextWeek").listeners.click();
+  await settle();
+  assert.notEqual(elements.get("#weekRange").textContent, initialRange);
+  assert.equal(elements.get("#weekMealCount").textContent, "0");
+  assert.equal(elements.get("#weekEmptySummary").hidden, false);
+
+  elements.get("#currentWeek").listeners.click();
+  await settle();
+  assert.equal(elements.get("#weekRange").textContent, initialRange);
+  assert.equal(elements.get("#weekMealCount").textContent, "1");
+
+  plannedMealsError = { message: "Connessione simulata non disponibile", code: "TEST" };
+  elements.get("#previousWeek").listeners.click();
+  await settle();
+  assert.equal(elements.get("#weekRange").textContent, initialRange);
+  assert.match(elements.get("#pageStatus").className, /error/);
+  plannedMealsError = null;
+
+  elements.get("#weekGrid").listeners.click({
+    target: {
+      closest: () => ({ dataset: { action: "add", date: core.localDateValue() } })
+    }
+  });
+  assert.equal(elements.get("#plannedDate").value, core.localDateValue());
+  assert.match(elements.get("#formTitle").textContent, /Pianifica per/i);
+
+  elements.get("#weekGrid").listeners.click({
+    target: {
+      closest: () => ({ dataset: { action: "edit", mealId: "meal-1" } })
+    }
+  });
+  assert.equal(elements.get("#mealId").value, "meal-1");
+  assert.equal(elements.get("#formTitle").textContent, "Modifica il pasto");
 
   console.log("Planner Supabase UI: smoke test simulato superato.");
 })().catch(error => {
