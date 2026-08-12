@@ -2,6 +2,7 @@
 
 const client = window.cucinaHubSupabase;
 const core = window.CucinaHubPlannerCore;
+const menuPlanEngine = window.CucinaHubMenuPlanImportEngine;
 
 const state = {
   ownerUserId: null,
@@ -26,6 +27,12 @@ const elements = {
   previousWeek: document.querySelector("#previousWeek"),
   currentWeek: document.querySelector("#currentWeek"),
   nextWeek: document.querySelector("#nextWeek"),
+  menuInput: document.querySelector("#menuPlanInput"),
+  menuFile: document.querySelector("#menuPlanFile"),
+  menuFileStatus: document.querySelector("#menuPlanFileStatus"),
+  menuAnalyze: document.querySelector("#analyzeMenuPlan"),
+  menuClear: document.querySelector("#clearMenuPlan"),
+  menuResult: document.querySelector("#menuPlanResult"),
   editor: document.querySelector("#plannerEditor"),
   form: document.querySelector("#mealForm"),
   formTitle: document.querySelector("#formTitle"),
@@ -115,6 +122,190 @@ function recipeLabel(recipe) {
   return [recipe.code, recipe.title].filter(Boolean).join(" — ") || "Ricetta senza titolo";
 }
 
+function menuImportIdleHtml(message = "Nessun pacchetto analizzato.") {
+  return `
+    <div class="menu-import-idle">
+      <strong>${escapeHtml(message)}</strong>
+      <span>Il flusso si fermerà dopo la risoluzione delle ricette della Biblioteca.</span>
+    </div>`;
+}
+
+function menuImportIssueHtml(item) {
+  const severity = item.severity === "warning" ? "warning" : "error";
+  return `
+    <div class="menu-import-issue ${severity}">
+      <strong>${escapeHtml(item.message)}</strong>
+      <code>${escapeHtml(item.code)} · ${escapeHtml(item.path)}</code>
+    </div>`;
+}
+
+function menuReferenceHtml(reference) {
+  const isResolved = reference.status === "resolved";
+  const badge = isResolved
+    ? '<span class="badge">RISOLTA</span>'
+    : reference.status === "missing_library_reference"
+      ? '<span class="badge pending">MANCANTE</span>'
+      : '<span class="badge pending">AMBIGUA</span>';
+  const title = isResolved
+    ? recipeLabel(reference.recipe)
+    : reference.label || reference.recipe_code || "Riferimento senza nome";
+  const candidates = Array.isArray(reference.candidates) && reference.candidates.length
+    ? `<span class="menu-reference-meta">Corrispondenze: ${reference.candidates.map(recipe => escapeHtml(recipeLabel(recipe))).join("; ")}</span>`
+    : "";
+
+  return `
+    <div class="menu-reference ${isResolved ? "resolved" : "unresolved"}">
+      <div class="menu-reference-heading">
+        <div>
+          <span class="menu-reference-code">${escapeHtml(reference.recipe_code)}</span>
+          <strong>${escapeHtml(title)}</strong>
+        </div>
+        <div>
+          ${reference.is_hurom_reference ? '<span class="badge pending">HUROM</span>' : ""}
+          ${badge}
+        </div>
+      </div>
+      <span class="menu-reference-meta">${escapeHtml(reference.status)} · ${escapeHtml(reference.meal_key)} · ${escapeHtml(reference.path)}</span>
+      ${candidates}
+    </div>`;
+}
+
+function menuImportStatsHtml(summary = {}) {
+  const stats = [
+    ["Giorni", summary.days ?? 0],
+    ["Pasti", summary.meals ?? 0],
+    ["Elementi", summary.items ?? 0],
+    ["Ricette", summary.recipes ?? 0],
+    ["Alimenti", summary.foods ?? 0],
+    ["Preparazioni", summary.preparations ?? 0]
+  ];
+  return `<div class="menu-import-stats">${stats.map(([label, value]) => `
+    <div class="menu-import-stat"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("")}</div>`;
+}
+
+function renderMenuPlanAnalysis(result) {
+  const phaseLabels = {
+    parsing: "Parsing",
+    validation: "Validazione contratto",
+    library_resolution: "Risoluzione Biblioteca"
+  };
+  const phase = phaseLabels[result.stage] ?? "Analisi";
+  const resolutionComplete = result.resolution?.complete === true;
+  const success = result.valid && resolutionComplete;
+  const heading = success
+    ? "Analisi tecnica completata"
+    : result.stage === "library_resolution"
+      ? "Riferimenti Biblioteca da correggere"
+      : result.stage === "validation"
+        ? "Pacchetto non conforme al contratto"
+        : "Il JSON non è stato letto";
+  const description = success
+    ? "Parsing, validazione e risoluzione sono riusciti. Nessun dato è stato salvato."
+    : `Il flusso si è fermato nella fase: ${phase}. Nessun dato è stato salvato.`;
+  const structuralErrors = result.stage === "library_resolution"
+    ? result.errors.filter(item => !["missing_library_reference", "ambiguous_library_reference"].includes(item.code))
+    : result.errors;
+  const packetTitle = result.packet?.menu?.title || result.packet?.menu?.external_id || null;
+  const sourceFormat = result.sourceFormat === "markdown_json" ? "blocco Markdown JSON" : "JSON puro";
+
+  elements.menuResult.innerHTML = `
+    <div class="menu-import-state ${success ? "ok" : "error"}">
+      <span class="menu-import-state-icon" aria-hidden="true">${success ? "✅" : "⚠️"}</span>
+      <div class="menu-import-state-copy">
+        <strong>${escapeHtml(heading)}</strong>
+        <span>${escapeHtml(description)}</span>
+        ${packetTitle ? `<span>${escapeHtml(packetTitle)} · ${escapeHtml(sourceFormat)}</span>` : ""}
+      </div>
+    </div>
+    ${result.summary ? menuImportStatsHtml(result.summary) : ""}
+    ${structuralErrors.length ? `
+      <section class="menu-import-section" aria-label="Errori bloccanti">
+        <h3>Errori bloccanti (${structuralErrors.length})</h3>
+        <div class="menu-import-issues">${structuralErrors.map(menuImportIssueHtml).join("")}</div>
+      </section>` : ""}
+    ${result.warnings?.length ? `
+      <section class="menu-import-section" aria-label="Avvisi">
+        <h3>Avvisi (${result.warnings.length})</h3>
+        <div class="menu-import-issues">${result.warnings.map(menuImportIssueHtml).join("")}</div>
+      </section>` : ""}
+    ${result.resolution ? `
+      <section class="menu-import-section" aria-label="Riferimenti Biblioteca">
+        <h3>Riferimenti Biblioteca (${result.resolution.references.length})</h3>
+        <p>Il codice resta nel pacchetto; quando è univoco viene associato all'UUID della ricetta già esistente.</p>
+        ${result.resolution.references.length
+          ? `<div class="menu-reference-list">${result.resolution.references.map(menuReferenceHtml).join("")}</div>`
+          : '<div class="menu-import-idle"><strong>Nessun item recipe.</strong><span>Il menu contiene soltanto alimenti o preparazioni autonome.</span></div>'}
+      </section>` : ""}
+    <div class="menu-import-boundary">
+      <strong>Flusso interrotto intenzionalmente dopo “Risoluzione Biblioteca”.</strong><br>
+      Idempotenza, conflitti, anteprima, conferma e commit non sono attivi in questo incremento.
+    </div>`;
+}
+
+function analyzeMenuPlan() {
+  if (!menuPlanEngine) {
+    renderMenuPlanUnavailable();
+    return;
+  }
+  elements.menuResult.setAttribute("aria-busy", "true");
+  const result = menuPlanEngine.analyze(elements.menuInput.value, state.recipes);
+  renderMenuPlanAnalysis(result);
+  elements.menuResult.setAttribute("aria-busy", "false");
+  setStatus(
+    result.valid
+      ? "Menu analizzato: struttura e riferimenti Biblioteca sono validi. Nessun dato salvato."
+      : "Analisi menu completata con errori bloccanti. Nessun dato salvato.",
+    result.valid ? "ok" : "error"
+  );
+}
+
+function renderMenuPlanUnavailable() {
+  elements.menuResult.innerHTML = `
+    <div class="menu-import-state error">
+      <span class="menu-import-state-icon" aria-hidden="true">⚠️</span>
+      <div class="menu-import-state-copy">
+        <strong>Motore di importazione non disponibile</strong>
+        <span>Ricarica la pagina. Il Planner manuale resta utilizzabile e nessun dato è stato modificato.</span>
+      </div>
+    </div>`;
+  elements.menuAnalyze.disabled = true;
+}
+
+function resetMenuImport() {
+  elements.menuInput.value = "";
+  elements.menuFile.value = "";
+  elements.menuFileStatus.textContent = "Puoi scegliere un file JSON, Markdown o testo fino a 2 MB.";
+  elements.menuResult.innerHTML = menuImportIdleHtml();
+  elements.menuResult.setAttribute("aria-busy", "false");
+}
+
+async function loadMenuPlanFile() {
+  const file = elements.menuFile.files?.[0];
+  if (!file) return;
+  const maxBytes = 2 * 1024 * 1024;
+  if (file.size > maxBytes) {
+    elements.menuFile.value = "";
+    elements.menuFileStatus.textContent = "Il file supera il limite di 2 MB. Scegli un pacchetto più piccolo.";
+    setStatus("File menu troppo grande. Nessun dato letto o salvato.", "error");
+    return;
+  }
+
+  elements.menuResult.setAttribute("aria-busy", "true");
+  elements.menuResult.innerHTML = menuImportIdleHtml("Lettura del file…");
+  try {
+    elements.menuInput.value = await file.text();
+    elements.menuFileStatus.textContent = `${file.name} · ${Math.max(1, Math.ceil(file.size / 1024))} KB · pronto per l'analisi.`;
+    elements.menuResult.innerHTML = menuImportIdleHtml("File caricato, non ancora analizzato.");
+    setStatus("File menu caricato localmente. Tocca ANALIZZA MENU; nessun dato è stato salvato.");
+  } catch (error) {
+    elements.menuFileStatus.textContent = `Lettura non riuscita: ${error.message}`;
+    elements.menuResult.innerHTML = menuImportIdleHtml("Il file non è stato letto.");
+    setStatus("Non è stato possibile leggere il file selezionato.", "error");
+  } finally {
+    elements.menuResult.setAttribute("aria-busy", "false");
+  }
+}
+
 function updateFormAvailability() {
   elements.save.disabled = state.busy || state.recipes.length === 0;
   elements.cancel.disabled = state.busy;
@@ -127,6 +318,8 @@ function setBusy(busy) {
   elements.form.querySelectorAll("input, select, textarea").forEach(field => {
     field.disabled = busy;
   });
+  elements.menuInput.disabled = busy;
+  elements.menuFile.disabled = busy;
   elements.workspace.querySelectorAll("button").forEach(button => {
     button.disabled = busy;
   });
@@ -497,6 +690,8 @@ async function initialize() {
     populateRecipes();
     renderPlanner();
     resetForm(state.weekAnchor);
+    resetMenuImport();
+    if (!menuPlanEngine) renderMenuPlanUnavailable();
     elements.workspace.hidden = false;
     setStatus(
       state.recipes.length
@@ -535,6 +730,12 @@ elements.currentWeek.addEventListener("click", () => {
 elements.nextWeek.addEventListener("click", () => {
   void selectWeek(core.addDays(state.weekAnchor, 7));
 });
+elements.menuAnalyze.addEventListener("click", analyzeMenuPlan);
+elements.menuClear.addEventListener("click", () => {
+  resetMenuImport();
+  setStatus("Analisi menu azzerata. Nessun dato è stato modificato.");
+});
+elements.menuFile.addEventListener("change", () => void loadMenuPlanFile());
 elements.retry.addEventListener("click", () => void initialize());
 
 void initialize();

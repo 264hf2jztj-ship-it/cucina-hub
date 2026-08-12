@@ -21,7 +21,13 @@ for (const stateId of [
   "weekEmptySummary",
   "previousWeek",
   "currentWeek",
-  "nextWeek"
+  "nextWeek",
+  "menuPlanInput",
+  "menuPlanFile",
+  "menuPlanFileStatus",
+  "analyzeMenuPlan",
+  "clearMenuPlan",
+  "menuPlanResult"
 ]) {
   assert.match(html, new RegExp(`id=["']${stateId}["']`));
 }
@@ -32,13 +38,18 @@ for (const fieldId of ["plannedDate", "mealSlot", "plannedTime", "servings", "re
 
 assert.match(html, /aria-live="polite"/i);
 assert.match(html, /planner-core\.js\?v=2/i);
-assert.match(html, /planner\.js\?v=2/i);
-assert.match(home, /href="planner\/index\.html\?v=2"/i);
+assert.match(html, /menu-plan-import-engine\.js\?v=1/i);
+assert.match(html, /planner\.js\?v=3/i);
+assert.match(home, /href="planner\/index\.html\?v=3"/i);
+assert.match(html, /accept="\.json,\.md,\.txt/i);
+assert.match(html, /SOLA ANALISI/i);
 assert.match(css, /min-height:\s*48px/i);
 assert.match(css, /@media \(max-width: 900px\)/i);
 assert.match(css, /grid-template-columns:\s*repeat\(7,\s*minmax/i);
 assert.match(css, /overflow-x:\s*auto/i);
 assert.match(css, /\.week-day-add/i);
+assert.match(css, /\.menu-import-panel/i);
+assert.match(css, /\.menu-file-input::file-selector-button/i);
 assert.match(js, /\.from\("recipes"\)/i);
 assert.match(js, /\.from\("planned_meals"\)/i);
 assert.match(js, /\.gte\("planned_date",\s*week\.startDate\)/i);
@@ -51,6 +62,10 @@ assert.match(js, /owner_user_id:\s*state\.ownerUserId/i);
 assert.match(js, /core\.weekForDate\(state\.weekAnchor/i);
 assert.match(js, /function selectWeek\(anchorDate\)/i);
 assert.match(js, /function prepareNewMeal\(plannedDate\)/i);
+assert.match(js, /menuPlanEngine\.analyze\(elements\.menuInput\.value,\s*state\.recipes\)/i);
+assert.match(js, /file\.size > maxBytes/i);
+assert.doesNotMatch(js, /\.from\("planner_menu_packages"\)/i);
+assert.doesNotMatch(js, /\.from\("planned_meal_items"\)/i);
 assert.match(js, /migration 040_planner_core\.sql/i);
 
 console.log("Planner UI settimanale: controlli statici superati.");
