@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6b4f">
+  <meta name="description" content="Laboratorio impasti di Cucina Hub.">
+  <title>Laboratorio impasti — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../style.css?v=13">
+  <link rel="stylesheet" href="lab.css?v=1">
+</head>
+<body>
+  <a class="skip-link" href="#doughLabMain">Vai al contenuto</a>
+
+  <header class="dough-topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">🍕</div>
+      <div>
+        <p class="eyebrow">Laboratorio</p>
+        <h1>Pizza e impasti</h1>
+      </div>
+    </div>
+    <a class="button secondary" href="../index.html?v=16">← Cucina Hub</a>
+  </header>
+
+  <main id="doughLabMain" class="dough-main" tabindex="-1">
+    <section class="dough-hero">
+      <div>
+        <span class="dough-status-badge">OPERATIVO</span>
+        <p class="eyebrow">Dalla pianificazione al risultato</p>
+        <h2>Prepara, segui e migliora ogni impasto.</h2>
+        <p>
+          Profili reali, calcolo a ritroso, timeline guidata, sessioni, diario e Learning
+          sono riuniti in un unico percorso.
+        </p>
+        <div class="dough-hero-actions">
+          <a class="button light" href="baking-wizard.html?v=22">+ NUOVA SESSIONE</a>
+          <a class="button ghost" href="baking-sessions.html?v=9">LE MIE SESSIONI</a>
+        </div>
+      </div>
+      <aside class="dough-flow" aria-label="Flusso del Laboratorio">
+        <strong>Flusso operativo</strong>
+        <ol>
+          <li>Configura ambiente e farine</li>
+          <li>Genera o importa l’impasto</li>
+          <li>Segui la Sessione Guidata</li>
+          <li>Valuta il risultato nel Diario</li>
+        </ol>
+      </aside>
+    </section>
+
+    <p id="pageStatus" class="dough-page-status" role="status" aria-live="polite">
+      Verifica della sessione…
+    </p>
+
+    <section id="authGate" class="dough-panel dough-gate" hidden>
+      <h2>Accedi prima di continuare</h2>
+      <p>La sessione privata non è disponibile. Torna alla Dashboard ed effettua l’accesso.</p>
+      <a class="button" href="../index.html?v=16">Vai all’accesso</a>
+    </section>
+
+    <div id="doughLabWorkspace" hidden>
+      <section class="dough-section" aria-labelledby="workTitle">
+        <div class="dough-heading">
+          <div>
+            <p class="eyebrow">Operatività</p>
+            <h2 id="workTitle">Cosa vuoi fare?</h2>
+          </div>
+        </div>
+
+        <div class="dough-card-grid">
+          <article class="dough-card featured">
+            <span class="dough-card-icon" aria-hidden="true">🧭</span>
+            <span class="badge">PUNTO DI PARTENZA</span>
+            <h3>Nuova sessione</h3>
+            <p>Genera una proposta o trasferisci il JSON della chat, controlla formula, timeline e cottura, poi salva.</p>
+            <a class="dough-card-link" href="baking-wizard.html?v=22">Apri il Wizard →</a>
+          </article>
+
+          <article class="dough-card">
+            <span class="dough-card-icon" aria-hidden="true">📋</span>
+            <span class="badge">GESTIONE</span>
+            <h3>Sessioni impasto</h3>
+            <p>Consulta sessioni pianificate, attive, completate o annullate e avvia la guida operativa.</p>
+            <a class="dough-card-link" href="baking-sessions.html?v=9">Apri le sessioni →</a>
+          </article>
+
+          <article class="dough-card">
+            <span class="dough-card-icon" aria-hidden="true">📚</span>
+            <span class="badge">RISULTATI</span>
+            <h3>Storico e Diario</h3>
+            <p>Rivedi le prove concluse, confronta tempi reali e pianificati e apri la valutazione del risultato.</p>
+            <a class="dough-card-link" href="baking-session-history.html?v=5">Apri lo storico →</a>
+          </article>
+
+          <article class="dough-card">
+            <span class="dough-card-icon" aria-hidden="true">🧠</span>
+            <span class="badge">APPRENDIMENTO</span>
+            <h3>Learning fermentazioni</h3>
+            <p>Analizza le sessioni reali valutate e individua le condizioni che hanno funzionato meglio.</p>
+            <a class="dough-card-link" href="fermentation-learning.html?v=2">Apri il Learning →</a>
+          </article>
+        </div>
+      </section>
+
+      <section class="dough-section" aria-labelledby="profileTitle">
+        <div class="dough-heading">
+          <div>
+            <p class="eyebrow">Dati riutilizzabili</p>
+            <h2 id="profileTitle">Profili del Laboratorio</h2>
+          </div>
+          <p>Imposta una volta i dati reali che il Wizard userà nelle proposte successive.</p>
+        </div>
+
+        <div class="dough-card-grid compact">
+          <article class="dough-card">
+            <span class="dough-card-icon" aria-hidden="true">🌡️</span>
+            <h3>Ambiente</h3>
+            <p>Temperatura della cucina, umidità relativa e frigorifero.</p>
+            <a class="dough-card-link" href="environment-profiles.html?v=1">Gestisci ambiente →</a>
+          </article>
+
+          <article class="dough-card">
+            <span class="dough-card-icon" aria-hidden="true">🌾</span>
+            <h3>Farine</h3>
+            <p>Forza, P/L, proteine, assorbimento e impieghi consigliati.</p>
+            <a class="dough-card-link" href="flour-profiles.html?v=1">Gestisci farine →</a>
+          </article>
+
+          <article class="dough-card">
+            <span class="dough-card-icon" aria-hidden="true">🥣</span>
+            <h3>Profili impasto</h3>
+            <p>Formule e parametri riutilizzabili per pizza, focaccia e pane.</p>
+            <a class="dough-card-link" href="dough-profiles.html?v=1">Gestisci profili →</a>
+          </article>
+        </div>
+      </section>
+
+      <aside class="dough-boundary" role="note">
+        <strong>Laboratorio operativo senza AI interna</strong>
+        <span>L’AI Fermentation Assistant resta separata e verrà attivata nella fase AI finale; non è necessaria per usare le funzioni disponibili qui.</span>
+      </aside>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js?v=12"></script>
+  <script src="../supabase-client.js?v=12"></script>
+  <script src="lab.js?v=1"></script>
+</body>
+</html>

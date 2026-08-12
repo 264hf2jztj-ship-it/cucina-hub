@@ -209,14 +209,20 @@ function metricCard(label, value, detail) {
 
 function categoryCard(category) {
   const count = state.recipes.filter(recipe => recipe.sezioni?.includes(category.id)).length;
-  const statusLabel = category.stato === "attiva" ? `${count} ricette` : "In sviluppo";
+  const statusLabel = category.stato === "attiva"
+    ? (category.etichetta_stato ?? `${count} ricette`)
+    : "In sviluppo";
   const badgeClass = category.stato === "attiva" ? "" : "pending";
+  const actionLabel = `${category.etichetta_azione ?? "Apri sezione"} →`;
+  const action = category.href
+    ? `<a class="card-link" href="${escapeHtml(category.href)}">${escapeHtml(actionLabel)}</a>`
+    : `<button class="card-link" data-go-view="${escapeHtml(category.vista)}" type="button">${escapeHtml(actionLabel)}</button>`;
   return `
     <article class="content-card">
       <div class="card-top"><span class="card-icon" aria-hidden="true">${escapeHtml(category.icona)}</span><span class="badge ${badgeClass}">${escapeHtml(statusLabel)}</span></div>
       <h4>${escapeHtml(category.titolo)}</h4>
       <p>${escapeHtml(category.descrizione)}</p>
-      <div class="card-footer"><button class="card-link" data-go-view="${escapeHtml(category.vista)}" type="button">Apri sezione →</button></div>
+      <div class="card-footer">${action}</div>
     </article>`;
 }
 
