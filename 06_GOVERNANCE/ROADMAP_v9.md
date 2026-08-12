@@ -40,12 +40,22 @@
 
 ### Milestone E — Planner
 - ✅ Planner Core MVP — pianificazione manuale collegata alle ricette della Biblioteca, CRUD, vincoli, RLS e test iPad completato (PR #122)
-- Vista settimanale
+- ✅ Vista settimanale — navigazione lunedì-domenica, giorni vuoti, aggiunta/modifica dalla griglia e query limitate alla settimana; validata su iPad (PR #124)
+- 🟡 Menu quindicinali / Menu Package
+  - ✅ Modello architetturale `Menu Package → Planned Meal → Planned Meal Item` accettato (ADR-011)
+  - ✅ Contratto `cucina-hub.menu-plan` versione 1 definito
+  - Database menu package e pasti multi-elemento
+  - Migrazione compatibile dei pasti Planner Core esistenti
+  - Riferimenti Biblioteca e codici stabili Hurom senza duplicazione
+  - Importazione manuale idempotente con preview, conflict engine e conferma esplicita
+  - Vista/import quindicinale nel Planner
+  - Protezione delle modifiche manuali tra revisioni successive
 - Meal Prep
-- Menu
 - Lista spesa
 - Calendario
 - Notifiche
+
+> Integrazione diretta ChatGPT → Cucina Hub: fase separata e successiva. Userà lo stesso contratto `cucina-hub.menu-plan` tramite endpoint autenticato, senza scrittura automatica e con conferma finale nell'app.
 
 ## Release 0.9
 - Dashboard
@@ -58,10 +68,10 @@
 
 ---
 
-**Aggiornato:** 11 agosto 2026
+**Aggiornato:** 12 agosto 2026
 
-**Step completato:** Milestone E — Planner Core MVP (PR #122), validato su iPad
+**Step completato:** definizione architetturale dei menu quindicinali nel Planner — ADR-011 e contratto `cucina-hub.menu-plan` v1
 
 **Macro-step in corso:** Milestone E — Planner
 
-**Prossimo task operativo:** vista settimanale del Planner; Milestone D — AI resta rinviata alla fase AI finale, dopo il completamento delle sezioni principali
+**Prossimo task operativo:** modello database `planner_menu_packages` + `planned_meal_items` ed evoluzione compatibile di `planned_meals`; Milestone D — AI resta rinviata alla fase AI finale.
