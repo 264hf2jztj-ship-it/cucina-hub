@@ -46,6 +46,9 @@ create table if not exists public.planner_menu_packages (
   constraint planner_menu_packages_confirmed_shape check (
     import_status <> 'confirmed'
     or (payload_hash is not null and confirmed_at is not null)
+  ),
+  constraint planner_menu_packages_not_self_superseding check (
+    supersedes_id is null or supersedes_id <> id
   )
 );
 
@@ -63,6 +66,40 @@ on public.planner_menu_packages(owner_user_id, period_start, period_end);
 create index if not exists planner_menu_packages_owner_status_idx
 on public.planner_menu_packages(owner_user_id, import_status, period_start);
 
+create or replace function public.planner_menu_packages_validate_supersedes_owner()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if new.supersedes_id is not null
+     and not exists (
+       select 1
+       from public.planner_menu_packages previous_package
+       where previous_package.id = new.supersedes_id
+         and previous_package.owner_user_id = new.owner_user_id
+     ) then
+    raise exception using
+      errcode = '23514',
+      message = 'supersedes_id must reference a menu package owned by the same user';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.planner_menu_packages_validate_supersedes_owner() from public;
+
+drop trigger if exists planner_menu_packages_supersedes_owner_guard
+on public.planner_menu_packages;
+
+create trigger planner_menu_packages_supersedes_owner_guard
+before insert or update of supersedes_id, owner_user_id
+on public.planner_menu_packages
+for each row
+execute function public.planner_menu_packages_validate_supersedes_owner();
+
 alter table public.planner_menu_packages enable row level security;
 
 drop policy if exists planner_menu_packages_owner_select on public.planner_menu_packages;
@@ -75,36 +112,14 @@ drop policy if exists planner_menu_packages_owner_insert on public.planner_menu_
 create policy planner_menu_packages_owner_insert
 on public.planner_menu_packages
 for insert
-with check (
-  owner_user_id = auth.uid()
-  and (
-    supersedes_id is null
-    or exists (
-      select 1
-      from public.planner_menu_packages previous_package
-      where previous_package.id = supersedes_id
-        and previous_package.owner_user_id = auth.uid()
-    )
-  )
-);
+with check (owner_user_id = auth.uid());
 
 drop policy if exists planner_menu_packages_owner_update on public.planner_menu_packages;
 create policy planner_menu_packages_owner_update
 on public.planner_menu_packages
 for update
 using (owner_user_id = auth.uid())
-with check (
-  owner_user_id = auth.uid()
-  and (
-    supersedes_id is null
-    or exists (
-      select 1
-      from public.planner_menu_packages previous_package
-      where previous_package.id = supersedes_id
-        and previous_package.owner_user_id = auth.uid()
-    )
-  )
-);
+with check (owner_user_id = auth.uid());
 
 drop policy if exists planner_menu_packages_owner_delete on public.planner_menu_packages;
 create policy planner_menu_packages_owner_delete
