@@ -416,6 +416,84 @@
   line-height: 1.45;
 }
 
+.menu-conflict-summary {
+  display: grid;
+  gap: 4px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  line-height: 1.5;
+}
+
+.menu-conflict-summary.ok {
+  border-color: #b9d8c2;
+  background: #f4faf6;
+}
+
+.menu-conflict-summary.error {
+  border-color: #ead1d1;
+  background: #fff7f7;
+}
+
+.menu-conflict-summary span,
+.menu-conflict-summary small {
+  color: var(--muted);
+}
+
+.menu-conflict-summary small {
+  margin-top: 3px;
+  font-size: 0.72rem;
+}
+
+.menu-conflict-list {
+  display: grid;
+  gap: 8px;
+}
+
+.menu-conflict-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e7dbc2;
+  border-radius: 11px;
+  background: #fffaf0;
+}
+
+.menu-conflict-icon {
+  font-size: 1.15rem;
+}
+
+.menu-conflict-copy {
+  min-width: 0;
+}
+
+.menu-conflict-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.menu-conflict-heading strong {
+  overflow-wrap: anywhere;
+}
+
+.menu-conflict-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.menu-conflict-meta code {
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 .menu-import-boundary {
   margin-top: 16px;
   padding: 13px;
@@ -926,6 +1004,11 @@
   }
 
   .menu-idempotency-heading {
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .menu-conflict-heading {
     flex-direction: column;
     gap: 7px;
   }

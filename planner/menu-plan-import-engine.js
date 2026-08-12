@@ -788,6 +788,197 @@
     };
   }
 
+  function dateRangesOverlap(leftStart, leftEnd, rightStart, rightEnd) {
+    return isRealDate(leftStart)
+      && isRealDate(leftEnd)
+      && isRealDate(rightStart)
+      && isRealDate(rightEnd)
+      && leftStart <= rightEnd
+      && leftEnd >= rightStart;
+  }
+
+  function incomingMealEntries(packet) {
+    const entries = [];
+    (Array.isArray(packet?.days) ? packet.days : []).forEach((day, dayIndex) => {
+      (Array.isArray(day?.meals) ? day.meals : []).forEach((meal, mealIndex) => {
+        entries.push({
+          key: meal?.key ?? null,
+          date: day?.date ?? null,
+          slot: meal?.slot ?? null,
+          time: meal?.time ?? null,
+          items: Array.isArray(meal?.items) ? meal.items : [],
+          path: `days[${dayIndex}].meals[${mealIndex}]`
+        });
+      });
+    });
+    return entries;
+  }
+
+  function analyzeConflicts(packet, context = {}) {
+    const menu = packet?.menu ?? {};
+    const packages = Array.isArray(context.packages) ? context.packages : [];
+    const meals = Array.isArray(context.meals) ? context.meals : [];
+    const items = Array.isArray(context.items) ? context.items : [];
+    const incomingMeals = incomingMealEntries(packet);
+    const packageById = new Map(packages.map(menuPackage => [menuPackage?.id, menuPackage]));
+    const mealById = new Map(meals.map(meal => [meal?.id, meal]));
+    const activePackages = packages.filter(menuPackage =>
+      !["cancelled", "superseded"].includes(menuPackage?.import_status)
+    );
+    const activePackageIds = new Set(activePackages.map(menuPackage => menuPackage?.id).filter(Boolean));
+    const incomingByPosition = new Map();
+    incomingMeals.forEach(meal => {
+      const position = `${meal.date}\u0000${meal.slot}`;
+      const matches = incomingByPosition.get(position) ?? [];
+      matches.push(meal);
+      incomingByPosition.set(position, matches);
+    });
+
+    const conflicts = [];
+    const affectedIncomingMeals = new Set();
+    const addConflict = (code, path, message, details = {}) => {
+      conflicts.push(issue(code, path, message, "error", details));
+      if (details.incoming_meal_key) affectedIncomingMeals.add(details.incoming_meal_key);
+    };
+
+    activePackages.forEach(menuPackage => {
+      if (!dateRangesOverlap(
+        menu.period_start,
+        menu.period_end,
+        menuPackage?.period_start,
+        menuPackage?.period_end
+      )) return;
+
+      const label = text(menuPackage.title) || text(menuPackage.source_external_id) || "Menu esistente";
+      addConflict(
+        "overlapping_menu_package",
+        "menu.period_start",
+        `${label} occupa già parte del periodo ${menuPackage.period_start}–${menuPackage.period_end}.`,
+        {
+          package_id: menuPackage.id ?? null,
+          title: label,
+          period_start: menuPackage.period_start ?? null,
+          period_end: menuPackage.period_end ?? null,
+          source_type: menuPackage.source_type ?? null,
+          source_external_id: menuPackage.source_external_id ?? null,
+          source_revision: menuPackage.source_revision ?? null,
+          import_status: menuPackage.import_status ?? null,
+          same_menu_source: menuPackage.source_type === menu?.source?.type
+            && menuPackage.source_external_id === menu.external_id
+        }
+      );
+    });
+
+    meals.forEach(meal => {
+      const position = `${meal?.planned_date}\u0000${meal?.meal_slot}`;
+      const collidingIncomingMeals = incomingByPosition.get(position) ?? [];
+      if (meal?.menu_package_id !== null && meal?.menu_package_id !== undefined) return;
+
+      collidingIncomingMeals.forEach(incomingMeal => {
+        addConflict(
+          "existing_manual_meal",
+          incomingMeal.path,
+          `Esiste già un pasto manuale il ${meal.planned_date} nella fascia ${meal.meal_slot}.`,
+          {
+            existing_meal_id: meal.id ?? null,
+            planned_date: meal.planned_date ?? null,
+            meal_slot: meal.meal_slot ?? null,
+            planned_time: meal.planned_time ?? null,
+            incoming_meal_key: incomingMeal.key
+          }
+        );
+      });
+    });
+
+    const importedMealIsAffected = meal => {
+      if (!meal?.menu_package_id) return false;
+      const menuPackage = packageById.get(meal.menu_package_id);
+      if (menuPackage && !activePackageIds.has(menuPackage.id)) return false;
+      const sameMenuSource = menuPackage?.source_type === menu?.source?.type
+        && menuPackage?.source_external_id === menu.external_id;
+      const collision = incomingByPosition.has(`${meal.planned_date}\u0000${meal.meal_slot}`);
+      return sameMenuSource || collision;
+    };
+
+    meals.forEach(meal => {
+      if (!meal?.is_user_modified || !importedMealIsAffected(meal)) return;
+      const menuPackage = packageById.get(meal.menu_package_id);
+      const incomingMatch = incomingMeals.find(incomingMeal => incomingMeal.key === meal.source_meal_key)
+        ?? incomingByPosition.get(`${meal.planned_date}\u0000${meal.meal_slot}`)?.[0]
+        ?? null;
+      addConflict(
+        "user_modified_imported_meal",
+        incomingMatch?.path ?? "menu",
+        `Il pasto importato del ${meal.planned_date} (${meal.meal_slot}) è stato modificato manualmente.`,
+        {
+          existing_meal_id: meal.id ?? null,
+          package_id: meal.menu_package_id,
+          source_meal_key: meal.source_meal_key ?? null,
+          planned_date: meal.planned_date ?? null,
+          meal_slot: meal.meal_slot ?? null,
+          incoming_meal_key: incomingMatch?.key ?? null,
+          source_external_id: menuPackage?.source_external_id ?? null,
+          source_revision: menuPackage?.source_revision ?? null
+        }
+      );
+    });
+
+    items.forEach(item => {
+      if (!item?.is_user_modified) return;
+      const parentMeal = mealById.get(item.planned_meal_id);
+      if (!parentMeal || !importedMealIsAffected(parentMeal)) return;
+      const menuPackage = packageById.get(parentMeal.menu_package_id);
+      const incomingMeal = incomingMeals.find(meal => meal.key === parentMeal.source_meal_key)
+        ?? incomingByPosition.get(`${parentMeal.planned_date}\u0000${parentMeal.meal_slot}`)?.[0]
+        ?? null;
+      const incomingItemIndex = incomingMeal?.items.findIndex(candidate => candidate?.key === item.source_item_key) ?? -1;
+      const itemPath = incomingMeal && incomingItemIndex >= 0
+        ? `${incomingMeal.path}.items[${incomingItemIndex}]`
+        : incomingMeal?.path ?? "menu";
+      const itemLabel = text(item.label) || text(item.recipe_code) || text(item.source_item_key) || "Elemento importato";
+      addConflict(
+        "user_modified_imported_item",
+        itemPath,
+        `${itemLabel} è stato modificato manualmente dopo l'importazione.`,
+        {
+          existing_item_id: item.id ?? null,
+          existing_meal_id: parentMeal.id ?? null,
+          package_id: parentMeal.menu_package_id,
+          source_meal_key: parentMeal.source_meal_key ?? null,
+          source_item_key: item.source_item_key ?? null,
+          item_type: item.item_type ?? null,
+          label: itemLabel,
+          planned_date: parentMeal.planned_date ?? null,
+          meal_slot: parentMeal.meal_slot ?? null,
+          incoming_meal_key: incomingMeal?.key ?? null,
+          source_external_id: menuPackage?.source_external_id ?? null,
+          source_revision: menuPackage?.source_revision ?? null
+        }
+      );
+    });
+
+    const countByType = conflicts.reduce((counts, conflict) => {
+      counts[conflict.code] = (counts[conflict.code] ?? 0) + 1;
+      return counts;
+    }, {});
+
+    return {
+      status: conflicts.length ? "conflicts_found" : "clear",
+      complete: conflicts.length === 0,
+      has_conflicts: conflicts.length > 0,
+      can_commit: false,
+      conflicts,
+      count_by_type: countByType,
+      affected_incoming_meals: affectedIncomingMeals.size,
+      scanned: {
+        incoming_meals: incomingMeals.length,
+        menu_packages: packages.length,
+        planned_meals: meals.length,
+        planned_meal_items: items.length
+      }
+    };
+  }
+
   function analyze(input, recipes = []) {
     let parsed;
     try {
@@ -835,9 +1026,12 @@
     HUROM_STABLE_CODES,
     STANDARD_UNITS,
     analyze,
+    analyzeConflicts,
     analyzeIdempotency,
     canonicalStringify,
     computePayloadHash,
+    dateRangesOverlap,
+    incomingMealEntries,
     isHuromRecipeCode,
     isRealDate,
     normalizeRecipeCode,

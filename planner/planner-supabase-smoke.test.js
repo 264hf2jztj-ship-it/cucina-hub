@@ -105,6 +105,7 @@ const database = {
     { id: "recipe-dup-2", owner_user_id: "user-1", code: "dup-1", title: "Duplicata due" }
   ],
   planner_menu_packages: [],
+  planned_meal_items: [],
   planned_meals: [
     {
       id: "meal-1",
@@ -122,11 +123,13 @@ const database = {
 
 let plannedMealsError = null;
 let plannerMenuPackagesError = null;
+let plannedMealItemsError = null;
 
 function queryFor(table) {
   const query = {
     select() { return query; },
     eq() { return query; },
+    in() { return query; },
     gte() { return query; },
     lte() { return query; },
     order() { return query; },
@@ -137,7 +140,9 @@ function queryFor(table) {
           ? plannedMealsError
           : table === "planner_menu_packages"
             ? plannerMenuPackagesError
-            : null
+            : table === "planned_meal_items"
+              ? plannedMealItemsError
+              : null
       }).then(resolve, reject);
     }
   };
@@ -217,7 +222,20 @@ global.window = {
   assert.match(elements.get("#menuPlanResult").innerHTML, /RISOLTA/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /NUOVO PACCHETTO/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /SHA-256 del payload normalizzato/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Nessun conflitto rilevato/);
   assert.doesNotMatch(elements.get("#menuPlanResult").innerHTML, /ingredienti|procedimento/i);
+
+  const manualConflictPacket = structuredClone(smokePacket);
+  manualConflictPacket.menu.external_id = "manual-conflict-menu";
+  manualConflictPacket.days[0].meals[0].key = "smoke-dinner";
+  manualConflictPacket.days[0].meals[0].slot = "dinner";
+  elements.get("#menuPlanInput").value = JSON.stringify(manualConflictPacket);
+  elements.get("#analyzeMenuPlan").listeners.click();
+  await settle();
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Conflitti da risolvere/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /PASTO MANUALE/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /existing_manual_meal/);
+  assert.match(elements.get("#pageStatus").className, /warning/);
 
   const normalizedSmokePacket = menuPlanEngine.validatePacket(smokePacket).normalizedPacket;
   const smokeHash = await menuPlanEngine.computePayloadHash(normalizedSmokePacket);
@@ -230,6 +248,7 @@ global.window = {
     payload_hash: smokeHash,
     import_status: "confirmed"
   });
+  elements.get("#menuPlanInput").value = JSON.stringify(smokePacket);
   elements.get("#analyzeMenuPlan").listeners.click();
   await settle();
   assert.match(elements.get("#menuPlanResult").innerHTML, /RETRY BLOCCATO/);
@@ -252,6 +271,63 @@ global.window = {
   assert.match(elements.get("#menuPlanResult").innerHTML, /CONTROLLO NON DISPONIBILE/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /041_planner_menu_packages\.sql/);
   plannerMenuPackagesError = null;
+
+  plannedMealItemsError = { message: "Elementi simulati non disponibili", code: "TEST" };
+  const conflictUnavailablePacket = structuredClone(smokePacket);
+  conflictUnavailablePacket.menu.external_id = "conflict-unavailable-menu";
+  elements.get("#menuPlanInput").value = JSON.stringify(conflictUnavailablePacket);
+  elements.get("#analyzeMenuPlan").listeners.click();
+  await settle();
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Analisi conflitti non disponibile/);
+  assert.match(elements.get("#pageStatus").className, /error/);
+  plannedMealItemsError = null;
+
+  const revisionPacket = structuredClone(smokePacket);
+  revisionPacket.menu.external_id = "protected-menu";
+  revisionPacket.menu.revision = 2;
+  revisionPacket.days[0].meals[0].key = "protected-breakfast";
+  const previousRevisionPacket = structuredClone(revisionPacket);
+  previousRevisionPacket.menu.revision = 1;
+  database.planner_menu_packages.push({
+    id: "protected-package",
+    owner_user_id: "user-1",
+    title: "Menu protetto",
+    period_start: core.localDateValue(),
+    period_end: core.localDateValue(),
+    source_type: "manual",
+    source_external_id: "protected-menu",
+    source_revision: 1,
+    payload_hash: await menuPlanEngine.computePayloadHash(previousRevisionPacket),
+    import_status: "confirmed"
+  });
+  database.planned_meals.push({
+    id: "protected-meal",
+    owner_user_id: "user-1",
+    recipe_id: "recipe-1",
+    menu_package_id: "protected-package",
+    source_meal_key: "protected-breakfast",
+    planned_date: core.localDateValue(),
+    meal_slot: "breakfast",
+    planned_time: "07:00:00",
+    is_user_modified: true
+  });
+  database.planned_meal_items.push({
+    id: "protected-item",
+    owner_user_id: "user-1",
+    planned_meal_id: "protected-meal",
+    source_item_key: "recipe",
+    item_type: "recipe",
+    recipe_code: "RC-1",
+    label: "Pollo al forno",
+    is_user_modified: true
+  });
+  elements.get("#menuPlanInput").value = JSON.stringify(revisionPacket);
+  elements.get("#analyzeMenuPlan").listeners.click();
+  await settle();
+  assert.match(elements.get("#menuPlanResult").innerHTML, /MENU SOVRAPPOSTO/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /PASTO MODIFICATO/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /ELEMENTO MODIFICATO/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /user_modified_imported_item/);
 
   const missingPacket = structuredClone(smokePacket);
   missingPacket.days[0].meals[0].items[0].recipe_code = "RC-999";
@@ -279,7 +355,7 @@ global.window = {
   elements.get("#currentWeek").listeners.click();
   await settle();
   assert.equal(elements.get("#weekRange").textContent, initialRange);
-  assert.equal(elements.get("#weekMealCount").textContent, "1");
+  assert.equal(elements.get("#weekMealCount").textContent, "2");
 
   plannedMealsError = { message: "Connessione simulata non disponibile", code: "TEST" };
   elements.get("#previousWeek").listeners.click();
