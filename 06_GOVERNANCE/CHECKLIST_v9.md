@@ -157,7 +157,50 @@
     - [x] UI touch-first e accesso dalla navigazione principale
     - [x] Test iPad completato
     - [x] Merge PR #122
-  - [ ] Vista settimanale
+  - [x] Vista settimanale
+    - [x] Intervallo lunedì-domenica
+    - [x] Navigazione settimana precedente / oggi / successiva
+    - [x] Giorni vuoti sempre visibili
+    - [x] Aggiunta con data precompilata dalla griglia
+    - [x] Modifica diretta dalla card del pasto
+    - [x] Query Supabase limitata alla settimana selezionata
+    - [x] UI touch-first e test iPad completato
+    - [x] Merge PR #124
+  - [ ] Menu quindicinali / Menu Package
+    - [x] Modello `Menu Package → Planned Meal → Planned Meal Item` accettato
+    - [x] ADR-011 `Menu package e pasti multi-elemento nel Planner`
+    - [x] Contratto `cucina-hub.menu-plan` versione 1
+    - [x] Periodo espresso con `period_start` / `period_end`, senza durata hard-coded
+    - [x] Tipi elemento definiti: `recipe`, `food`, `preparation`
+    - [x] Regola Hurom: usare i codici stabili della Biblioteca quando disponibili, senza duplicare ingredienti e procedimento
+    - [x] Idempotenza definita tramite provenienza, `external_id`, revisione e `payload_hash`
+    - [x] Guardrail obbligatori: preview, nessun salvataggio automatico, conferma esplicita
+    - [x] Integrazione diretta ChatGPT → Cucina Hub separata e rinviata a endpoint autenticato
+    - [ ] Migration `planner_menu_packages`
+    - [ ] Migration `planned_meal_items`
+    - [ ] Evoluzione compatibile di `planned_meals`
+    - [ ] Migrazione dei `recipe_id` esistenti in item `recipe`
+    - [ ] Vincoli, indici e RLS per proprietario
+    - [ ] Parser `cucina-hub.menu-plan` v1
+    - [ ] Validatore strutturale e guardrail
+    - [ ] Resolver dei `recipe_code` della Biblioteca
+    - [ ] Gestione specifica riferimenti Hurom
+    - [ ] Calcolo `payload_hash` e protezione dai retry
+    - [ ] Anteprima importazione
+    - [ ] Conflict engine
+    - [ ] Conflitti con pasti manuali e menu sovrapposti
+    - [ ] Protezione dei pasti/elementi modificati manualmente
+    - [ ] Conferma esplicita prima del commit
+    - [ ] Commit atomico del pacchetto
+    - [ ] Vista/import quindicinale iPad-first
+    - [ ] Test iPad
+    - [ ] Merge
+  - [ ] Integrazione diretta ChatGPT → Cucina Hub
+    - [ ] Endpoint autenticato
+    - [ ] Riutilizzo del contratto `cucina-hub.menu-plan`
+    - [ ] `owner_user_id` derivato dal JWT
+    - [ ] Creazione della sola preview/staging
+    - [ ] Conferma finale obbligatoria nell'app
 - [ ] Meal Prep
 - [ ] Calendario
 - [ ] Lista spesa
@@ -167,6 +210,6 @@
 
 ---
 
-**Aggiornato:** 11 agosto 2026
+**Aggiornato:** 12 agosto 2026
 
-**Stato corrente:** Milestone E — Planner avviata; Planner Core MVP unito con PR #122 e validato su iPad. Prossimo task operativo: vista settimanale del Planner; Milestone D — AI resta rinviata alla fase finale.
+**Stato corrente:** Milestone E — Planner in corso; Planner Core e vista settimanale sono completati e validati su iPad. L'architettura dei menu quindicinali è definita con ADR-011 e contratto `cucina-hub.menu-plan` v1. Prossimo task operativo: database Menu Package + pasti multi-elemento. Milestone D — AI resta rinviata alla fase finale.
