@@ -127,7 +127,7 @@ function menuImportIdleHtml(message = "Nessun pacchetto analizzato.") {
   return `
     <div class="menu-import-idle">
       <strong>${escapeHtml(message)}</strong>
-      <span>Il flusso si fermerà dopo il controllo di identità, hash e retry.</span>
+      <span>Il flusso si fermerà dopo l'analisi dei conflitti, senza salvare dati.</span>
     </div>`;
 }
 
@@ -267,45 +267,117 @@ function menuIdempotencyHtml(check) {
     </section>`;
 }
 
+function menuConflictHtml(conflict) {
+  const presentations = {
+    overlapping_menu_package: { badge: "MENU SOVRAPPOSTO", icon: "🗓️" },
+    existing_manual_meal: { badge: "PASTO MANUALE", icon: "✋" },
+    user_modified_imported_meal: { badge: "PASTO MODIFICATO", icon: "🛡️" },
+    user_modified_imported_item: { badge: "ELEMENTO MODIFICATO", icon: "🛡️" }
+  };
+  const presentation = presentations[conflict.code] ?? { badge: "CONFLITTO", icon: "⚠️" };
+  const details = conflict.details ?? {};
+  const dateAndSlot = details.planned_date
+    ? `<span>${escapeHtml(details.planned_date)}${details.meal_slot ? ` · ${escapeHtml(details.meal_slot)}` : ""}</span>`
+    : "";
+
+  return `
+    <article class="menu-conflict-card">
+      <span class="menu-conflict-icon" aria-hidden="true">${presentation.icon}</span>
+      <div class="menu-conflict-copy">
+        <div class="menu-conflict-heading">
+          <strong>${escapeHtml(conflict.message)}</strong>
+          <span class="badge pending">${escapeHtml(presentation.badge)}</span>
+        </div>
+        <div class="menu-conflict-meta">
+          ${dateAndSlot}
+          <code>${escapeHtml(conflict.code)} · ${escapeHtml(conflict.path)}</code>
+        </div>
+      </div>
+    </article>`;
+}
+
+function menuConflictAnalysisHtml(analysis) {
+  if (analysis.status === "check_unavailable") {
+    return `
+      <section class="menu-import-section" aria-label="Analisi conflitti non disponibile">
+        <h3>Analisi conflitti</h3>
+        <div class="menu-conflict-summary error">
+          <strong>Controllo non disponibile</strong>
+          <span>${escapeHtml(analysis.issue?.message || "Non è stato possibile leggere i dati del Planner.")}</span>
+        </div>
+      </section>`;
+  }
+
+  const scanned = analysis.scanned ?? {};
+  if (!analysis.has_conflicts) {
+    return `
+      <section class="menu-import-section" aria-label="Analisi conflitti completata">
+        <h3>Analisi conflitti</h3>
+        <div class="menu-conflict-summary ok">
+          <strong>Nessun conflitto rilevato</strong>
+          <span>Periodo, pasti manuali e contenuti importati protetti sono stati controllati.</span>
+          <small>${escapeHtml(scanned.menu_packages ?? 0)} menu · ${escapeHtml(scanned.planned_meals ?? 0)} pasti · ${escapeHtml(scanned.planned_meal_items ?? 0)} elementi esaminati</small>
+        </div>
+      </section>`;
+  }
+
+  return `
+    <section class="menu-import-section" aria-label="Conflitti rilevati">
+      <h3>Conflitti da risolvere (${analysis.conflicts.length})</h3>
+      <p>Nessun record verrà sovrascritto: le scelte di risoluzione saranno aggiunte nella prossima anteprima operativa.</p>
+      <div class="menu-conflict-list">${analysis.conflicts.map(menuConflictHtml).join("")}</div>
+    </section>`;
+}
+
 function renderMenuPlanAnalysis(result) {
   const phaseLabels = {
     parsing: "Parsing",
     validation: "Validazione contratto",
     library_resolution: "Risoluzione Biblioteca",
-    idempotency: "Identità e retry"
+    idempotency: "Identità e retry",
+    conflict_analysis: "Analisi conflitti"
   };
   const phase = phaseLabels[result.stage] ?? "Analisi";
   const resolutionComplete = result.resolution?.complete === true;
   const idempotency = result.idempotency ?? null;
+  const conflictAnalysis = result.conflictAnalysis ?? null;
   const duplicateRetry = idempotency?.status === "already_imported";
-  const success = result.valid && resolutionComplete && idempotency?.blocking !== true;
-  const tone = idempotency?.blocking
-    ? "error"
-    : duplicateRetry
-      ? "warning"
-      : success
-        ? "ok"
-        : "error";
-  const heading = idempotency?.blocking
-    ? "Controllo retry bloccato"
-    : duplicateRetry
-      ? "Retry riconosciuto e fermato"
-      : success
-        ? "Analisi tecnica completata"
-    : result.stage === "library_resolution"
-      ? "Riferimenti Biblioteca da correggere"
-      : result.stage === "validation"
-        ? "Pacchetto non conforme al contratto"
-        : "Il JSON non è stato letto";
-  const description = idempotency
-    ? idempotency.blocking
-      ? `Il flusso si è fermato nella fase: ${phase}. Nessun dato è stato salvato.`
-      : duplicateRetry
-        ? "Il contenuto coincide con una revisione già nota. Nessun duplicato è stato creato."
-        : "Parsing, validazione, risoluzione e controllo retry sono riusciti. Nessun dato è stato salvato."
-    : success
-      ? "Parsing, validazione e risoluzione sono riusciti. Nessun dato è stato salvato."
-    : `Il flusso si è fermato nella fase: ${phase}. Nessun dato è stato salvato.`;
+  const conflictUnavailable = conflictAnalysis?.status === "check_unavailable";
+  const hasConflicts = conflictAnalysis?.has_conflicts === true;
+  const success = result.valid
+    && resolutionComplete
+    && idempotency?.blocking !== true
+    && !conflictUnavailable
+    && !hasConflicts;
+  let tone = "error";
+  let heading = "Il JSON non è stato letto";
+  let description = `Il flusso si è fermato nella fase: ${phase}. Nessun dato è stato salvato.`;
+
+  if (idempotency?.blocking) {
+    heading = "Controllo retry bloccato";
+  } else if (conflictUnavailable) {
+    heading = "Analisi conflitti non disponibile";
+  } else if (duplicateRetry) {
+    tone = "warning";
+    heading = "Retry riconosciuto e fermato";
+    description = "Il contenuto coincide con una revisione già nota. Nessun duplicato è stato creato.";
+  } else if (hasConflicts) {
+    tone = "warning";
+    heading = "Conflitti da risolvere";
+    description = `Sono stati rilevati ${conflictAnalysis.conflicts.length} conflitti. Nessun dato è stato salvato o sovrascritto.`;
+  } else if (success) {
+    tone = "ok";
+    heading = "Analisi tecnica completata";
+    description = conflictAnalysis
+      ? "Parsing, validazione, risoluzione, retry e conflitti sono stati controllati. Nessun dato è stato salvato."
+      : idempotency
+        ? "Parsing, validazione, risoluzione e controllo retry sono riusciti. Nessun dato è stato salvato."
+        : "Parsing, validazione e risoluzione sono riusciti. Nessun dato è stato salvato.";
+  } else if (result.stage === "library_resolution") {
+    heading = "Riferimenti Biblioteca da correggere";
+  } else if (result.stage === "validation") {
+    heading = "Pacchetto non conforme al contratto";
+  }
   const structuralErrors = result.stage === "library_resolution"
     ? result.errors.filter(item => !["missing_library_reference", "ambiguous_library_reference"].includes(item.code))
     : result.errors;
@@ -341,22 +413,92 @@ function renderMenuPlanAnalysis(result) {
           : '<div class="menu-import-idle"><strong>Nessun item recipe.</strong><span>Il menu contiene soltanto alimenti o preparazioni autonome.</span></div>'}
       </section>` : ""}
     ${idempotency ? menuIdempotencyHtml(idempotency) : ""}
+    ${conflictAnalysis ? menuConflictAnalysisHtml(conflictAnalysis) : ""}
     <div class="menu-import-boundary">
-      <strong>Limite attuale del flusso: “Identità e retry”.</strong><br>
-      Conflitti di calendario, anteprima, conferma e commit non sono attivi in questo incremento.
+      <strong>Limite attuale del flusso: “Analisi conflitti”.</strong><br>
+      Scelte di risoluzione, conferma e commit non sono attivi in questo incremento.
     </div>`;
 }
 
 async function fetchKnownMenuPackages(packet) {
   const { data, error } = await client
     .from("planner_menu_packages")
-    .select("id,source_type,source_external_id,source_revision,payload_hash,import_status,created_at")
+    .select("id,title,period_start,period_end,source_type,source_external_id,source_revision,payload_hash,import_status,created_at")
     .eq("owner_user_id", state.ownerUserId)
     .eq("source_type", packet.menu.source.type)
     .eq("source_external_id", packet.menu.external_id)
     .order("source_revision", { ascending: false });
   assertOk(error, "Lettura registro pacchetti menu");
   return data ?? [];
+}
+
+function uniqueRows(rows = []) {
+  return [...new Map(rows.filter(row => row?.id).map(row => [row.id, row])).values()];
+}
+
+async function fetchConflictContext(packet, knownPackages = []) {
+  const packageFields = "id,title,period_start,period_end,source_type,source_external_id,source_revision,payload_hash,import_status,created_at";
+  const mealFields = "id,planned_date,meal_slot,planned_time,menu_package_id,source_meal_key,is_user_modified";
+  const sameSourcePackageIds = knownPackages
+    .filter(menuPackage => !["cancelled", "superseded"].includes(menuPackage.import_status))
+    .map(menuPackage => menuPackage.id)
+    .filter(Boolean);
+
+  const overlappingPackagesPromise = client
+    .from("planner_menu_packages")
+    .select(packageFields)
+    .eq("owner_user_id", state.ownerUserId)
+    .lte("period_start", packet.menu.period_end)
+    .gte("period_end", packet.menu.period_start)
+    .order("period_start", { ascending: true });
+  const periodMealsPromise = client
+    .from("planned_meals")
+    .select(mealFields)
+    .eq("owner_user_id", state.ownerUserId)
+    .gte("planned_date", packet.menu.period_start)
+    .lte("planned_date", packet.menu.period_end)
+    .order("planned_date", { ascending: true });
+  const sourceMealsPromise = sameSourcePackageIds.length
+    ? client
+      .from("planned_meals")
+      .select(mealFields)
+      .eq("owner_user_id", state.ownerUserId)
+      .in("menu_package_id", sameSourcePackageIds)
+      .order("planned_date", { ascending: true })
+    : Promise.resolve({ data: [], error: null });
+
+  const [overlappingPackagesResult, periodMealsResult, sourceMealsResult] = await Promise.all([
+    overlappingPackagesPromise,
+    periodMealsPromise,
+    sourceMealsPromise
+  ]);
+  assertOk(overlappingPackagesResult.error, "Lettura menu sovrapposti");
+  assertOk(periodMealsResult.error, "Lettura pasti nel periodo");
+  assertOk(sourceMealsResult.error, "Lettura pasti delle revisioni precedenti");
+
+  const packages = uniqueRows([
+    ...knownPackages,
+    ...(overlappingPackagesResult.data ?? [])
+  ]);
+  const meals = uniqueRows([
+    ...(periodMealsResult.data ?? []),
+    ...(sourceMealsResult.data ?? [])
+  ]);
+  const mealIds = meals.map(meal => meal.id).filter(Boolean);
+  let items = [];
+
+  if (mealIds.length) {
+    const itemsResult = await client
+      .from("planned_meal_items")
+      .select("id,planned_meal_id,position,source_item_key,is_user_modified,item_type,label,recipe_code")
+      .eq("owner_user_id", state.ownerUserId)
+      .in("planned_meal_id", mealIds)
+      .order("position", { ascending: true });
+    assertOk(itemsResult.error, "Lettura elementi dei pasti");
+    items = itemsResult.data ?? [];
+  }
+
+  return { packages, meals, items };
 }
 
 function setMenuAnalysisBusy(busy) {
@@ -376,16 +518,19 @@ async function analyzeMenuPlan() {
 
   setMenuAnalysisBusy(true);
   elements.menuResult.setAttribute("aria-busy", "true");
-  setStatus("Analisi del menu e controllo retry…");
+  setStatus("Analisi del menu, retry e conflitti…");
 
   try {
     let result = menuPlanEngine.analyze(elements.menuInput.value, state.recipes);
     if (result.valid) {
+      let existingPackages = [];
       try {
-        const [payloadHash, existingPackages] = await Promise.all([
+        const idempotencyInputs = await Promise.all([
           menuPlanEngine.computePayloadHash(result.normalizedPacket),
           fetchKnownMenuPackages(result.normalizedPacket)
         ]);
+        const [payloadHash, packages] = idempotencyInputs;
+        existingPackages = packages;
         const idempotency = menuPlanEngine.analyzeIdempotency(
           result.normalizedPacket,
           payloadHash,
@@ -424,11 +569,51 @@ async function analyzeMenuPlan() {
           }
         };
       }
+
+      if (result.idempotency?.can_continue) {
+        try {
+          const conflictContext = await fetchConflictContext(result.normalizedPacket, existingPackages);
+          result = {
+            ...result,
+            stage: "conflict_analysis",
+            conflictAnalysis: menuPlanEngine.analyzeConflicts(
+              result.normalizedPacket,
+              conflictContext
+            )
+          };
+        } catch (error) {
+          result = {
+            ...result,
+            stage: "conflict_analysis",
+            valid: false,
+            conflictAnalysis: {
+              status: "check_unavailable",
+              complete: false,
+              has_conflicts: false,
+              can_commit: false,
+              conflicts: [],
+              issue: {
+                code: "conflict_analysis_unavailable",
+                path: "planner",
+                severity: "error",
+                message: `Impossibile analizzare i conflitti. Verifica la migration 041_planner_menu_packages.sql. ${error.message}`
+              }
+            }
+          };
+        }
+      }
     }
 
     renderMenuPlanAnalysis(result);
     const idempotency = result.idempotency;
-    if (idempotency?.blocking) {
+    const conflictAnalysis = result.conflictAnalysis;
+    if (conflictAnalysis?.status === "check_unavailable") {
+      setStatus("Analisi conflitti non disponibile. Nessun dato salvato.", "error");
+    } else if (conflictAnalysis?.has_conflicts) {
+      setStatus(`${conflictAnalysis.conflicts.length} conflitti da risolvere. Nessun dato salvato o sovrascritto.`, "warning");
+    } else if (conflictAnalysis?.complete) {
+      setStatus("Menu valido: nessun conflitto rilevato. Nessun dato salvato.", "ok");
+    } else if (idempotency?.blocking) {
       setStatus("Controllo retry bloccato. Nessun dato salvato.", "error");
     } else if (idempotency?.status === "already_imported") {
       setStatus("Retry fermato in sicurezza: il pacchetto è già noto. Nessun dato salvato.", "warning");

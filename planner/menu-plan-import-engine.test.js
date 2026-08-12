@@ -283,7 +283,90 @@ const irrelevantPackage = { ...identityPackage, source_external_id: "other-menu"
 assert.equal(engine.analyzeIdempotency(validPacket, canonicalHash, [irrelevantPackage]).status, "new_menu");
 assert.equal(engine.analyzeIdempotency(validPacket, "not-a-hash", []).status, "invalid_payload_hash");
 
-console.log("Menu plan import engine: contratto, hash e idempotenza verificati.");
+assert.equal(engine.dateRangesOverlap("2026-08-17", "2026-08-30", "2026-08-30", "2026-09-02"), true);
+assert.equal(engine.dateRangesOverlap("2026-08-17", "2026-08-30", "2026-08-31", "2026-09-02"), false);
+assert.equal(engine.incomingMealEntries(validPacket).length, 1);
+assert.equal(engine.analyzeConflicts(validPacket).status, "clear");
+
+const overlappingPackage = {
+  ...identityPackage,
+  title: "Menu precedente",
+  period_start: "2026-08-10",
+  period_end: "2026-08-20"
+};
+const overlapAnalysis = engine.analyzeConflicts(validPacket, { packages: [overlappingPackage] });
+assert.equal(overlapAnalysis.status, "conflicts_found");
+assert.equal(overlapAnalysis.count_by_type.overlapping_menu_package, 1);
+assert.equal(overlapAnalysis.conflicts[0].details.same_menu_source, true);
+
+const cancelledOverlap = engine.analyzeConflicts(validPacket, {
+  packages: [{ ...overlappingPackage, import_status: "cancelled" }]
+});
+assert.equal(cancelledOverlap.status, "clear");
+
+const existingManualMeal = {
+  id: "manual-meal",
+  menu_package_id: null,
+  planned_date: "2026-08-17",
+  meal_slot: "breakfast",
+  planned_time: "07:30:00",
+  is_user_modified: false
+};
+const manualConflict = engine.analyzeConflicts(validPacket, { meals: [existingManualMeal] });
+assert.equal(manualConflict.count_by_type.existing_manual_meal, 1);
+assert.equal(manualConflict.affected_incoming_meals, 1);
+
+const differentSlotMeal = { ...existingManualMeal, id: "manual-dinner", meal_slot: "dinner" };
+assert.equal(engine.analyzeConflicts(validPacket, { meals: [differentSlotMeal] }).status, "clear");
+
+const modifiedImportedMeal = {
+  id: "imported-meal",
+  menu_package_id: overlappingPackage.id,
+  source_meal_key: "2026-08-17-breakfast",
+  planned_date: "2026-08-17",
+  meal_slot: "breakfast",
+  is_user_modified: true
+};
+const modifiedImportedItem = {
+  id: "imported-item",
+  planned_meal_id: modifiedImportedMeal.id,
+  source_item_key: "juice",
+  item_type: "recipe",
+  recipe_code: "RC-003",
+  label: "Good Boy",
+  is_user_modified: true
+};
+const protectedAnalysis = engine.analyzeConflicts(validPacket, {
+  packages: [overlappingPackage],
+  meals: [modifiedImportedMeal],
+  items: [modifiedImportedItem]
+});
+assert.equal(protectedAnalysis.count_by_type.overlapping_menu_package, 1);
+assert.equal(protectedAnalysis.count_by_type.user_modified_imported_meal, 1);
+assert.equal(protectedAnalysis.count_by_type.user_modified_imported_item, 1);
+assert.equal(protectedAnalysis.conflicts.find(conflict => conflict.code === "user_modified_imported_item").path,
+  "days[0].meals[0].items[0]");
+
+const unrelatedPackage = {
+  ...overlappingPackage,
+  id: "unrelated-package",
+  source_external_id: "unrelated",
+  period_start: "2026-09-01",
+  period_end: "2026-09-02"
+};
+const unrelatedModifiedMeal = {
+  ...modifiedImportedMeal,
+  id: "unrelated-meal",
+  menu_package_id: unrelatedPackage.id,
+  planned_date: "2026-09-01",
+  meal_slot: "dinner"
+};
+assert.equal(engine.analyzeConflicts(validPacket, {
+  packages: [unrelatedPackage],
+  meals: [unrelatedModifiedMeal]
+}).status, "clear");
+
+console.log("Menu plan import engine: contratto, hash, idempotenza e conflitti verificati.");
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;
