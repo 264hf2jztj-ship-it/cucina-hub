@@ -10,6 +10,7 @@ const state = {
   meals: [],
   weekAnchor: null,
   editingId: null,
+  menuAnalyzing: false,
   busy: false
 };
 
@@ -126,7 +127,7 @@ function menuImportIdleHtml(message = "Nessun pacchetto analizzato.") {
   return `
     <div class="menu-import-idle">
       <strong>${escapeHtml(message)}</strong>
-      <span>Il flusso si fermerà dopo la risoluzione delle ricette della Biblioteca.</span>
+      <span>Il flusso si fermerà dopo il controllo di identità, hash e retry.</span>
     </div>`;
 }
 
@@ -183,24 +184,127 @@ function menuImportStatsHtml(summary = {}) {
     <div class="menu-import-stat"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("")}</div>`;
 }
 
+function menuIdempotencyHtml(check) {
+  const presentations = {
+    new_menu: {
+      tone: "ok",
+      badge: "NUOVO PACCHETTO",
+      title: "Identità disponibile",
+      message: "Non risultano pacchetti precedenti con questa sorgente e questo identificativo."
+    },
+    new_revision: {
+      tone: "ok",
+      badge: "NUOVA REVISIONE",
+      title: "Revisione successiva riconosciuta",
+      message: `La revisione ${check.identity?.source_revision} è successiva alla ${check.latest?.source_revision}.`
+    },
+    already_imported: {
+      tone: "warning",
+      badge: "RETRY BLOCCATO",
+      title: "Pacchetto già noto",
+      message: check.issue?.message
+    },
+    same_revision_payload_mismatch: {
+      tone: "error",
+      badge: "CONFLITTO HASH",
+      title: "Stessa revisione, contenuto diverso",
+      message: check.issue?.message
+    },
+    stale_revision: {
+      tone: "error",
+      badge: "REVISIONE SUPERATA",
+      title: "È già presente una revisione più recente",
+      message: check.issue?.message
+    },
+    existing_revision_without_hash: {
+      tone: "error",
+      badge: "VERIFICA MANUALE",
+      title: "Revisione esistente senza hash",
+      message: check.issue?.message
+    },
+    invalid_payload_hash: {
+      tone: "error",
+      badge: "HASH NON VALIDO",
+      title: "Impossibile verificare il pacchetto",
+      message: check.issue?.message
+    },
+    check_unavailable: {
+      tone: "error",
+      badge: "CONTROLLO NON DISPONIBILE",
+      title: "Il registro dei pacchetti non è leggibile",
+      message: check.issue?.message
+    }
+  };
+  const presentation = presentations[check.status] ?? presentations.check_unavailable;
+  const identity = check.identity ?? {};
+  const existingStatus = check.match?.import_status
+    ? `<span>Stato esistente <strong>${escapeHtml(check.match.import_status)}</strong></span>`
+    : "";
+  const payloadHash = check.payload_hash
+    ? `<div class="menu-payload-hash">
+        <span>SHA-256 del payload normalizzato</span>
+        <code>${escapeHtml(check.payload_hash)}</code>
+      </div>`
+    : "";
+
+  return `
+    <section class="menu-import-section" aria-label="Controllo identità e retry">
+      <h3>Identità e retry</h3>
+      <div class="menu-idempotency ${presentation.tone}">
+        <div class="menu-idempotency-heading">
+          <strong>${escapeHtml(presentation.title)}</strong>
+          <span class="badge${presentation.tone === "ok" ? "" : " pending"}">${escapeHtml(presentation.badge)}</span>
+        </div>
+        <p>${escapeHtml(presentation.message || "Controllo non disponibile.")}</p>
+        <div class="menu-idempotency-meta">
+          <span>Sorgente <code>${escapeHtml(identity.source_type || "—")}</code></span>
+          <span>ID <code>${escapeHtml(identity.source_external_id || "—")}</code></span>
+          <span>Revisione <strong>${escapeHtml(identity.source_revision ?? "—")}</strong></span>
+          ${existingStatus}
+        </div>
+        ${payloadHash}
+      </div>
+    </section>`;
+}
+
 function renderMenuPlanAnalysis(result) {
   const phaseLabels = {
     parsing: "Parsing",
     validation: "Validazione contratto",
-    library_resolution: "Risoluzione Biblioteca"
+    library_resolution: "Risoluzione Biblioteca",
+    idempotency: "Identità e retry"
   };
   const phase = phaseLabels[result.stage] ?? "Analisi";
   const resolutionComplete = result.resolution?.complete === true;
-  const success = result.valid && resolutionComplete;
-  const heading = success
-    ? "Analisi tecnica completata"
+  const idempotency = result.idempotency ?? null;
+  const duplicateRetry = idempotency?.status === "already_imported";
+  const success = result.valid && resolutionComplete && idempotency?.blocking !== true;
+  const tone = idempotency?.blocking
+    ? "error"
+    : duplicateRetry
+      ? "warning"
+      : success
+        ? "ok"
+        : "error";
+  const heading = idempotency?.blocking
+    ? "Controllo retry bloccato"
+    : duplicateRetry
+      ? "Retry riconosciuto e fermato"
+      : success
+        ? "Analisi tecnica completata"
     : result.stage === "library_resolution"
       ? "Riferimenti Biblioteca da correggere"
       : result.stage === "validation"
         ? "Pacchetto non conforme al contratto"
         : "Il JSON non è stato letto";
-  const description = success
-    ? "Parsing, validazione e risoluzione sono riusciti. Nessun dato è stato salvato."
+  const description = idempotency
+    ? idempotency.blocking
+      ? `Il flusso si è fermato nella fase: ${phase}. Nessun dato è stato salvato.`
+      : duplicateRetry
+        ? "Il contenuto coincide con una revisione già nota. Nessun duplicato è stato creato."
+        : "Parsing, validazione, risoluzione e controllo retry sono riusciti. Nessun dato è stato salvato."
+    : success
+      ? "Parsing, validazione e risoluzione sono riusciti. Nessun dato è stato salvato."
     : `Il flusso si è fermato nella fase: ${phase}. Nessun dato è stato salvato.`;
   const structuralErrors = result.stage === "library_resolution"
     ? result.errors.filter(item => !["missing_library_reference", "ambiguous_library_reference"].includes(item.code))
@@ -209,8 +313,8 @@ function renderMenuPlanAnalysis(result) {
   const sourceFormat = result.sourceFormat === "markdown_json" ? "blocco Markdown JSON" : "JSON puro";
 
   elements.menuResult.innerHTML = `
-    <div class="menu-import-state ${success ? "ok" : "error"}">
-      <span class="menu-import-state-icon" aria-hidden="true">${success ? "✅" : "⚠️"}</span>
+    <div class="menu-import-state ${tone}">
+      <span class="menu-import-state-icon" aria-hidden="true">${tone === "ok" ? "✅" : "⚠️"}</span>
       <div class="menu-import-state-copy">
         <strong>${escapeHtml(heading)}</strong>
         <span>${escapeHtml(description)}</span>
@@ -236,27 +340,117 @@ function renderMenuPlanAnalysis(result) {
           ? `<div class="menu-reference-list">${result.resolution.references.map(menuReferenceHtml).join("")}</div>`
           : '<div class="menu-import-idle"><strong>Nessun item recipe.</strong><span>Il menu contiene soltanto alimenti o preparazioni autonome.</span></div>'}
       </section>` : ""}
+    ${idempotency ? menuIdempotencyHtml(idempotency) : ""}
     <div class="menu-import-boundary">
-      <strong>Flusso interrotto intenzionalmente dopo “Risoluzione Biblioteca”.</strong><br>
-      Idempotenza, conflitti, anteprima, conferma e commit non sono attivi in questo incremento.
+      <strong>Limite attuale del flusso: “Identità e retry”.</strong><br>
+      Conflitti di calendario, anteprima, conferma e commit non sono attivi in questo incremento.
     </div>`;
 }
 
-function analyzeMenuPlan() {
+async function fetchKnownMenuPackages(packet) {
+  const { data, error } = await client
+    .from("planner_menu_packages")
+    .select("id,source_type,source_external_id,source_revision,payload_hash,import_status,created_at")
+    .eq("owner_user_id", state.ownerUserId)
+    .eq("source_type", packet.menu.source.type)
+    .eq("source_external_id", packet.menu.external_id)
+    .order("source_revision", { ascending: false });
+  assertOk(error, "Lettura registro pacchetti menu");
+  return data ?? [];
+}
+
+function setMenuAnalysisBusy(busy) {
+  state.menuAnalyzing = busy;
+  elements.menuAnalyze.disabled = busy || state.busy || !menuPlanEngine;
+  elements.menuClear.disabled = busy || state.busy;
+  elements.menuInput.disabled = busy || state.busy;
+  elements.menuFile.disabled = busy || state.busy;
+}
+
+async function analyzeMenuPlan() {
   if (!menuPlanEngine) {
     renderMenuPlanUnavailable();
     return;
   }
+  if (state.menuAnalyzing || state.busy) return;
+
+  setMenuAnalysisBusy(true);
   elements.menuResult.setAttribute("aria-busy", "true");
-  const result = menuPlanEngine.analyze(elements.menuInput.value, state.recipes);
-  renderMenuPlanAnalysis(result);
-  elements.menuResult.setAttribute("aria-busy", "false");
-  setStatus(
-    result.valid
-      ? "Menu analizzato: struttura e riferimenti Biblioteca sono validi. Nessun dato salvato."
-      : "Analisi menu completata con errori bloccanti. Nessun dato salvato.",
-    result.valid ? "ok" : "error"
-  );
+  setStatus("Analisi del menu e controllo retry…");
+
+  try {
+    let result = menuPlanEngine.analyze(elements.menuInput.value, state.recipes);
+    if (result.valid) {
+      try {
+        const [payloadHash, existingPackages] = await Promise.all([
+          menuPlanEngine.computePayloadHash(result.normalizedPacket),
+          fetchKnownMenuPackages(result.normalizedPacket)
+        ]);
+        const idempotency = menuPlanEngine.analyzeIdempotency(
+          result.normalizedPacket,
+          payloadHash,
+          existingPackages
+        );
+        result = {
+          ...result,
+          stage: "idempotency",
+          valid: result.valid && !idempotency.blocking,
+          idempotency
+        };
+      } catch (error) {
+        const packet = result.normalizedPacket;
+        result = {
+          ...result,
+          stage: "idempotency",
+          valid: false,
+          idempotency: {
+            status: "check_unavailable",
+            can_continue: false,
+            blocking: true,
+            payload_hash: null,
+            identity: {
+              source_type: packet?.menu?.source?.type ?? null,
+              source_external_id: packet?.menu?.external_id ?? null,
+              source_revision: packet?.menu?.revision ?? null
+            },
+            match: null,
+            latest: null,
+            issue: {
+              code: "idempotency_check_unavailable",
+              path: "planner_menu_packages",
+              severity: "error",
+              message: `Impossibile consultare il registro. Verifica la migration 041_planner_menu_packages.sql. ${error.message}`
+            }
+          }
+        };
+      }
+    }
+
+    renderMenuPlanAnalysis(result);
+    const idempotency = result.idempotency;
+    if (idempotency?.blocking) {
+      setStatus("Controllo retry bloccato. Nessun dato salvato.", "error");
+    } else if (idempotency?.status === "already_imported") {
+      setStatus("Retry fermato in sicurezza: il pacchetto è già noto. Nessun dato salvato.", "warning");
+    } else if (idempotency?.can_continue) {
+      setStatus("Menu valido e controllo retry superato. Nessun dato salvato.", "ok");
+    } else {
+      setStatus("Analisi menu completata con errori bloccanti. Nessun dato salvato.", "error");
+    }
+  } catch (error) {
+    elements.menuResult.innerHTML = `
+      <div class="menu-import-state error">
+        <span class="menu-import-state-icon" aria-hidden="true">⚠️</span>
+        <div class="menu-import-state-copy">
+          <strong>Analisi interrotta</strong>
+          <span>${escapeHtml(error.message || "Errore tecnico inatteso.")} Nessun dato è stato salvato.</span>
+        </div>
+      </div>`;
+    setStatus("Analisi interrotta da un errore tecnico. Nessun dato salvato.", "error");
+  } finally {
+    elements.menuResult.setAttribute("aria-busy", "false");
+    setMenuAnalysisBusy(false);
+  }
 }
 
 function renderMenuPlanUnavailable() {
@@ -323,6 +517,10 @@ function setBusy(busy) {
   elements.workspace.querySelectorAll("button").forEach(button => {
     button.disabled = busy;
   });
+  elements.menuAnalyze.disabled = busy || state.menuAnalyzing || !menuPlanEngine;
+  elements.menuClear.disabled = busy || state.menuAnalyzing;
+  elements.menuInput.disabled = busy || state.menuAnalyzing;
+  elements.menuFile.disabled = busy || state.menuAnalyzing;
   updateFormAvailability();
 }
 
@@ -730,7 +928,7 @@ elements.currentWeek.addEventListener("click", () => {
 elements.nextWeek.addEventListener("click", () => {
   void selectWeek(core.addDays(state.weekAnchor, 7));
 });
-elements.menuAnalyze.addEventListener("click", analyzeMenuPlan);
+elements.menuAnalyze.addEventListener("click", () => void analyzeMenuPlan());
 elements.menuClear.addEventListener("click", () => {
   resetMenuImport();
   setStatus("Analisi menu azzerata. Nessun dato è stato modificato.");

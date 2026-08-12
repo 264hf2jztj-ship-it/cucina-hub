@@ -2,6 +2,7 @@
 
 const assert = require("node:assert/strict");
 const core = require("./planner-core.js");
+const menuPlanEngine = require("./menu-plan-import-engine.js");
 
 class FakeClassList {
   constructor() {
@@ -103,6 +104,7 @@ const database = {
     { id: "recipe-dup-1", owner_user_id: "user-1", code: "DUP-1", title: "Duplicata uno" },
     { id: "recipe-dup-2", owner_user_id: "user-1", code: "dup-1", title: "Duplicata due" }
   ],
+  planner_menu_packages: [],
   planned_meals: [
     {
       id: "meal-1",
@@ -119,6 +121,7 @@ const database = {
 };
 
 let plannedMealsError = null;
+let plannerMenuPackagesError = null;
 
 function queryFor(table) {
   const query = {
@@ -130,7 +133,11 @@ function queryFor(table) {
     then(resolve, reject) {
       return Promise.resolve({
         data: database[table] ?? [],
-        error: table === "planned_meals" ? plannedMealsError : null
+        error: table === "planned_meals"
+          ? plannedMealsError
+          : table === "planner_menu_packages"
+            ? plannerMenuPackagesError
+            : null
       }).then(resolve, reject);
     }
   };
@@ -145,7 +152,7 @@ global.document = {
 
 global.window = {
   CucinaHubPlannerCore: core,
-  CucinaHubMenuPlanImportEngine: require("./menu-plan-import-engine.js"),
+  CucinaHubMenuPlanImportEngine: menuPlanEngine,
   cucinaHubSupabase: {
     auth: {
       getSession: async () => ({
@@ -183,7 +190,7 @@ global.window = {
   assert.match(elements.get("#mealList").innerHTML, /3 porzioni/);
   assert.match(elements.get("#pageStatus").className, /ok/);
 
-  elements.get("#menuPlanInput").value = JSON.stringify({
+  const smokePacket = {
     contract: "cucina-hub.menu-plan",
     version: 1,
     menu: {
@@ -202,22 +209,62 @@ global.window = {
       }]
     }],
     guardrails: { preview_only: true, automatic_save: false, requires_user_confirmation: true }
-  });
+  };
+  elements.get("#menuPlanInput").value = JSON.stringify(smokePacket);
   elements.get("#analyzeMenuPlan").listeners.click();
+  await settle();
   assert.match(elements.get("#menuPlanResult").innerHTML, /Analisi tecnica completata/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /RISOLTA/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /NUOVO PACCHETTO/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /SHA-256 del payload normalizzato/);
   assert.doesNotMatch(elements.get("#menuPlanResult").innerHTML, /ingredienti|procedimento/i);
 
-  const missingPacket = JSON.parse(elements.get("#menuPlanInput").value);
+  const normalizedSmokePacket = menuPlanEngine.validatePacket(smokePacket).normalizedPacket;
+  const smokeHash = await menuPlanEngine.computePayloadHash(normalizedSmokePacket);
+  database.planner_menu_packages.push({
+    id: "package-1",
+    owner_user_id: "user-1",
+    source_type: "manual",
+    source_external_id: "smoke-menu",
+    source_revision: 1,
+    payload_hash: smokeHash,
+    import_status: "confirmed"
+  });
+  elements.get("#analyzeMenuPlan").listeners.click();
+  await settle();
+  assert.match(elements.get("#menuPlanResult").innerHTML, /RETRY BLOCCATO/);
+  assert.match(elements.get("#pageStatus").className, /warning/);
+
+  const conflictingPacket = structuredClone(smokePacket);
+  conflictingPacket.days[0].meals[0].time = "08:00";
+  elements.get("#menuPlanInput").value = JSON.stringify(conflictingPacket);
+  elements.get("#analyzeMenuPlan").listeners.click();
+  await settle();
+  assert.match(elements.get("#menuPlanResult").innerHTML, /CONFLITTO HASH/);
+  assert.match(elements.get("#pageStatus").className, /error/);
+
+  plannerMenuPackagesError = { message: "Tabella simulata non disponibile", code: "TEST" };
+  const unavailablePacket = structuredClone(smokePacket);
+  unavailablePacket.menu.external_id = "unavailable-menu";
+  elements.get("#menuPlanInput").value = JSON.stringify(unavailablePacket);
+  elements.get("#analyzeMenuPlan").listeners.click();
+  await settle();
+  assert.match(elements.get("#menuPlanResult").innerHTML, /CONTROLLO NON DISPONIBILE/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /041_planner_menu_packages\.sql/);
+  plannerMenuPackagesError = null;
+
+  const missingPacket = structuredClone(smokePacket);
   missingPacket.days[0].meals[0].items[0].recipe_code = "RC-999";
   elements.get("#menuPlanInput").value = JSON.stringify(missingPacket);
   elements.get("#analyzeMenuPlan").listeners.click();
+  await settle();
   assert.match(elements.get("#menuPlanResult").innerHTML, /missing_library_reference/);
   assert.match(elements.get("#pageStatus").className, /error/);
 
   missingPacket.days[0].meals[0].items[0].recipe_code = "DUP-1";
   elements.get("#menuPlanInput").value = JSON.stringify(missingPacket);
   elements.get("#analyzeMenuPlan").listeners.click();
+  await settle();
   assert.match(elements.get("#menuPlanResult").innerHTML, /ambiguous_library_reference/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /Duplicata uno/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /Duplicata due/);
