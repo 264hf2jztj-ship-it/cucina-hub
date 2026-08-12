@@ -56,6 +56,8 @@ function packet(overrides = {}) {
   };
 }
 
+(async () => {
+
 const validPacket = packet();
 const pureJson = JSON.stringify(validPacket);
 assert.equal(engine.parse(pureJson).sourceFormat, "json");
@@ -203,4 +205,86 @@ assert.deepEqual(fixtureResult.summary, {
   preparations: 1
 });
 
-console.log("Menu plan import engine: controlli contrattuali superati.");
+assert.equal(
+  engine.canonicalStringify({ b: 2, a: { d: 4, c: 3 } }),
+  engine.canonicalStringify({ a: { c: 3, d: 4 }, b: 2 })
+);
+
+const reorderedPacket = {
+  guardrails: structuredClone(validPacket.guardrails),
+  days: structuredClone(validPacket.days),
+  menu: {
+    source: structuredClone(validPacket.menu.source),
+    period_end: validPacket.menu.period_end,
+    period_start: validPacket.menu.period_start,
+    title: validPacket.menu.title,
+    revision: validPacket.menu.revision,
+    external_id: validPacket.menu.external_id
+  },
+  version: validPacket.version,
+  contract: validPacket.contract
+};
+const canonicalHash = await engine.computePayloadHash(validPacket);
+const reorderedHash = await engine.computePayloadHash(reorderedPacket);
+assert.match(canonicalHash, /^[0-9a-f]{64}$/);
+assert.equal(reorderedHash, canonicalHash);
+
+const normalizedUnitPacket = structuredClone(validPacket);
+normalizedUnitPacket.days[0].meals[0].items[1].unit = " G ";
+assert.equal(await engine.computePayloadHash(normalizedUnitPacket), canonicalHash);
+
+const changedPacket = structuredClone(validPacket);
+changedPacket.days[0].meals[0].items[1].quantity = 180;
+assert.notEqual(await engine.computePayloadHash(changedPacket), canonicalHash);
+
+const identityPackage = {
+  id: "package-1",
+  source_type: validPacket.menu.source.type,
+  source_external_id: validPacket.menu.external_id,
+  source_revision: 1,
+  payload_hash: canonicalHash,
+  import_status: "confirmed"
+};
+assert.equal(engine.analyzeIdempotency(validPacket, canonicalHash, []).status, "new_menu");
+
+const duplicateRetry = engine.analyzeIdempotency(validPacket, canonicalHash, [identityPackage]);
+assert.equal(duplicateRetry.status, "already_imported");
+assert.equal(duplicateRetry.can_continue, false);
+assert.equal(duplicateRetry.blocking, false);
+assert.equal(duplicateRetry.issue.code, "already_imported");
+
+const hashConflict = engine.analyzeIdempotency(validPacket, canonicalHash, [{
+  ...identityPackage,
+  payload_hash: "f".repeat(64)
+}]);
+assert.equal(hashConflict.status, "same_revision_payload_mismatch");
+assert.equal(hashConflict.blocking, true);
+
+const hashUnavailable = engine.analyzeIdempotency(validPacket, canonicalHash, [{
+  ...identityPackage,
+  payload_hash: null
+}]);
+assert.equal(hashUnavailable.status, "existing_revision_without_hash");
+assert.equal(hashUnavailable.blocking, true);
+
+const revisionTwoPacket = structuredClone(validPacket);
+revisionTwoPacket.menu.revision = 2;
+const revisionTwoHash = await engine.computePayloadHash(revisionTwoPacket);
+const newRevision = engine.analyzeIdempotency(revisionTwoPacket, revisionTwoHash, [identityPackage]);
+assert.equal(newRevision.status, "new_revision");
+assert.equal(newRevision.can_continue, true);
+
+const latestPackage = { ...identityPackage, source_revision: 2, payload_hash: revisionTwoHash };
+const staleRevision = engine.analyzeIdempotency(validPacket, canonicalHash, [latestPackage]);
+assert.equal(staleRevision.status, "stale_revision");
+assert.equal(staleRevision.blocking, true);
+
+const irrelevantPackage = { ...identityPackage, source_external_id: "other-menu" };
+assert.equal(engine.analyzeIdempotency(validPacket, canonicalHash, [irrelevantPackage]).status, "new_menu");
+assert.equal(engine.analyzeIdempotency(validPacket, "not-a-hash", []).status, "invalid_payload_hash");
+
+console.log("Menu plan import engine: contratto, hash e idempotenza verificati.");
+})().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});

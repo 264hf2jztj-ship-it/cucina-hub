@@ -99,6 +99,53 @@
     return normalized;
   }
 
+  function sortJsonValue(value) {
+    if (Array.isArray(value)) return value.map(sortJsonValue);
+    if (!isPlainObject(value)) return value;
+
+    return Object.keys(value)
+      .sort()
+      .reduce((sorted, key) => {
+        sorted[key] = sortJsonValue(value[key]);
+        return sorted;
+      }, Object.create(null));
+  }
+
+  function canonicalStringify(value) {
+    const json = JSON.stringify(value);
+    if (json === undefined) {
+      throw issue("invalid_hash_payload", "$", "Il contenuto non può essere convertito in JSON canonico.");
+    }
+    return JSON.stringify(sortJsonValue(JSON.parse(json)));
+  }
+
+  function bytesToHex(bytes) {
+    return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function computePayloadHash(packet) {
+    const canonicalPayload = canonicalStringify(normalizePacketUnits(packet));
+
+    if (globalThis.crypto?.subtle && typeof globalThis.TextEncoder === "function") {
+      const digest = await globalThis.crypto.subtle.digest(
+        "SHA-256",
+        new globalThis.TextEncoder().encode(canonicalPayload)
+      );
+      return bytesToHex(new Uint8Array(digest));
+    }
+
+    if (typeof require === "function") {
+      const { createHash } = require("node:crypto");
+      return createHash("sha256").update(canonicalPayload, "utf8").digest("hex");
+    }
+
+    throw issue(
+      "hash_unavailable",
+      "$",
+      "Il browser non rende disponibile SHA-256: impossibile verificare i retry in sicurezza."
+    );
+  }
+
   function isRealDate(value) {
     if (typeof value !== "string" || !DATE_PATTERN.test(value)) return false;
     const [year, month, day] = value.split("-").map(Number);
@@ -615,6 +662,132 @@
     };
   }
 
+  function analyzeIdempotency(packet, payloadHash, existingPackages = []) {
+    const sourceType = typeof packet?.menu?.source?.type === "string" ? packet.menu.source.type : "";
+    const externalId = typeof packet?.menu?.external_id === "string" ? packet.menu.external_id : "";
+    const revision = packet?.menu?.revision;
+    const identity = {
+      source_type: sourceType,
+      source_external_id: externalId,
+      source_revision: revision
+    };
+
+    if (!/^[0-9a-f]{64}$/.test(payloadHash ?? "")) {
+      return {
+        status: "invalid_payload_hash",
+        can_continue: false,
+        blocking: true,
+        payload_hash: payloadHash ?? null,
+        identity,
+        existing_count: 0,
+        match: null,
+        latest: null,
+        issue: issue(
+          "invalid_payload_hash",
+          "$",
+          "L'hash del pacchetto non è uno SHA-256 valido."
+        )
+      };
+    }
+
+    const relevantPackages = (Array.isArray(existingPackages) ? existingPackages : [])
+      .filter(menuPackage => menuPackage?.source_type === sourceType
+        && menuPackage?.source_external_id === externalId
+        && Number.isInteger(menuPackage?.source_revision))
+      .sort((left, right) => right.source_revision - left.source_revision);
+    const latest = relevantPackages[0] ?? null;
+    const match = relevantPackages.find(menuPackage => menuPackage.source_revision === revision) ?? null;
+    const base = {
+      payload_hash: payloadHash,
+      identity,
+      existing_count: relevantPackages.length,
+      match,
+      latest
+    };
+
+    if (!latest) {
+      return {
+        ...base,
+        status: "new_menu",
+        can_continue: true,
+        blocking: false,
+        issue: null
+      };
+    }
+
+    if (match) {
+      if (match.payload_hash === payloadHash) {
+        return {
+          ...base,
+          status: "already_imported",
+          can_continue: false,
+          blocking: false,
+          issue: issue(
+            "already_imported",
+            "menu.revision",
+            "Questo pacchetto è già noto: il retry è stato fermato senza creare duplicati.",
+            "warning",
+            { package_id: match.id ?? null, import_status: match.import_status ?? null }
+          )
+        };
+      }
+
+      if (!match.payload_hash) {
+        return {
+          ...base,
+          status: "existing_revision_without_hash",
+          can_continue: false,
+          blocking: true,
+          issue: issue(
+            "existing_revision_without_hash",
+            "menu.revision",
+            "Questa revisione esiste già ma non ha un hash verificabile: controllo manuale necessario.",
+            "error",
+            { package_id: match.id ?? null }
+          )
+        };
+      }
+
+      return {
+        ...base,
+        status: "same_revision_payload_mismatch",
+        can_continue: false,
+        blocking: true,
+        issue: issue(
+          "same_revision_payload_mismatch",
+          "menu.revision",
+          "La stessa revisione esiste già con contenuto diverso. Incrementa menu.revision oppure ripristina il contenuto originale.",
+          "error",
+          { package_id: match.id ?? null, existing_payload_hash: match.payload_hash }
+        )
+      };
+    }
+
+    if (revision < latest.source_revision) {
+      return {
+        ...base,
+        status: "stale_revision",
+        can_continue: false,
+        blocking: true,
+        issue: issue(
+          "stale_menu_revision",
+          "menu.revision",
+          `La revisione ${revision} è superata: la revisione più recente è ${latest.source_revision}.`,
+          "error",
+          { latest_package_id: latest.id ?? null, latest_revision: latest.source_revision }
+        )
+      };
+    }
+
+    return {
+      ...base,
+      status: "new_revision",
+      can_continue: true,
+      blocking: false,
+      issue: null
+    };
+  }
+
   function analyze(input, recipes = []) {
     let parsed;
     try {
@@ -662,6 +835,9 @@
     HUROM_STABLE_CODES,
     STANDARD_UNITS,
     analyze,
+    analyzeIdempotency,
+    canonicalStringify,
+    computePayloadHash,
     isHuromRecipeCode,
     isRealDate,
     normalizeRecipeCode,

@@ -8,7 +8,7 @@
   <title>Planner — Cucina Hub</title>
   <link rel="icon" href="../icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../style.css?v=13">
-  <link rel="stylesheet" href="planner.css?v=3">
+  <link rel="stylesheet" href="planner.css?v=4">
 </head>
 <body>
   <a class="skip-link" href="#plannerMain">Vai al contenuto</a>
@@ -101,7 +101,7 @@
 
         <p class="menu-import-description">
           Incolla il pacchetto <code>cucina-hub.menu-plan</code> oppure seleziona un file.
-          In questo step il Planner controlla struttura, guardrail e riferimenti alla Biblioteca, ma non salva alcun dato.
+          Il Planner controlla struttura, guardrail, riferimenti alla Biblioteca, hash e retry, ma non salva alcun dato.
         </p>
 
         <div class="planner-field">
@@ -138,7 +138,7 @@
         >
           <div class="menu-import-idle">
             <strong>Nessun pacchetto analizzato.</strong>
-            <span>Il flusso si fermerà dopo la risoluzione delle ricette della Biblioteca.</span>
+            <span>Il flusso si fermerà dopo il controllo di identità, hash e retry.</span>
           </div>
         </div>
       </section>
@@ -226,7 +226,7 @@
   <script src="../supabase-config.js?v=12"></script>
   <script src="../supabase-client.js?v=12"></script>
   <script src="planner-core.js?v=2"></script>
-  <script src="menu-plan-import-engine.js?v=1"></script>
-  <script src="planner.js?v=3"></script>
+  <script src="menu-plan-import-engine.js?v=2"></script>
+  <script src="planner.js?v=4"></script>
 </body>
 </html>
