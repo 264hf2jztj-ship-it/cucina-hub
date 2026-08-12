@@ -1,10 +1,13 @@
 "use strict";
 
+const APP_VERSION = "1.1";
+
 const DATA_FILES = {
   recipes: "ricette.json",
   appliances: "elettrodomestici.json",
   categories: "categorie.json",
-  changelog: "changelog.json"
+  changelog: "changelog.json",
+  huromGuide: "hurom-guide.json"
 };
 
 const state = {
@@ -12,11 +15,14 @@ const state = {
   appliances: [],
   categories: [],
   changelog: [],
+  huromGuide: {},
   meta: {},
   currentView: "dashboard",
   recipeQuery: "",
   recipeStatus: "all",
-  recipeAppliance: "all"
+  recipeAppliance: "all",
+  huromSection: null,
+  huromIngredientQuery: ""
 };
 
 const elements = {
@@ -57,11 +63,12 @@ async function loadJson(url) {
 
 async function init() {
   try {
-    const [recipesData, appliancesData, categoriesData, changelogData] = await Promise.all([
+    const [recipesData, appliancesData, categoriesData, changelogData, huromGuideData] = await Promise.all([
       loadJson(DATA_FILES.recipes),
       loadJson(DATA_FILES.appliances),
       loadJson(DATA_FILES.categories),
-      loadJson(DATA_FILES.changelog)
+      loadJson(DATA_FILES.changelog),
+      loadJson(DATA_FILES.huromGuide)
     ]);
 
     state.recipes = recipesData.ricette ?? [];
@@ -69,7 +76,8 @@ async function init() {
     state.appliances = appliancesData.elettrodomestici ?? [];
     state.categories = categoriesData.categorie ?? [];
     state.changelog = changelogData.versioni ?? [];
-    elements.version.textContent = state.meta.versione ?? "1.0";
+    state.huromGuide = huromGuideData;
+    elements.version.textContent = APP_VERSION;
 
     elements.loading.hidden = true;
     elements.root.hidden = false;
@@ -116,8 +124,20 @@ function bindEvents() {
     const viewButton = event.target.closest("[data-go-view]");
     if (viewButton) renderView(viewButton.dataset.goView);
 
+    const huromSectionButton = event.target.closest("[data-hurom-section]");
+    if (huromSectionButton) renderHuromSection(huromSectionButton.dataset.huromSection);
+
+    const huromIndexButton = event.target.closest("[data-hurom-index]");
+    if (huromIndexButton) renderHuromHub();
+
     const recipeButton = event.target.closest("[data-recipe-id]");
     if (recipeButton) openRecipe(recipeButton.dataset.recipeId);
+  });
+
+  elements.root.addEventListener("input", event => {
+    if (!event.target.matches("#huromIngredientSearch")) return;
+    state.huromIngredientQuery = event.target.value;
+    updateHuromIngredientGrid();
   });
 }
 
@@ -135,7 +155,7 @@ function renderView(view) {
   const renderers = {
     dashboard: renderDashboard,
     recipes: renderRecipes,
-    hurom: () => renderCategory("hurom"),
+    hurom: renderHuromHub,
     ninja: () => renderCategory("ninja"),
     pizza: () => renderCategory("pizza-impasti"),
     appliances: renderAppliances,
@@ -157,7 +177,7 @@ function renderDashboard() {
   elements.root.innerHTML = `
     <section class="hero">
       <div class="hero-panel">
-        <p class="eyebrow" style="color:rgba(255,255,255,.72)">Web Edition ${escapeHtml(state.meta.versione ?? "1.0")}</p>
+        <p class="eyebrow" style="color:rgba(255,255,255,.72)">Web Edition ${escapeHtml(APP_VERSION)}</p>
         <h2>Ricette, strumenti e appunti di cucina in un unico posto.</h2>
         <p>Cucina Hub raccoglie le preparazioni provate, gli esperimenti da affinare e le guide pratiche dei tuoi elettrodomestici.</p>
         <div class="hero-actions">
@@ -309,6 +329,309 @@ function renderCategory(categoryId) {
       <div class="section-heading"><div><h3>Ricette</h3><p>${recipes.length ? "Contenuti già presenti in questa area." : "La struttura è pronta per le prossime ricette."}</p></div></div>
       <div class="card-grid">${recipes.length ? recipes.map(recipeCard).join("") : emptyStateHtml("Nessuna ricetta inserita in questa sezione.")}</div>
     </section>`;
+}
+
+function renderHuromHub() {
+  state.huromSection = null;
+  const category = state.categories.find(item => item.id === "hurom");
+  const appliance = state.appliances.find(item => item.sezione === "hurom");
+  const recipes = huromRecipes();
+  const certified = recipes.filter(recipe => recipe.stato === "certificata");
+  const experiments = recipes.filter(recipe => recipe.stato === "da-testare");
+  const guide = state.huromGuide;
+
+  elements.root.innerHTML = `
+    <header class="page-header hurom-page-header">
+      <div>
+        <p class="eyebrow">Manuale personale v${escapeHtml(guide.meta?.versione_fonte ?? "3.0")}</p>
+        <h2>${escapeHtml(category?.icona ?? "🥤")} ${escapeHtml(category?.titolo ?? "Hurom E30ST")}</h2>
+        <p>Ricette, guida operativa e consultazione rapida dell'estrattore in un unico indice.</p>
+      </div>
+    </header>
+    ${appliance ? applianceCallout(appliance) : ""}
+    <section class="metric-grid hurom-metrics" aria-label="Riepilogo Hurom">
+      ${metricCard("Ricette certificate", certified.length, "Provate e approvate")}
+      ${metricCard("Ricette sperimentali", experiments.length, "Ancora da testare")}
+      ${metricCard("Ingredienti", guide.ingredienti?.length ?? 0, "Schede consultabili")}
+      ${metricCard("Aree della guida", guide.navigazione?.length ?? 0, "Indice completo")}
+    </section>
+    <section class="section hurom-index-section" aria-labelledby="huromIndexTitle">
+      <div class="section-heading">
+        <div>
+          <h3 id="huromIndexTitle">Cosa vuoi consultare?</h3>
+          <p>Tocca una card per aprire la relativa sezione.</p>
+        </div>
+      </div>
+      <div class="hurom-topic-grid">
+        ${(guide.navigazione ?? []).map(huromTopicCard).join("")}
+      </div>
+    </section>`;
+
+  completeHuromNavigation();
+}
+
+function huromRecipes() {
+  return state.recipes.filter(recipe => recipe.sezioni?.includes("hurom"));
+}
+
+function huromTopicCard(section) {
+  const recipes = huromRecipes();
+  const labels = {
+    ricette: `${recipes.filter(recipe => recipe.stato === "certificata").length} certificate · ${recipes.filter(recipe => recipe.stato === "da-testare").length} sperimentali`,
+    "guida-operativa": `${state.huromGuide.guida_operativa?.sequenza?.length ?? 0} passaggi`,
+    filtri: `${state.huromGuide.filtri?.opzioni?.length ?? 0} filtri`,
+    "tabella-rapida": `${state.huromGuide.tabella_rapida?.righe?.length ?? 0} ingredienti`,
+    tecniche: "Resa e scorrevolezza",
+    faq: `${state.huromGuide.faq?.length ?? 0} risposte`,
+    ingredienti: `${state.huromGuide.ingredienti?.length ?? 0} schede`,
+    obiettivi: `${state.huromGuide.obiettivi?.length ?? 0} obiettivi`,
+    stagionalita: `${state.huromGuide.stagionalita?.ingredienti?.length ?? 0} ingredienti`,
+    polpa: `${state.huromGuide.polpa?.usi?.length ?? 0} riutilizzi`,
+    glossario: `${state.huromGuide.glossario?.length ?? 0} termini`
+  };
+
+  return `
+    <button class="hurom-topic-card" data-hurom-section="${escapeHtml(section.id)}" type="button">
+      <span class="hurom-topic-top">
+        <span class="hurom-topic-icon" aria-hidden="true">${escapeHtml(section.icona)}</span>
+        <span class="badge">${escapeHtml(labels[section.id] ?? "Guida pratica")}</span>
+      </span>
+      <strong>${escapeHtml(section.titolo)}</strong>
+      <span class="hurom-topic-description">${escapeHtml(section.descrizione)}</span>
+      <span class="hurom-topic-action">Apri sezione <span aria-hidden="true">→</span></span>
+    </button>`;
+}
+
+function renderHuromSection(sectionId) {
+  const section = state.huromGuide.navigazione?.find(item => item.id === sectionId);
+  const renderers = {
+    ricette: renderHuromRecipesContent,
+    "guida-operativa": renderHuromOperatingGuideContent,
+    filtri: renderHuromFiltersContent,
+    "tabella-rapida": renderHuromQuickTableContent,
+    tecniche: renderHuromTechniquesContent,
+    faq: renderHuromFaqContent,
+    ingredienti: renderHuromIngredientsContent,
+    obiettivi: renderHuromObjectivesContent,
+    stagionalita: renderHuromSeasonsContent,
+    polpa: renderHuromPulpContent,
+    glossario: renderHuromGlossaryContent
+  };
+
+  if (!section || !renderers[sectionId]) {
+    renderHuromHub();
+    return;
+  }
+
+  state.huromSection = sectionId;
+  elements.root.innerHTML = `
+    ${huromBackButtonHtml()}
+    <header class="page-header hurom-detail-header">
+      <div>
+        <p class="eyebrow">Guida Hurom E30ST</p>
+        <h2><span aria-hidden="true">${escapeHtml(section.icona)}</span> ${escapeHtml(section.titolo)}</h2>
+        <p>${escapeHtml(section.descrizione)}</p>
+      </div>
+    </header>
+    ${renderers[sectionId]()}
+    <div class="hurom-back-footer">${huromBackButtonHtml()}</div>`;
+
+  if (sectionId === "ingredienti") updateHuromIngredientGrid();
+  completeHuromNavigation();
+}
+
+function huromBackButtonHtml() {
+  return `<nav class="hurom-back-row" aria-label="Navigazione sezione Hurom"><button class="button secondary" data-hurom-index type="button"><span aria-hidden="true">←</span> Torna all'indice Hurom</button></nav>`;
+}
+
+function completeHuromNavigation() {
+  document.querySelector("#main-content").focus({ preventScroll: true });
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderHuromRecipesContent() {
+  const recipes = huromRecipes();
+  const certified = recipes.filter(recipe => recipe.stato === "certificata");
+  const experiments = recipes.filter(recipe => recipe.stato === "da-testare");
+
+  return `
+    <aside class="hurom-note"><strong>Archivio unico</strong><span>Queste schede provengono dal ricettario centrale: ogni aggiornamento appare qui senza creare copie.</span></aside>
+    <section class="section" aria-labelledby="huromCertifiedTitle">
+      <div class="section-heading"><div><h3 id="huromCertifiedTitle">Ricette certificate</h3><p>Già preparate e approvate.</p></div><span class="badge">${certified.length} ricette</span></div>
+      <div class="card-grid">${certified.map(recipeCard).join("")}</div>
+    </section>
+    <section class="section" aria-labelledby="huromExperimentsTitle">
+      <div class="section-heading"><div><h3 id="huromExperimentsTitle">Ricette sperimentali</h3><p>Esperimenti ancora da testare o perfezionare.</p></div><span class="badge test">${experiments.length} ricette</span></div>
+      <div class="card-grid">${experiments.map(recipeCard).join("")}</div>
+    </section>`;
+}
+
+function renderHuromOperatingGuideContent() {
+  const guide = state.huromGuide.guida_operativa;
+  return `
+    <section class="hurom-content-section" aria-labelledby="huromSequenceTitle">
+      <h3 id="huromSequenceTitle">Sequenza standard per un estratto</h3>
+      <ol class="hurom-step-list">
+        ${(guide.sequenza ?? []).map(step => `<li><span>${escapeHtml(step)}</span></li>`).join("")}
+      </ol>
+    </section>
+    <aside class="hurom-alert"><strong>Da ricordare</strong><span>${escapeHtml(guide.promemoria)}</span></aside>
+    <section class="hurom-content-section hurom-list-panel" aria-labelledby="huromSafetyTitle">
+      <h3 id="huromSafetyTitle">Sicurezza e pulizia</h3>
+      <ul class="hurom-check-list">${(guide.sicurezza ?? []).map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    </section>`;
+}
+
+function renderHuromFiltersContent() {
+  const filters = state.huromGuide.filtri;
+  return `
+    <section class="hurom-filter-grid" aria-label="Confronto filtri">
+      ${(filters.opzioni ?? []).map((filter, index) => `
+        <article class="hurom-filter-card ${index === 0 ? "is-default" : ""}">
+          <div class="card-top"><span class="hurom-filter-icon" aria-hidden="true">${index === 0 ? "💧" : "🥛"}</span>${index === 0 ? '<span class="badge">Default</span>' : '<span class="badge test">Opzionale</span>'}</div>
+          <h3>Filtro ${escapeHtml(filter.nome)}</h3>
+          <dl class="hurom-spec-list">
+            <div><dt>Uso</dt><dd>${escapeHtml(filter.uso)}</dd></div>
+            <div><dt>Risultato</dt><dd>${escapeHtml(filter.risultato)}</dd></div>
+            <div><dt>Esempi</dt><dd>${escapeHtml(filter.esempi)}</dd></div>
+          </dl>
+        </article>`).join("")}
+    </section>
+    <aside class="hurom-note"><strong>Regola del ricettario</strong><span>${escapeHtml(filters.regola)}</span></aside>
+    <aside class="hurom-note neutral"><strong>Accessorio</strong><span>${escapeHtml(filters.accessorio)}</span></aside>
+    <section class="hurom-content-section hurom-list-panel"><h3>Acqua e altri liquidi</h3><p>${escapeHtml(filters.liquidi)}</p></section>`;
+}
+
+function renderHuromQuickTableContent() {
+  const table = state.huromGuide.tabella_rapida;
+  return `
+    <div class="hurom-table-wrap" tabindex="0" role="region" aria-label="Tabella preparazione ingredienti">
+      <table class="hurom-table">
+        <thead><tr><th scope="col">Ingrediente</th><th scope="col">Buccia</th><th scope="col">Semi o parti da togliere</th><th scope="col">Sera prima</th></tr></thead>
+        <tbody>${(table.righe ?? []).map(row => `<tr><th scope="row">${escapeHtml(row.ingrediente)}</th><td>${escapeHtml(row.buccia)}</td><td>${escapeHtml(row.semi)}</td><td>${escapeHtml(row.sera_prima)}</td></tr>`).join("")}</tbody>
+      </table>
+    </div>
+    <aside class="hurom-note"><strong>Routine pratica della sera</strong><span>${escapeHtml(table.routine)}</span></aside>`;
+}
+
+function renderHuromTechniquesContent() {
+  const techniques = state.huromGuide.tecniche;
+  return `
+    <section class="hurom-content-section hurom-list-panel" aria-labelledby="huromLayersTitle">
+      <h3 id="huromLayersTitle">Come disporre gli ingredienti</h3>
+      <ul class="hurom-check-list">${(techniques.disposizione ?? []).map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    </section>
+    <div class="hurom-info-grid">
+      <article class="hurom-info-card"><span class="hurom-info-icon" aria-hidden="true">↩️</span><h3>Se la coclea si ferma</h3><p>${escapeHtml(techniques.coclea)}</p></article>
+      <article class="hurom-info-card"><span class="hurom-info-icon" aria-hidden="true">🧊</span><h3>Conservazione del succo</h3><p>${escapeHtml(techniques.conservazione)}</p></article>
+    </div>`;
+}
+
+function renderHuromFaqContent() {
+  return `
+    <section class="hurom-faq-list" aria-label="Domande frequenti Hurom">
+      ${(state.huromGuide.faq ?? []).map((item, index) => `
+        <details class="hurom-faq-item"${index === 0 ? " open" : ""}>
+          <summary>${escapeHtml(item.domanda)}</summary>
+          <p>${escapeHtml(item.risposta)}</p>
+        </details>`).join("")}
+    </section>`;
+}
+
+function renderHuromIngredientsContent() {
+  return `
+    <aside class="hurom-note neutral"><strong>Come leggere le schede</strong><span>${escapeHtml(state.huromGuide.nota_ingredienti)}</span></aside>
+    <section class="hurom-search-panel" aria-label="Cerca nell'enciclopedia">
+      <div class="field">
+        <label for="huromIngredientSearch">Cerca ingrediente, nutriente o abbinamento</label>
+        <input id="huromIngredientSearch" type="search" placeholder="Es. carota, vitamina C, zenzero" value="${escapeHtml(state.huromIngredientQuery)}">
+      </div>
+      <p id="huromIngredientCount" class="result-count" aria-live="polite"></p>
+    </section>
+    <section id="huromIngredientGrid" class="hurom-ingredient-grid" aria-label="Schede ingredienti"></section>`;
+}
+
+function updateHuromIngredientGrid() {
+  const grid = document.querySelector("#huromIngredientGrid");
+  const count = document.querySelector("#huromIngredientCount");
+  if (!grid || !count) return;
+
+  const query = normalize(state.huromIngredientQuery);
+  const ingredients = (state.huromGuide.ingredienti ?? []).filter(item => {
+    const haystack = normalize([item.nome, item.preparazione, item.filtro, item.nutrienti, item.ruolo, ...(item.abbinamenti ?? [])].join(" "));
+    return !query || haystack.includes(query);
+  });
+
+  count.textContent = ingredients.length === 1
+    ? "1 ingrediente trovato"
+    : `${ingredients.length} ingredienti trovati`;
+  grid.innerHTML = ingredients.length
+    ? ingredients.map(huromIngredientCard).join("")
+    : emptyStateHtml("Nessun ingrediente corrisponde alla ricerca.");
+}
+
+function huromIngredientCard(item) {
+  return `
+    <article class="hurom-ingredient-card">
+      <div class="card-top"><h3>${escapeHtml(item.nome)}</h3><span class="badge">${escapeHtml(item.filtro)}</span></div>
+      <dl class="hurom-spec-list">
+        <div><dt>Preparazione</dt><dd>${escapeHtml(item.preparazione)}</dd></div>
+        <div><dt>Nutrienti</dt><dd>${escapeHtml(item.nutrienti)}</dd></div>
+        <div><dt>Ruolo</dt><dd>${escapeHtml(item.ruolo)}</dd></div>
+      </dl>
+      <div class="hurom-pairings"><strong>Abbina con</strong><div>${(item.abbinamenti ?? []).map(pairing => `<span class="badge">${escapeHtml(pairing)}</span>`).join("")}</div></div>
+    </article>`;
+}
+
+function renderHuromObjectivesContent() {
+  return `
+    <section class="hurom-objective-grid" aria-label="Ricette per obiettivo">
+      ${(state.huromGuide.obiettivi ?? []).map(objective => `
+        <article class="hurom-objective-card">
+          <span class="hurom-info-icon" aria-hidden="true">${escapeHtml(objective.icona)}</span>
+          <h3>${escapeHtml(objective.nome)}</h3>
+          <div class="hurom-recipe-references">${(objective.ricette ?? []).map(huromRecipeReference).join("")}</div>
+          ${objective.nota ? `<p>${escapeHtml(objective.nota)}</p>` : ""}
+        </article>`).join("")}
+    </section>
+    <aside class="hurom-note neutral"><strong>Energia reale</strong><span>${escapeHtml(state.huromGuide.nota_energia)}</span></aside>`;
+}
+
+function huromRecipeReference(code) {
+  const recipe = state.recipes.find(item => item.codice === code);
+  if (!recipe) return `<span class="badge pending">${escapeHtml(code)}</span>`;
+  const status = recipe.stato === "certificata" ? "Certificata" : "Sperimentale";
+  const badgeClass = recipe.stato === "certificata" ? "" : "test";
+  return `<button class="hurom-recipe-reference ${badgeClass}" data-recipe-id="${escapeHtml(recipe.id)}" type="button"><strong>${escapeHtml(code)}</strong><span>${escapeHtml(recipe.titolo)}</span><small>${status}</small></button>`;
+}
+
+function renderHuromSeasonsContent() {
+  const calendar = state.huromGuide.stagionalita;
+  return `
+    <aside class="hurom-note neutral"><strong>Indicazione generale</strong><span>${escapeHtml(calendar.nota)}</span></aside>
+    <div class="hurom-table-wrap" tabindex="0" role="region" aria-label="Calendario stagionale ingredienti">
+      <table class="hurom-table hurom-season-table">
+        <thead><tr><th scope="col">Ingrediente</th>${(calendar.stagioni ?? []).map(season => `<th scope="col">${escapeHtml(season)}</th>`).join("")}</tr></thead>
+        <tbody>${(calendar.ingredienti ?? []).map(item => `<tr><th scope="row">${escapeHtml(item.nome)}</th>${(calendar.stagioni ?? []).map(season => item.stagioni?.includes(season) ? `<td class="is-season"><span aria-label="Disponibile in ${escapeHtml(season)}">●</span></td>` : '<td><span aria-hidden="true">—</span></td>').join("")}</tr>`).join("")}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderHuromPulpContent() {
+  const pulp = state.huromGuide.polpa;
+  return `
+    <section class="hurom-pulp-grid" aria-label="Idee per riutilizzare la polpa">
+      ${(pulp.usi ?? []).map(item => `<article class="hurom-info-card"><span class="hurom-info-icon" aria-hidden="true">${escapeHtml(item.icona)}</span><h3>${escapeHtml(item.tipo)}</h3><p>${escapeHtml(item.uso)}</p></article>`).join("")}
+    </section>
+    <aside class="hurom-alert"><strong>Regola igienica</strong><span>${escapeHtml(pulp.igiene)}</span></aside>`;
+}
+
+function renderHuromGlossaryContent() {
+  return `
+    <dl class="hurom-glossary-grid">
+      ${(state.huromGuide.glossario ?? []).map(item => `<div><dt>${escapeHtml(item.termine)}</dt><dd>${escapeHtml(item.definizione)}</dd></div>`).join("")}
+    </dl>
+    <aside class="hurom-note neutral"><strong>Nota</strong><span>Le indicazioni sono descrittive e non attribuiscono agli estratti proprietà terapeutiche.</span></aside>`;
 }
 
 function applianceCallout(appliance) {

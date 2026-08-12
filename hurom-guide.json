@@ -1,0 +1,237 @@
+{
+  "meta": {
+    "titolo": "Guida Hurom E30ST",
+    "versione_fonte": "3.0",
+    "fonte": "Manuale Personale Hurom E30ST v3.0",
+    "nota": "Sintesi operativa e nutrizionale a uso personale."
+  },
+  "navigazione": [
+    {
+      "id": "ricette",
+      "titolo": "Ricette",
+      "icona": "🥤",
+      "descrizione": "Tutte le ricette Hurom certificate e sperimentali, lette dal ricettario centrale."
+    },
+    {
+      "id": "guida-operativa",
+      "titolo": "Guida operativa",
+      "icona": "▶️",
+      "descrizione": "La sequenza corretta, dall'inserimento degli ingredienti al lavaggio."
+    },
+    {
+      "id": "filtri",
+      "titolo": "Filtro fine o grossolano",
+      "icona": "🫗",
+      "descrizione": "Scegli il filtro in base alla consistenza che vuoi ottenere."
+    },
+    {
+      "id": "tabella-rapida",
+      "titolo": "Buccia, semi e sera prima",
+      "icona": "🔪",
+      "descrizione": "Una tabella rapida per preparare correttamente dodici ingredienti."
+    },
+    {
+      "id": "tecniche",
+      "titolo": "Tecniche di estrazione",
+      "icona": "🌀",
+      "descrizione": "Stratificazione, gestione della coclea e conservazione del succo."
+    },
+    {
+      "id": "faq",
+      "titolo": "FAQ essenziali",
+      "icona": "❓",
+      "descrizione": "Le risposte rapide ai dubbi più frequenti durante l'uso."
+    },
+    {
+      "id": "ingredienti",
+      "titolo": "Enciclopedia ingredienti",
+      "icona": "🍎",
+      "descrizione": "Venti schede con preparazione, nutrienti, ruolo e abbinamenti."
+    },
+    {
+      "id": "obiettivi",
+      "titolo": "Ricette per obiettivo",
+      "icona": "🎯",
+      "descrizione": "Scegli una ricetta per momento della giornata o risultato desiderato."
+    },
+    {
+      "id": "stagionalita",
+      "titolo": "Calendario stagionale",
+      "icona": "🗓️",
+      "descrizione": "Controlla rapidamente le stagioni indicative di dodici ingredienti."
+    },
+    {
+      "id": "polpa",
+      "titolo": "Riutilizzo polpa",
+      "icona": "♻️",
+      "descrizione": "Idee pratiche e regole igieniche per ridurre gli sprechi."
+    },
+    {
+      "id": "glossario",
+      "titolo": "Glossario nutrizionale",
+      "icona": "🧬",
+      "descrizione": "Otto termini ricorrenti spiegati con parole semplici."
+    }
+  ],
+  "guida_operativa": {
+    "sequenza": [
+      "Prepara e taglia gli ingredienti; per quelli fibrosi usa pezzi corti.",
+      "Apri la tramoggia e carica gli ingredienti prima dell'avvio, senza superare il segno limite. Alterna già nella tramoggia ingredienti fibrosi e acquosi.",
+      "Chiudi il coperchio e tieni aperto il tappo del succo per la normale estrazione.",
+      "Accendi una sola volta. Se gli ingredienti aderiscono alla parete, usa REV per 3–5 secondi e rilascialo, ripetendo se necessario.",
+      "Dopo che gli ingredienti sono scesi, lascia lavorare circa 1 minuto per espellere meglio succo e polpa.",
+      "Spegni, svuota e lava subito le parti a contatto con gli alimenti."
+    ],
+    "promemoria": "Non far funzionare l'estrattore a vuoto prima di inserire gli ingredienti. Non superare 30 minuti continuativi; dopo un uso prolungato lascialo riposare almeno 5 minuti.",
+    "sicurezza": [
+      "Non inserire ghiaccio, noccioli, semi duri, chicchi di caffè o ingredienti non spremibili.",
+      "Gli ingredienti molto morbidi non vanno estratti da soli: abbinali a frutta o verdura più consistente.",
+      "Frutta secca e semi per latti vegetali: piccole quantità e ammollo secondo ricetta.",
+      "Niente lavastoviglie, microonde o acqua a 80 °C o più per le parti lavabili.",
+      "Consuma il succo appena estratto, quando possibile."
+    ]
+  },
+  "filtri": {
+    "opzioni": [
+      {
+        "nome": "Fine",
+        "uso": "Uso standard per frutta e verdura.",
+        "risultato": "Succo più liscio e leggero.",
+        "esempi": "ACE, Green Fresh, Good Boy e post corsa."
+      },
+      {
+        "nome": "Grossolano",
+        "uso": "Polpa morbida e succhi densi, se presente nel kit.",
+        "risultato": "Più corpo e maggiore presenza di polpa.",
+        "esempi": "Banana o fragola abbinate, smoothie, latte e zuppe."
+      }
+    ],
+    "accessorio": "Il filtro grossolano è indicato nel manuale come accessorio venduto separatamente.",
+    "regola": "Il filtro fine è il default per tutte le ricette certificate attuali. Usa il grossolano solo quando vuoi un risultato volutamente più denso o saziante.",
+    "liquidi": "Acqua e altri liquidi sono ammessi quando previsti dalla ricetta, nelle quantità indicate e insieme agli ingredienti. Non usare l'E30ST come semplice miscelatore e non lasciare accumulare grandi quantità di acqua o succo nella parte superiore."
+  },
+  "tabella_rapida": {
+    "righe": [
+      { "ingrediente": "Arancia", "buccia": "Togliere", "semi": "Togliere se presenti", "sera_prima": "Meglio al mattino" },
+      { "ingrediente": "Limone", "buccia": "Togliere", "semi": "Togliere", "sera_prima": "Sì, contenitore chiuso" },
+      { "ingrediente": "Mela", "buccia": "Sì, se ben lavata", "semi": "Togli torsolo e semi", "sera_prima": "Sì, con poche gocce di limone" },
+      { "ingrediente": "Pera", "buccia": "Sì, se ben lavata", "semi": "Togli torsolo e semi", "sera_prima": "Sì, con poche gocce di limone" },
+      { "ingrediente": "Carota", "buccia": "Lavare bene; pelare se necessario", "semi": "—", "sera_prima": "Sì" },
+      { "ingrediente": "Cetriolo", "buccia": "Sì se tenera; parziale se amara", "semi": "Semi morbidi ok", "sera_prima": "Sì" },
+      { "ingrediente": "Zenzero", "buccia": "Meglio pelare", "semi": "—", "sera_prima": "Sì" },
+      { "ingrediente": "Ananas", "buccia": "Togliere", "semi": "Rimuovi scorza e parti molto dure", "sera_prima": "Sì" },
+      { "ingrediente": "Finocchio", "buccia": "Lavare; elimina parti rovinate", "semi": "—", "sera_prima": "Sì" },
+      { "ingrediente": "Sedano", "buccia": "Lavare; togli fili grossi se necessari", "semi": "—", "sera_prima": "Sì, ben chiuso" },
+      { "ingrediente": "Menta", "buccia": "Solo foglie pulite", "semi": "—", "sera_prima": "Meglio fresca; altrimenti carta appena umida" },
+      { "ingrediente": "Melagrana", "buccia": "Solo arilli", "semi": "Semi interni degli arilli ok", "sera_prima": "Sì, arilli pronti" }
+    ],
+    "routine": "Prepara carota, cetriolo, zenzero, finocchio e sedano in un contenitore chiuso. Mela e pera possono essere tagliate, ma vanno protette dall'ossidazione con poco limone. Gli agrumi restano migliori se sbucciati al mattino. Usa gli ingredienti preparati entro la mattina successiva."
+  },
+  "tecniche": {
+    "disposizione": [
+      "Metti a strati gli ingredienti: acquoso – fibroso – acquoso.",
+      "Distribuisci zenzero e menta in mezzo agli altri ingredienti, non tutti in un punto.",
+      "Mescola gli ingredienti morbidi con ingredienti più consistenti.",
+      "Per sedano, prezzemolo e ortaggi a stelo usa pezzi corti, circa 3 cm o meno.",
+      "Non schiacciare la tramoggia oltre il limite: il carico deve poter muoversi."
+    ],
+    "coclea": "Tieni premuto REV per 3–5 secondi, rilascia e attendi l'arresto completo; ripeti 2–3 volte se necessario. Premi ON solo quando la coclea si è fermata. Se il problema continua, spegni, scollega e pulisci il gruppo.",
+    "conservazione": "Il risultato migliore si ottiene bevendo l'estratto appena fatto. Per poche ore, usa un contenitore pulito e chiuso, riempito quasi fino all'orlo e tenuto in frigorifero. Quando possibile prepara in anticipo gli ingredienti, non il succo già estratto."
+  },
+  "faq": [
+    {
+      "domanda": "Devo accendere e spegnere ogni volta che aggiungo un ingrediente?",
+      "risposta": "No. Carica gli ingredienti nella tramoggia, chiudi e accendi una volta sola."
+    },
+    {
+      "domanda": "Il tappo del succo va aperto o chiuso?",
+      "risposta": "Per gli estratti normali va tenuto aperto. Alcune ricette specifiche, come certi latti vegetali, possono richiedere una fase a tappo chiuso."
+    },
+    {
+      "domanda": "Posso mettere acqua?",
+      "risposta": "Sì, quando è prevista dalla ricetta e nelle quantità indicate. Non usare l'estrattore come frullatore o miscelatore di liquidi."
+    },
+    {
+      "domanda": "Posso preparare tutto la sera prima?",
+      "risposta": "Carota, cetriolo, zenzero, finocchio e sedano si prestano bene. Arancia e mandarino sono migliori sbucciati al mattino."
+    },
+    {
+      "domanda": "Quale filtro uso quasi sempre?",
+      "risposta": "Il filtro fine. Il grossolano è utile solo per un risultato volutamente più denso e può essere venduto separatamente."
+    },
+    {
+      "domanda": "Quanto deve girare alla fine?",
+      "risposta": "Circa 1 minuto dopo che gli ingredienti sono scesi, per espellere meglio i residui."
+    }
+  ],
+  "nota_ingredienti": "Le indicazioni nutrizionali sono qualitative. Negli estratti una parte importante della fibra resta nella polpa; la quantità effettiva dei nutrienti varia con maturazione, varietà e resa della macchina.",
+  "ingredienti": [
+    { "nome": "Arancia", "preparazione": "Togliere la buccia", "filtro": "Fine", "nutrienti": "Vitamina C, folati, potassio, flavonoidi", "ruolo": "Base liquida dolce-acida", "abbinamenti": ["carota", "mela", "zenzero", "menta"] },
+    { "nome": "Limone", "preparazione": "Togliere la buccia", "filtro": "Fine", "nutrienti": "Vitamina C e flavonoidi", "ruolo": "Acidità e freschezza", "abbinamenti": ["mela", "cetriolo", "menta", "zenzero"] },
+    { "nome": "Mandarino", "preparazione": "Togliere la buccia", "filtro": "Fine", "nutrienti": "Vitamina C e carotenoidi", "ruolo": "Dolcezza agrumata morbida", "abbinamenti": ["arancia", "carota", "mela"] },
+    { "nome": "Mela", "preparazione": "Buccia sì, ben lavata", "filtro": "Fine", "nutrienti": "Polifenoli e potassio", "ruolo": "Dolcezza ed energia rapida", "abbinamenti": ["cetriolo", "arancia", "carota", "zenzero"] },
+    { "nome": "Pera", "preparazione": "Buccia sì, ben lavata", "filtro": "Fine", "nutrienti": "Potassio e polifenoli", "ruolo": "Dolcezza delicata e succosità", "abbinamenti": ["mela", "carota", "zenzero"] },
+    { "nome": "Carota", "preparazione": "Lavare o pelare", "filtro": "Fine", "nutrienti": "Beta-carotene e potassio", "ruolo": "Corpo e dolcezza vegetale", "abbinamenti": ["arancia", "mela", "zenzero"] },
+    { "nome": "Cetriolo", "preparazione": "Buccia sì se tenera", "filtro": "Fine", "nutrienti": "Acqua, potassio, vitamina K", "ruolo": "Idratazione e leggerezza", "abbinamenti": ["mela", "arancia", "limone", "menta"] },
+    { "nome": "Sedano", "preparazione": "Lavare", "filtro": "Fine", "nutrienti": "Potassio, vitamina K, folati", "ruolo": "Nota vegetale e sapida", "abbinamenti": ["mela", "carota", "limone", "zenzero"] },
+    { "nome": "Finocchio", "preparazione": "Lavare", "filtro": "Fine", "nutrienti": "Potassio, vitamina C, folati", "ruolo": "Aroma fresco e anisato", "abbinamenti": ["ananas", "mela", "zenzero"] },
+    { "nome": "Zenzero", "preparazione": "Meglio pelare", "filtro": "Fine", "nutrienti": "Gingeroli e composti aromatici", "ruolo": "Piccantezza e profumo", "abbinamenti": ["agrumi", "mela", "pera", "carota"] },
+    { "nome": "Menta marocchina", "preparazione": "Solo foglie pulite", "filtro": "Fine", "nutrienti": "Polifenoli aromatici", "ruolo": "Freschezza persistente", "abbinamenti": ["cetriolo", "mela", "arancia", "limone"] },
+    { "nome": "Spinaci", "preparazione": "Lavare", "filtro": "Fine", "nutrienti": "Folati, vitamina K, carotenoidi", "ruolo": "Verde delicato; usare poco", "abbinamenti": ["mela", "cetriolo", "limone"] },
+    { "nome": "Cavolo nero", "preparazione": "Lavare", "filtro": "Fine", "nutrienti": "Vitamine C e K, carotenoidi", "ruolo": "Verde intenso e fibroso", "abbinamenti": ["mela", "limone", "cetriolo"] },
+    { "nome": "Prezzemolo", "preparazione": "Lavare", "filtro": "Fine", "nutrienti": "Vitamina K, vitamina C, folati", "ruolo": "Aroma erbaceo deciso", "abbinamenti": ["mela", "cetriolo", "limone"] },
+    { "nome": "Ananas", "preparazione": "Togliere la buccia", "filtro": "Fine", "nutrienti": "Vitamina C, manganese", "ruolo": "Dolcezza tropicale e acidità", "abbinamenti": ["finocchio", "mela", "zenzero"] },
+    { "nome": "Melagrana", "preparazione": "Solo arilli", "filtro": "Fine", "nutrienti": "Polifenoli e potassio", "ruolo": "Acidità, colore e aroma", "abbinamenti": ["arancia", "mela", "limone"] },
+    { "nome": "Kiwi", "preparazione": "Togliere la buccia o lavare bene", "filtro": "Fine; con ingredienti consistenti", "nutrienti": "Vitamina C, vitamina K, potassio", "ruolo": "Acidità e polpa morbida", "abbinamenti": ["mela", "cetriolo", "arancia"] },
+    { "nome": "Anguria", "preparazione": "Togliere la buccia", "filtro": "Fine", "nutrienti": "Acqua, potassio, licopene", "ruolo": "Massima idratazione estiva", "abbinamenti": ["lime o limone", "menta", "cetriolo"] },
+    { "nome": "Barbabietola", "preparazione": "Pelare se necessario", "filtro": "Fine", "nutrienti": "Folati, potassio, betalaini", "ruolo": "Terroso, dolce, colore intenso", "abbinamenti": ["mela", "carota", "arancia", "zenzero"] },
+    { "nome": "Curcuma fresca", "preparazione": "Pelare", "filtro": "Fine", "nutrienti": "Curcuminoidi aromatici", "ruolo": "Nota terrosa e speziata", "abbinamenti": ["arancia", "carota", "zenzero"] }
+  ],
+  "obiettivi": [
+    { "nome": "Colazione", "icona": "🌅", "ricette": ["RC-001", "RC-002A", "RC-003"] },
+    { "nome": "Pomeriggio leggero", "icona": "🌤️", "ricette": ["RC-002B"] },
+    { "nome": "Pomeriggio più energetico", "icona": "⚡", "ricette": ["EXP-004"] },
+    { "nome": "Post corsa", "icona": "🏃", "ricette": ["RC-004"], "nota": "Abbina una fonte proteica." },
+    { "nome": "Idratazione estiva", "icona": "💧", "ricette": ["RC-002B", "EXP-007"] },
+    { "nome": "Gusto più vegetale", "icona": "🌿", "ricette": ["EXP-008"] }
+  ],
+  "nota_energia": "L'energia viene soprattutto dai carboidrati naturali di frutta e carota. Zenzero e menta aumentano la sensazione di freschezza o vivacità, ma non sostituiscono calorie, riposo o caffeina.",
+  "stagionalita": {
+    "stagioni": ["Primavera", "Estate", "Autunno", "Inverno"],
+    "ingredienti": [
+      { "nome": "Arancia", "stagioni": ["Autunno", "Inverno"] },
+      { "nome": "Mandarino", "stagioni": ["Autunno", "Inverno"] },
+      { "nome": "Mela", "stagioni": ["Primavera", "Estate", "Autunno", "Inverno"] },
+      { "nome": "Pera", "stagioni": ["Primavera", "Estate", "Autunno", "Inverno"] },
+      { "nome": "Carota", "stagioni": ["Primavera", "Estate", "Autunno", "Inverno"] },
+      { "nome": "Cetriolo", "stagioni": ["Primavera", "Estate"] },
+      { "nome": "Finocchio", "stagioni": ["Primavera", "Autunno", "Inverno"] },
+      { "nome": "Ananas", "stagioni": ["Primavera", "Estate", "Autunno", "Inverno"] },
+      { "nome": "Melagrana", "stagioni": ["Autunno", "Inverno"] },
+      { "nome": "Anguria", "stagioni": ["Estate"] },
+      { "nome": "Menta", "stagioni": ["Primavera", "Estate", "Autunno"] },
+      { "nome": "Sedano", "stagioni": ["Primavera", "Estate", "Autunno", "Inverno"] }
+    ],
+    "nota": "Indicazione generale per scegliere ingredienti più saporiti e convenienti. La disponibilità varia per zona e varietà."
+  },
+  "polpa": {
+    "usi": [
+      { "tipo": "Polpa ACE", "icona": "🧁", "uso": "Muffin o torta di carote; aggiungila a impasti già bilanciati." },
+      { "tipo": "Mela e pera", "icona": "🥞", "uso": "Porridge, pancake, yogurt oppure composta cotta." },
+      { "tipo": "Carota e sedano", "icona": "🥕", "uso": "Brodo vegetale, polpette o burger; congela in piccole porzioni." },
+      { "tipo": "Cetriolo e menta", "icona": "🥒", "uso": "Salse fredde o acqua aromatizzata, se la polpa è gradevole e usata subito." },
+      { "tipo": "Compost", "icona": "🌱", "uso": "Soluzione universale quando la polpa è troppo fibrosa o mescolata a gusti poco compatibili." }
+    ],
+    "igiene": "Riutilizza la polpa subito oppure raffreddala rapidamente in un contenitore pulito. Non conservarla se contiene ingredienti deteriorati o se è rimasta a temperatura ambiente per troppo tempo."
+  },
+  "glossario": [
+    { "termine": "Beta-carotene", "definizione": "Pigmento vegetale che l'organismo può convertire in vitamina A. Tipico della carota." },
+    { "termine": "Flavonoidi", "definizione": "Famiglia di composti vegetali presenti, tra gli altri, negli agrumi." },
+    { "termine": "Polifenoli", "definizione": "Ampio gruppo di composti vegetali; il contenuto varia molto tra varietà e maturazione." },
+    { "termine": "Gingeroli", "definizione": "Composti aromatici caratteristici dello zenzero fresco." },
+    { "termine": "Folati", "definizione": "Vitamine del gruppo B presenti in diversi ortaggi e frutti." },
+    { "termine": "Potassio", "definizione": "Minerale presente in molti alimenti vegetali; contribuisce alla normale funzione muscolare e nervosa." },
+    { "termine": "Fibra", "definizione": "Componente vegetale importante per sazietà e intestino. Con l'estrazione, molta fibra resta nella polpa." },
+    { "termine": "Idratazione", "definizione": "Dipende soprattutto dall'acqua complessiva bevuta e dal bilancio di liquidi; un estratto può contribuire ma non sostituisce l'acqua." }
+  ]
+}
