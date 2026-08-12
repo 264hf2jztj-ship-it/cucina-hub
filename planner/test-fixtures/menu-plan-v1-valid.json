@@ -1,0 +1,83 @@
+{
+  "contract": "cucina-hub.menu-plan",
+  "version": 1,
+  "menu": {
+    "external_id": "cucina-hub-ipad-test-2026-08-17",
+    "revision": 1,
+    "title": "Menu di prova Planner",
+    "period_start": "2026-08-17",
+    "period_end": "2026-08-18",
+    "source": {
+      "type": "manual",
+      "label": "Test Cucina Hub",
+      "generated_at": "2026-08-16T18:30:00+02:00"
+    }
+  },
+  "days": [
+    {
+      "date": "2026-08-17",
+      "meals": [
+        {
+          "key": "2026-08-17-breakfast",
+          "slot": "breakfast",
+          "time": "07:00",
+          "servings": 1,
+          "items": [
+            {
+              "key": "juice",
+              "type": "recipe",
+              "recipe_code": "RC-003",
+              "label": "Good Boy"
+            },
+            {
+              "key": "yogurt",
+              "type": "food",
+              "label": "Yogurt greco",
+              "quantity": 170,
+              "unit": "g"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-08-18",
+      "meals": [
+        {
+          "key": "2026-08-18-lunch",
+          "slot": "lunch",
+          "servings": 1,
+          "items": [
+            {
+              "key": "quick-salad",
+              "type": "preparation",
+              "label": "Insalata veloce",
+              "quantity": 1,
+              "unit": "portion",
+              "ingredients": [
+                {
+                  "name": "Insalata mista",
+                  "quantity": 120,
+                  "unit": "g"
+                },
+                {
+                  "name": "Olio EVO",
+                  "quantity": 10,
+                  "unit": "g"
+                }
+              ],
+              "procedure": [
+                "Condisci l'insalata subito prima di servire."
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "guardrails": {
+    "preview_only": true,
+    "automatic_save": false,
+    "requires_user_confirmation": true
+  }
+}

@@ -68,6 +68,12 @@ const selectors = [
   "#previousWeek",
   "#currentWeek",
   "#nextWeek",
+  "#menuPlanInput",
+  "#menuPlanFile",
+  "#menuPlanFileStatus",
+  "#analyzeMenuPlan",
+  "#clearMenuPlan",
+  "#menuPlanResult",
   "#plannerEditor",
   "#mealForm",
   "#formTitle",
@@ -93,7 +99,9 @@ elements.get("#cancelEdit").hidden = true;
 
 const database = {
   recipes: [
-    { id: "recipe-1", owner_user_id: "user-1", code: "RC-1", title: "Pollo al forno" }
+    { id: "recipe-1", owner_user_id: "user-1", code: "RC-1", title: "Pollo al forno" },
+    { id: "recipe-dup-1", owner_user_id: "user-1", code: "DUP-1", title: "Duplicata uno" },
+    { id: "recipe-dup-2", owner_user_id: "user-1", code: "dup-1", title: "Duplicata due" }
   ],
   planned_meals: [
     {
@@ -137,6 +145,7 @@ global.document = {
 
 global.window = {
   CucinaHubPlannerCore: core,
+  CucinaHubMenuPlanImportEngine: require("./menu-plan-import-engine.js"),
   cucinaHubSupabase: {
     auth: {
       getSession: async () => ({
@@ -173,6 +182,45 @@ global.window = {
   assert.match(elements.get("#mealList").innerHTML, /20:00/);
   assert.match(elements.get("#mealList").innerHTML, /3 porzioni/);
   assert.match(elements.get("#pageStatus").className, /ok/);
+
+  elements.get("#menuPlanInput").value = JSON.stringify({
+    contract: "cucina-hub.menu-plan",
+    version: 1,
+    menu: {
+      external_id: "smoke-menu",
+      revision: 1,
+      period_start: core.localDateValue(),
+      period_end: core.localDateValue(),
+      source: { type: "manual", label: "Smoke test" }
+    },
+    days: [{
+      date: core.localDateValue(),
+      meals: [{
+        key: "smoke-breakfast",
+        slot: "breakfast",
+        items: [{ key: "recipe", type: "recipe", recipe_code: "RC-1" }]
+      }]
+    }],
+    guardrails: { preview_only: true, automatic_save: false, requires_user_confirmation: true }
+  });
+  elements.get("#analyzeMenuPlan").listeners.click();
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Analisi tecnica completata/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /RISOLTA/);
+  assert.doesNotMatch(elements.get("#menuPlanResult").innerHTML, /ingredienti|procedimento/i);
+
+  const missingPacket = JSON.parse(elements.get("#menuPlanInput").value);
+  missingPacket.days[0].meals[0].items[0].recipe_code = "RC-999";
+  elements.get("#menuPlanInput").value = JSON.stringify(missingPacket);
+  elements.get("#analyzeMenuPlan").listeners.click();
+  assert.match(elements.get("#menuPlanResult").innerHTML, /missing_library_reference/);
+  assert.match(elements.get("#pageStatus").className, /error/);
+
+  missingPacket.days[0].meals[0].items[0].recipe_code = "DUP-1";
+  elements.get("#menuPlanInput").value = JSON.stringify(missingPacket);
+  elements.get("#analyzeMenuPlan").listeners.click();
+  assert.match(elements.get("#menuPlanResult").innerHTML, /ambiguous_library_reference/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Duplicata uno/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Duplicata due/);
 
   const initialRange = elements.get("#weekRange").textContent;
   elements.get("#nextWeek").listeners.click();

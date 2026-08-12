@@ -8,7 +8,7 @@
   <title>Planner — Cucina Hub</title>
   <link rel="icon" href="../icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../style.css?v=13">
-  <link rel="stylesheet" href="planner.css?v=2">
+  <link rel="stylesheet" href="planner.css?v=3">
 </head>
 <body>
   <a class="skip-link" href="#plannerMain">Vai al contenuto</a>
@@ -88,6 +88,59 @@
           Nessun pasto in questa settimana. Usa “Aggiungi” nel giorno che preferisci.
         </p>
         <div id="weekGrid" class="week-grid" role="list" aria-live="polite" aria-busy="true"></div>
+      </section>
+
+      <section class="planner-panel menu-import-panel" aria-labelledby="menuImportTitle">
+        <div class="panel-heading menu-import-heading">
+          <div>
+            <p class="eyebrow">Menu Package</p>
+            <h2 id="menuImportTitle">Analizza un menu dalla chat</h2>
+          </div>
+          <span class="badge pending">SOLA ANALISI</span>
+        </div>
+
+        <p class="menu-import-description">
+          Incolla il pacchetto <code>cucina-hub.menu-plan</code> oppure seleziona un file.
+          In questo step il Planner controlla struttura, guardrail e riferimenti alla Biblioteca, ma non salva alcun dato.
+        </p>
+
+        <div class="planner-field">
+          <label for="menuPlanInput">Pacchetto JSON</label>
+          <textarea
+            id="menuPlanInput"
+            rows="11"
+            spellcheck="false"
+            autocapitalize="off"
+            autocomplete="off"
+            placeholder="Incolla JSON puro oppure un singolo blocco Markdown ```json … ```"
+          ></textarea>
+        </div>
+
+        <div class="menu-import-actions">
+          <input
+            id="menuPlanFile"
+            class="menu-file-input"
+            type="file"
+            accept=".json,.md,.txt,application/json,text/plain,text/markdown"
+            aria-label="Scegli un file menu JSON, Markdown o testo"
+          >
+          <button id="analyzeMenuPlan" class="button" type="button">ANALIZZA MENU</button>
+          <button id="clearMenuPlan" class="button secondary" type="button">AZZERA</button>
+        </div>
+        <p id="menuPlanFileStatus" class="field-help">Puoi scegliere un file JSON, Markdown o testo fino a 2 MB.</p>
+
+        <div
+          id="menuPlanResult"
+          class="menu-import-result"
+          role="region"
+          aria-label="Esito analisi menu"
+          aria-live="polite"
+        >
+          <div class="menu-import-idle">
+            <strong>Nessun pacchetto analizzato.</strong>
+            <span>Il flusso si fermerà dopo la risoluzione delle ricette della Biblioteca.</span>
+          </div>
+        </div>
       </section>
 
       <section id="plannerEditor" class="planner-panel planner-editor" aria-labelledby="formTitle">
@@ -173,6 +226,7 @@
   <script src="../supabase-config.js?v=12"></script>
   <script src="../supabase-client.js?v=12"></script>
   <script src="planner-core.js?v=2"></script>
-  <script src="planner.js?v=2"></script>
+  <script src="menu-plan-import-engine.js?v=1"></script>
+  <script src="planner.js?v=3"></script>
 </body>
 </html>
