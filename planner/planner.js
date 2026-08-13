@@ -10,6 +10,8 @@ const state = {
   meals: [],
   weekAnchor: null,
   editingId: null,
+  menuAnalysisResult: null,
+  menuResolutionSelections: Object.create(null),
   menuAnalyzing: false,
   busy: false
 };
@@ -127,7 +129,7 @@ function menuImportIdleHtml(message = "Nessun pacchetto analizzato.") {
   return `
     <div class="menu-import-idle">
       <strong>${escapeHtml(message)}</strong>
-      <span>Il flusso si fermerà dopo l'analisi dei conflitti, senza salvare dati.</span>
+      <span>Il flusso si fermerà dopo l'anteprima e le scelte di risoluzione, senza salvare dati.</span>
     </div>`;
 }
 
@@ -140,14 +142,22 @@ function menuImportIssueHtml(item) {
     </div>`;
 }
 
-function menuReferenceHtml(reference) {
-  const isResolved = reference.status === "resolved";
-  const badge = isResolved
+function menuReferenceHtml(reference, resolutionPlan = null) {
+  const mappedConflict = resolutionPlan?.conflicts?.find(conflict => conflict.path === reference.path);
+  const mapping = mappedConflict?.decision?.choice?.action === "map_recipe"
+    ? mappedConflict.decision.choice
+    : null;
+  const isResolved = reference.status === "resolved" || Boolean(mapping);
+  const badge = mapping
+    ? '<span class="badge">MAPPATA</span>'
+    : isResolved
     ? '<span class="badge">RISOLTA</span>'
     : reference.status === "missing_library_reference"
       ? '<span class="badge pending">MANCANTE</span>'
       : '<span class="badge pending">AMBIGUA</span>';
-  const title = isResolved
+  const title = mapping
+    ? recipeLabel({ code: mapping.recipe_code, title: mapping.recipe_title })
+    : isResolved
     ? recipeLabel(reference.recipe)
     : reference.label || reference.recipe_code || "Riferimento senza nome";
   const candidates = Array.isArray(reference.candidates) && reference.candidates.length
@@ -166,7 +176,7 @@ function menuReferenceHtml(reference) {
           ${badge}
         </div>
       </div>
-      <span class="menu-reference-meta">${escapeHtml(reference.status)} · ${escapeHtml(reference.meal_key)} · ${escapeHtml(reference.path)}</span>
+      <span class="menu-reference-meta">${escapeHtml(mapping ? "mapped" : reference.status)} · ${escapeHtml(reference.meal_key)} · ${escapeHtml(reference.path)}</span>
       ${candidates}
     </div>`;
 }
@@ -182,6 +192,112 @@ function menuImportStatsHtml(summary = {}) {
   ];
   return `<div class="menu-import-stats">${stats.map(([label, value]) => `
     <div class="menu-import-stat"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("")}</div>`;
+}
+
+function menuPreviewQuantityHtml(item) {
+  if (item.quantity === null || item.quantity === undefined) return "";
+  return `<span>${escapeHtml(item.quantity)}${item.unit ? ` ${escapeHtml(item.unit)}` : ""}</span>`;
+}
+
+function menuPreviewItemHtml(item) {
+  const typeLabels = {
+    recipe: "RICETTA",
+    food: "ALIMENTO",
+    preparation: "PREPARAZIONE"
+  };
+  const reference = item.recipe_reference;
+  const referenceHtml = reference
+    ? `<div class="menu-preview-reference ${reference.status}">
+        <span>Codice <code>${escapeHtml(reference.recipe_code)}</code></span>
+        <span>${reference.status === "mapped" ? "Mappata a" : reference.status === "resolved" ? "Collegata a" : "Da risolvere"}
+          <strong>${escapeHtml(reference.recipe_title || "ricetta non associata")}</strong>
+        </span>
+      </div>`
+    : "";
+  const ingredients = item.ingredients.length
+    ? `<div class="menu-preview-detail">
+        <strong>Ingredienti</strong>
+        <ul>${item.ingredients.map(ingredient => `
+          <li>${escapeHtml(ingredient.name)}${ingredient.quantity !== undefined && ingredient.quantity !== null
+            ? ` — ${escapeHtml(ingredient.quantity)}${ingredient.unit ? ` ${escapeHtml(ingredient.unit)}` : ""}`
+            : ""}</li>`).join("")}</ul>
+      </div>`
+    : "";
+  const procedure = item.procedure.length
+    ? `<div class="menu-preview-detail">
+        <strong>Procedimento</strong>
+        <ol>${item.procedure.map(step => `<li>${escapeHtml(step)}</li>`).join("")}</ol>
+      </div>`
+    : "";
+
+  return `
+    <article class="menu-preview-item">
+      <div class="menu-preview-item-heading">
+        <div>
+          <span class="badge${item.type === "recipe" ? "" : " pending"}">${escapeHtml(typeLabels[item.type] || item.type)}</span>
+          ${reference?.is_hurom_reference ? '<span class="badge pending">HUROM</span>' : ""}
+          ${item.conflict_count ? `<span class="badge pending">${escapeHtml(item.conflict_count)} ${item.conflict_count === 1 ? "CONFLITTO" : "CONFLITTI"}</span>` : ""}
+        </div>
+        ${menuPreviewQuantityHtml(item)}
+      </div>
+      <h5>${escapeHtml(item.label)}</h5>
+      ${item.note ? `<p>${escapeHtml(item.note)}</p>` : ""}
+      ${referenceHtml}
+      ${ingredients}
+      ${procedure}
+    </article>`;
+}
+
+function menuPreviewMealHtml(meal) {
+  const slot = core.MEAL_SLOTS[meal.slot] ?? core.MEAL_SLOTS.other;
+  const meta = [
+    meal.time ? `ore ${meal.time}` : null,
+    meal.servings ? `${meal.servings} ${meal.servings === 1 ? "porzione" : "porzioni"}` : null
+  ].filter(Boolean);
+
+  return `
+    <section class="menu-preview-meal">
+      <div class="menu-preview-meal-heading">
+        <div>
+          <span class="menu-preview-meal-icon" aria-hidden="true">${escapeHtml(slot.icon)}</span>
+          <div>
+            <h4>${escapeHtml(slot.label)}</h4>
+            ${meta.length ? `<span>${escapeHtml(meta.join(" · "))}</span>` : ""}
+          </div>
+        </div>
+        ${meal.conflict_count ? `<span class="badge pending">${escapeHtml(meal.conflict_count)} ${meal.conflict_count === 1 ? "CONFLITTO" : "CONFLITTI"}</span>` : ""}
+      </div>
+      ${meal.note ? `<p class="menu-preview-meal-note">${escapeHtml(meal.note)}</p>` : ""}
+      <div class="menu-preview-items">${meal.items.map(menuPreviewItemHtml).join("")}</div>
+    </section>`;
+}
+
+function menuFullPreviewHtml(preview) {
+  const menu = preview.menu ?? {};
+  return `
+    <section class="menu-import-section menu-full-preview" aria-label="Anteprima completa del menu">
+      <div class="menu-preview-title">
+        <div>
+          <p class="eyebrow">Anteprima completa</p>
+          <h3>${escapeHtml(menu.title || menu.external_id || "Menu senza titolo")}</h3>
+        </div>
+        <span class="badge pending">REVISIONE ${escapeHtml(menu.revision ?? "—")}</span>
+      </div>
+      <div class="menu-preview-meta">
+        <span>Periodo <strong>${escapeHtml(menu.period_start)} – ${escapeHtml(menu.period_end)}</strong></span>
+        <span>Origine <strong>${escapeHtml(menu.source_label || menu.source_type || "—")}</strong></span>
+        <span>${escapeHtml(preview.hurom_references)} riferimenti Hurom</span>
+        <span>${escapeHtml(preview.autonomous_items)} elementi autonomi</span>
+      </div>
+      <div class="menu-preview-days">${preview.days.map(day => `
+        <article class="menu-preview-day">
+          <div class="menu-preview-day-heading">
+            <h4>${escapeHtml(formatDate(day.date))}</h4>
+            <span class="badge">${escapeHtml(day.meals.length)} ${day.meals.length === 1 ? "PASTO" : "PASTI"}</span>
+          </div>
+          <div class="menu-preview-meals">${day.meals.map(menuPreviewMealHtml).join("")}</div>
+        </article>`).join("")}</div>
+    </section>`;
 }
 
 function menuIdempotencyHtml(check) {
@@ -267,8 +383,84 @@ function menuIdempotencyHtml(check) {
     </section>`;
 }
 
-function menuConflictHtml(conflict) {
+const MENU_RESOLUTION_LABELS = Object.freeze({
+  keep_existing: "Mantieni l’esistente",
+  use_incoming: "Usa il nuovo contenuto",
+  skip_incoming_meal: "Salta il pasto in arrivo",
+  skip_incoming_item: "Salta l’elemento in arrivo",
+  cancel_import: "Annulla l’importazione"
+});
+
+function menuResolutionLabel(conflict, action) {
+  const contextualLabels = {
+    overlapping_menu_package: {
+      keep_existing: "Mantieni attivo anche il menu esistente",
+      use_incoming: "Usa il nuovo e sostituisci il menu esistente"
+    },
+    existing_manual_meal: {
+      keep_existing: "Mantieni il pasto esistente e aggiungi anche il nuovo",
+      use_incoming: "Usa il nuovo e sostituisci il pasto esistente",
+      skip_incoming_meal: "Mantieni l’esistente e salta il nuovo pasto"
+    },
+    user_modified_imported_meal: {
+      keep_existing: "Conserva le modifiche manuali al pasto",
+      use_incoming: "Usa il nuovo pasto e scarta le modifiche",
+      skip_incoming_meal: "Salta il pasto della nuova revisione"
+    },
+    user_modified_imported_item: {
+      keep_existing: "Conserva le modifiche manuali all’elemento",
+      use_incoming: "Usa il nuovo elemento e scarta le modifiche",
+      skip_incoming_item: "Salta l’elemento della nuova revisione"
+    }
+  };
+  return contextualLabels[conflict.code]?.[action] ?? MENU_RESOLUTION_LABELS[action] ?? action;
+}
+
+function menuConflictChoiceValue(decision) {
+  if (decision?.choice?.action === "map_recipe" && decision.choice.recipe_id) {
+    return `map_recipe:${decision.choice.recipe_id}`;
+  }
+  return decision?.choice?.action ?? "";
+}
+
+function menuConflictResolutionHtml(conflict, resolutionPlan) {
+  const selectedValue = menuConflictChoiceValue(conflict.decision);
+  const resolvedByCancellation = resolutionPlan?.cancelled && selectedValue !== "cancel_import";
+  const standardOptions = conflict.allowed_actions
+    .filter(action => action !== "map_recipe")
+    .map(action => `<option value="${escapeHtml(action)}"${selectedValue === action ? " selected" : ""}>${escapeHtml(menuResolutionLabel(conflict, action))}</option>`);
+  const recipeOptions = conflict.allowed_actions.includes("map_recipe")
+    ? state.recipes.map(recipe => {
+        const value = `map_recipe:${recipe.id}`;
+        return `<option value="${escapeHtml(value)}"${selectedValue === value ? " selected" : ""}>Mappa a: ${escapeHtml(recipeLabel(recipe))}</option>`;
+      })
+    : [];
+
+  return `
+    <div class="menu-conflict-resolution">
+      <label for="resolution-${escapeHtml(conflict.conflict_id)}">Scelta esplicita</label>
+      <select
+        id="resolution-${escapeHtml(conflict.conflict_id)}"
+        data-menu-conflict-id="${escapeHtml(conflict.conflict_id)}"
+        aria-label="Risoluzione ${escapeHtml(conflict.code)}"
+        ${resolvedByCancellation ? "disabled" : ""}
+      >
+        <option value="">Scegli come risolvere…</option>
+        ${recipeOptions.join("")}
+        ${standardOptions.join("")}
+      </select>
+      <small>${resolvedByCancellation
+        ? "Nessun’altra scelta necessaria: l’importazione è annullata."
+        : conflict.decision?.resolved
+          ? "Scelta registrata soltanto nell’anteprima."
+          : "Scelta obbligatoria prima della futura conferma."}</small>
+    </div>`;
+}
+
+function menuConflictHtml(conflict, resolutionPlan) {
   const presentations = {
+    missing_library_reference: { badge: "RICETTA MANCANTE", icon: "📚" },
+    ambiguous_library_reference: { badge: "RICETTA AMBIGUA", icon: "📚" },
     overlapping_menu_package: { badge: "MENU SOVRAPPOSTO", icon: "🗓️" },
     existing_manual_meal: { badge: "PASTO MANUALE", icon: "✋" },
     user_modified_imported_meal: { badge: "PASTO MODIFICATO", icon: "🛡️" },
@@ -281,7 +473,7 @@ function menuConflictHtml(conflict) {
     : "";
 
   return `
-    <article class="menu-conflict-card">
+    <article class="menu-conflict-card${conflict.decision?.resolved || resolutionPlan?.cancelled ? " resolved" : ""}">
       <span class="menu-conflict-icon" aria-hidden="true">${presentation.icon}</span>
       <div class="menu-conflict-copy">
         <div class="menu-conflict-heading">
@@ -292,11 +484,12 @@ function menuConflictHtml(conflict) {
           ${dateAndSlot}
           <code>${escapeHtml(conflict.code)} · ${escapeHtml(conflict.path)}</code>
         </div>
+        ${menuConflictResolutionHtml(conflict, resolutionPlan)}
       </div>
     </article>`;
 }
 
-function menuConflictAnalysisHtml(analysis) {
+function menuConflictAnalysisHtml(analysis, resolutionPlan) {
   if (analysis.status === "check_unavailable") {
     return `
       <section class="menu-import-section" aria-label="Analisi conflitti non disponibile">
@@ -309,10 +502,10 @@ function menuConflictAnalysisHtml(analysis) {
   }
 
   const scanned = analysis.scanned ?? {};
-  if (!analysis.has_conflicts) {
+  if (!resolutionPlan?.total_conflicts) {
     return `
       <section class="menu-import-section" aria-label="Analisi conflitti completata">
-        <h3>Analisi conflitti</h3>
+        <h3>Scelte di risoluzione</h3>
         <div class="menu-conflict-summary ok">
           <strong>Nessun conflitto rilevato</strong>
           <span>Periodo, pasti manuali e contenuti importati protetti sono stati controllati.</span>
@@ -321,12 +514,55 @@ function menuConflictAnalysisHtml(analysis) {
       </section>`;
   }
 
+  const summaryClass = resolutionPlan.cancelled
+    ? "warning"
+    : resolutionPlan.complete
+      ? "ok"
+      : "warning";
+  const summaryTitle = resolutionPlan.cancelled
+    ? "Importazione annullata nell’anteprima"
+    : resolutionPlan.complete
+      ? "Tutte le scelte sono complete"
+      : `${resolutionPlan.unresolved_conflicts} ${resolutionPlan.unresolved_conflicts === 1 ? "scelta da completare" : "scelte da completare"}`;
+  const summaryText = resolutionPlan.cancelled
+    ? "La decisione resta locale alla pagina e nessun dato è stato modificato."
+    : resolutionPlan.complete
+      ? "L’anteprima è pronta per la futura conferma esplicita; il salvataggio resta disattivato."
+      : "Scegli un’azione per ogni conflitto. Nessun valore viene applicato automaticamente.";
+
   return `
-    <section class="menu-import-section" aria-label="Conflitti rilevati">
-      <h3>Conflitti da risolvere (${analysis.conflicts.length})</h3>
-      <p>Nessun record verrà sovrascritto: le scelte di risoluzione saranno aggiunte nella prossima anteprima operativa.</p>
-      <div class="menu-conflict-list">${analysis.conflicts.map(menuConflictHtml).join("")}</div>
+    <section class="menu-import-section" aria-label="Scelte per i conflitti rilevati">
+      <h3>Scelte di risoluzione (${resolutionPlan.resolved_conflicts}/${resolutionPlan.total_conflicts})</h3>
+      <p>Nessun record viene sovrascritto: ogni decisione è esplicita e resta soltanto nell’anteprima.</p>
+      <div class="menu-conflict-summary ${summaryClass}">
+        <strong>${escapeHtml(summaryTitle)}</strong>
+        <span>${escapeHtml(summaryText)}</span>
+      </div>
+      <div class="menu-conflict-list">${resolutionPlan.conflicts.map(conflict => menuConflictHtml(conflict, resolutionPlan)).join("")}</div>
     </section>`;
+}
+
+function prepareMenuPreviewResult(result) {
+  if (!result?.normalizedPacket || !result?.conflictAnalysis || result.conflictAnalysis.status === "check_unavailable") {
+    return result;
+  }
+  const resolutionPlan = menuPlanEngine.buildResolutionPlan(
+    result.resolution,
+    result.conflictAnalysis,
+    state.menuResolutionSelections,
+    state.recipes
+  );
+  return {
+    ...result,
+    stage: "preview",
+    resolutionPlan,
+    preview: menuPlanEngine.buildMenuPreview(
+      result.normalizedPacket,
+      result.resolution,
+      resolutionPlan,
+      state.recipes
+    )
+  };
 }
 
 function renderMenuPlanAnalysis(result) {
@@ -335,20 +571,19 @@ function renderMenuPlanAnalysis(result) {
     validation: "Validazione contratto",
     library_resolution: "Risoluzione Biblioteca",
     idempotency: "Identità e retry",
-    conflict_analysis: "Analisi conflitti"
+    conflict_analysis: "Analisi conflitti",
+    preview: "Anteprima"
   };
   const phase = phaseLabels[result.stage] ?? "Analisi";
-  const resolutionComplete = result.resolution?.complete === true;
   const idempotency = result.idempotency ?? null;
   const conflictAnalysis = result.conflictAnalysis ?? null;
+  const resolutionPlan = result.resolutionPlan ?? null;
   const duplicateRetry = idempotency?.status === "already_imported";
   const conflictUnavailable = conflictAnalysis?.status === "check_unavailable";
-  const hasConflicts = conflictAnalysis?.has_conflicts === true;
-  const success = result.valid
-    && resolutionComplete
-    && idempotency?.blocking !== true
-    && !conflictUnavailable
-    && !hasConflicts;
+  const choicesPending = resolutionPlan?.available
+    && !resolutionPlan.cancelled
+    && resolutionPlan.unresolved_conflicts > 0;
+  const previewReady = resolutionPlan?.ready_for_confirmation === true;
   let tone = "error";
   let heading = "Il JSON non è stato letto";
   let description = `Il flusso si è fermato nella fase: ${phase}. Nessun dato è stato salvato.`;
@@ -361,24 +596,26 @@ function renderMenuPlanAnalysis(result) {
     tone = "warning";
     heading = "Retry riconosciuto e fermato";
     description = "Il contenuto coincide con una revisione già nota. Nessun duplicato è stato creato.";
-  } else if (hasConflicts) {
+  } else if (resolutionPlan?.cancelled) {
     tone = "warning";
-    heading = "Conflitti da risolvere";
-    description = `Sono stati rilevati ${conflictAnalysis.conflicts.length} conflitti. Nessun dato è stato salvato o sovrascritto.`;
-  } else if (success) {
+    heading = "Importazione annullata nell’anteprima";
+    description = "La scelta è stata registrata soltanto nella pagina. Nessun dato è stato salvato o modificato.";
+  } else if (choicesPending) {
+    tone = "warning";
+    heading = "Anteprima pronta: completa le scelte";
+    description = `${resolutionPlan.unresolved_conflicts} ${resolutionPlan.unresolved_conflicts === 1 ? "conflitto richiede" : "conflitti richiedono"} una decisione esplicita. Nessun dato è stato salvato.`;
+  } else if (previewReady) {
     tone = "ok";
-    heading = "Analisi tecnica completata";
-    description = conflictAnalysis
-      ? "Parsing, validazione, risoluzione, retry e conflitti sono stati controllati. Nessun dato è stato salvato."
-      : idempotency
-        ? "Parsing, validazione, risoluzione e controllo retry sono riusciti. Nessun dato è stato salvato."
-        : "Parsing, validazione e risoluzione sono riusciti. Nessun dato è stato salvato.";
+    heading = resolutionPlan.total_conflicts
+      ? "Anteprima pronta per la conferma"
+      : "Anteprima completa";
+    description = "Giorni, pasti, elementi, riferimenti e conflitti sono stati controllati. Conferma e salvataggio restano disattivati.";
   } else if (result.stage === "library_resolution") {
     heading = "Riferimenti Biblioteca da correggere";
   } else if (result.stage === "validation") {
     heading = "Pacchetto non conforme al contratto";
   }
-  const structuralErrors = result.stage === "library_resolution"
+  const structuralErrors = result.resolution
     ? result.errors.filter(item => !["missing_library_reference", "ambiguous_library_reference"].includes(item.code))
     : result.errors;
   const packetTitle = result.packet?.menu?.title || result.packet?.menu?.external_id || null;
@@ -409,14 +646,15 @@ function renderMenuPlanAnalysis(result) {
         <h3>Riferimenti Biblioteca (${result.resolution.references.length})</h3>
         <p>Il codice resta nel pacchetto; quando è univoco viene associato all'UUID della ricetta già esistente.</p>
         ${result.resolution.references.length
-          ? `<div class="menu-reference-list">${result.resolution.references.map(menuReferenceHtml).join("")}</div>`
+          ? `<div class="menu-reference-list">${result.resolution.references.map(reference => menuReferenceHtml(reference, resolutionPlan)).join("")}</div>`
           : '<div class="menu-import-idle"><strong>Nessun item recipe.</strong><span>Il menu contiene soltanto alimenti o preparazioni autonome.</span></div>'}
       </section>` : ""}
     ${idempotency ? menuIdempotencyHtml(idempotency) : ""}
-    ${conflictAnalysis ? menuConflictAnalysisHtml(conflictAnalysis) : ""}
+    ${result.preview ? menuFullPreviewHtml(result.preview) : ""}
+    ${conflictAnalysis && resolutionPlan ? menuConflictAnalysisHtml(conflictAnalysis, resolutionPlan) : ""}
     <div class="menu-import-boundary">
-      <strong>Limite attuale del flusso: “Analisi conflitti”.</strong><br>
-      Scelte di risoluzione, conferma e commit non sono attivi in questo incremento.
+      <strong>Limite attuale del flusso: “Anteprima e scelte di risoluzione”.</strong><br>
+      Le decisioni restano nella memoria della pagina. Conferma esplicita e commit atomico non sono ancora attivi.
     </div>`;
 }
 
@@ -518,11 +756,13 @@ async function analyzeMenuPlan() {
 
   setMenuAnalysisBusy(true);
   elements.menuResult.setAttribute("aria-busy", "true");
-  setStatus("Analisi del menu, retry e conflitti…");
+  state.menuAnalysisResult = null;
+  state.menuResolutionSelections = Object.create(null);
+  setStatus("Analisi del menu e costruzione dell’anteprima…");
 
   try {
     let result = menuPlanEngine.analyze(elements.menuInput.value, state.recipes);
-    if (result.valid) {
+    if (result.contractValid) {
       let existingPackages = [];
       try {
         const idempotencyInputs = await Promise.all([
@@ -539,7 +779,7 @@ async function analyzeMenuPlan() {
         result = {
           ...result,
           stage: "idempotency",
-          valid: result.valid && !idempotency.blocking,
+          valid: result.contractValid && !idempotency.blocking,
           idempotency
         };
       } catch (error) {
@@ -604,15 +844,20 @@ async function analyzeMenuPlan() {
       }
     }
 
+    result = prepareMenuPreviewResult(result);
+    state.menuAnalysisResult = result;
     renderMenuPlanAnalysis(result);
     const idempotency = result.idempotency;
     const conflictAnalysis = result.conflictAnalysis;
+    const resolutionPlan = result.resolutionPlan;
     if (conflictAnalysis?.status === "check_unavailable") {
       setStatus("Analisi conflitti non disponibile. Nessun dato salvato.", "error");
-    } else if (conflictAnalysis?.has_conflicts) {
-      setStatus(`${conflictAnalysis.conflicts.length} conflitti da risolvere. Nessun dato salvato o sovrascritto.`, "warning");
-    } else if (conflictAnalysis?.complete) {
-      setStatus("Menu valido: nessun conflitto rilevato. Nessun dato salvato.", "ok");
+    } else if (resolutionPlan?.cancelled) {
+      setStatus("Importazione annullata nell’anteprima. Nessun dato modificato.", "warning");
+    } else if (resolutionPlan?.unresolved_conflicts) {
+      setStatus(`${resolutionPlan.unresolved_conflicts} ${resolutionPlan.unresolved_conflicts === 1 ? "scelta da completare" : "scelte da completare"}. Nessun dato salvato.`, "warning");
+    } else if (resolutionPlan?.ready_for_confirmation) {
+      setStatus("Anteprima completa. Conferma e salvataggio non sono ancora attivi.", "ok");
     } else if (idempotency?.blocking) {
       setStatus("Controllo retry bloccato. Nessun dato salvato.", "error");
     } else if (idempotency?.status === "already_imported") {
@@ -638,6 +883,35 @@ async function analyzeMenuPlan() {
   }
 }
 
+function handleMenuResolutionChange(event) {
+  const select = event.target.closest?.("select[data-menu-conflict-id]");
+  if (!select || !state.menuAnalysisResult) return;
+  const conflictId = select.dataset.menuConflictId;
+  const value = select.value;
+
+  if (!value) {
+    delete state.menuResolutionSelections[conflictId];
+  } else if (value.startsWith("map_recipe:")) {
+    state.menuResolutionSelections[conflictId] = {
+      action: "map_recipe",
+      recipe_id: value.slice("map_recipe:".length)
+    };
+  } else {
+    state.menuResolutionSelections[conflictId] = { action: value };
+  }
+
+  state.menuAnalysisResult = prepareMenuPreviewResult(state.menuAnalysisResult);
+  renderMenuPlanAnalysis(state.menuAnalysisResult);
+  const plan = state.menuAnalysisResult.resolutionPlan;
+  if (plan.cancelled) {
+    setStatus("Importazione annullata nell’anteprima. Nessun dato modificato.", "warning");
+  } else if (plan.unresolved_conflicts) {
+    setStatus(`${plan.unresolved_conflicts} ${plan.unresolved_conflicts === 1 ? "scelta da completare" : "scelte da completare"}. Nessun dato salvato.`, "warning");
+  } else {
+    setStatus("Scelte complete: anteprima pronta per la futura conferma. Nessun dato salvato.", "ok");
+  }
+}
+
 function renderMenuPlanUnavailable() {
   elements.menuResult.innerHTML = `
     <div class="menu-import-state error">
@@ -651,6 +925,8 @@ function renderMenuPlanUnavailable() {
 }
 
 function resetMenuImport() {
+  state.menuAnalysisResult = null;
+  state.menuResolutionSelections = Object.create(null);
   elements.menuInput.value = "";
   elements.menuFile.value = "";
   elements.menuFileStatus.textContent = "Puoi scegliere un file JSON, Markdown o testo fino a 2 MB.";
@@ -661,6 +937,8 @@ function resetMenuImport() {
 async function loadMenuPlanFile() {
   const file = elements.menuFile.files?.[0];
   if (!file) return;
+  state.menuAnalysisResult = null;
+  state.menuResolutionSelections = Object.create(null);
   const maxBytes = 2 * 1024 * 1024;
   if (file.size > maxBytes) {
     elements.menuFile.value = "";
@@ -1114,6 +1392,7 @@ elements.nextWeek.addEventListener("click", () => {
   void selectWeek(core.addDays(state.weekAnchor, 7));
 });
 elements.menuAnalyze.addEventListener("click", () => void analyzeMenuPlan());
+elements.menuResult.addEventListener("change", handleMenuResolutionChange);
 elements.menuClear.addEventListener("click", () => {
   resetMenuImport();
   setStatus("Analisi menu azzerata. Nessun dato è stato modificato.");

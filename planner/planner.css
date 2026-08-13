@@ -436,6 +436,11 @@
   background: #fff7f7;
 }
 
+.menu-conflict-summary.warning {
+  border-color: #e7dbc2;
+  background: #fffaf0;
+}
+
 .menu-conflict-summary span,
 .menu-conflict-summary small {
   color: var(--muted);
@@ -459,6 +464,11 @@
   border: 1px solid #e7dbc2;
   border-radius: 11px;
   background: #fffaf0;
+}
+
+.menu-conflict-card.resolved {
+  border-color: #b9d8c2;
+  background: #f4faf6;
 }
 
 .menu-conflict-icon {
@@ -492,6 +502,201 @@
 .menu-conflict-meta code {
   overflow-wrap: anywhere;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.menu-conflict-resolution {
+  display: grid;
+  gap: 5px;
+  margin-top: 11px;
+}
+
+.menu-conflict-resolution label {
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.menu-conflict-resolution select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 38px 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.86rem;
+}
+
+.menu-conflict-resolution small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.menu-full-preview {
+  padding: 14px;
+  border: 1px solid #b9d8c2;
+  border-radius: 14px;
+  background: #f4faf6;
+}
+
+.menu-preview-title,
+.menu-preview-day-heading,
+.menu-preview-meal-heading,
+.menu-preview-item-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.menu-preview-title h3,
+.menu-preview-day-heading h4,
+.menu-preview-meal-heading h4,
+.menu-preview-item h5 {
+  margin: 0;
+}
+
+.menu-preview-title .eyebrow {
+  margin: 0 0 3px;
+}
+
+.menu-preview-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 14px;
+  margin-top: 11px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.menu-preview-days,
+.menu-preview-meals,
+.menu-preview-items {
+  display: grid;
+  gap: 10px;
+}
+
+.menu-preview-days {
+  margin-top: 14px;
+}
+
+.menu-preview-day {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.menu-preview-day-heading {
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.menu-preview-meal {
+  padding: 11px;
+  border: 1px solid #dce6df;
+  border-radius: 11px;
+  background: #fbfdfb;
+}
+
+.menu-preview-meal-heading > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.menu-preview-meal-heading h4 {
+  font-size: 0.95rem;
+}
+
+.menu-preview-meal-heading span,
+.menu-preview-meal-note,
+.menu-preview-item > p {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.menu-preview-meal-icon {
+  font-size: 1.3rem;
+}
+
+.menu-preview-meal-note {
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
+
+.menu-preview-items {
+  margin-top: 10px;
+}
+
+.menu-preview-item {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.menu-preview-item-heading > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.menu-preview-item-heading > span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.menu-preview-item h5 {
+  margin-top: 7px;
+  font-size: 0.92rem;
+}
+
+.menu-preview-item > p {
+  margin: 5px 0 0;
+  line-height: 1.45;
+}
+
+.menu-preview-reference,
+.menu-preview-detail {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #f5f6f3;
+  font-size: 0.74rem;
+}
+
+.menu-preview-reference {
+  display: grid;
+  gap: 3px;
+}
+
+.menu-preview-reference.mapped,
+.menu-preview-reference.resolved {
+  background: #edf7ef;
+}
+
+.menu-preview-reference code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.menu-preview-reference strong {
+  overflow-wrap: anywhere;
+}
+
+.menu-preview-detail > strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.menu-preview-detail ul,
+.menu-preview-detail ol {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.5;
 }
 
 .menu-import-boundary {
@@ -1011,6 +1216,18 @@
   .menu-conflict-heading {
     flex-direction: column;
     gap: 7px;
+  }
+
+  .menu-preview-title,
+  .menu-preview-day-heading,
+  .menu-preview-meal-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .menu-preview-item-heading {
+    align-items: flex-start;
   }
 
   .week-toolbar {
