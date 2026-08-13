@@ -372,7 +372,7 @@ assert.equal(clearResolutionPlan.available, true);
 assert.equal(clearResolutionPlan.total_conflicts, 0);
 assert.equal(clearResolutionPlan.complete, true);
 assert.equal(clearResolutionPlan.ready_for_confirmation, true);
-assert.equal(clearResolutionPlan.can_commit, false);
+assert.equal(clearResolutionPlan.can_commit, true);
 
 const unresolvedManualPlan = engine.buildResolutionPlan(resolved, manualConflict, {}, recipes);
 assert.equal(unresolvedManualPlan.total_conflicts, 1);
@@ -390,7 +390,7 @@ const resolvedManualPlan = engine.buildResolutionPlan(resolved, manualConflict, 
 }, recipes);
 assert.equal(resolvedManualPlan.complete, true);
 assert.equal(resolvedManualPlan.ready_for_confirmation, true);
-assert.equal(resolvedManualPlan.can_commit, false);
+assert.equal(resolvedManualPlan.can_commit, true);
 
 const cancelledManualPlan = engine.buildResolutionPlan(resolved, manualConflict, {
   [manualConflictId]: { action: "cancel_import" }
@@ -426,7 +426,61 @@ assert.equal(preview.days[0].meals[0].items[2].ingredients.length, 1);
 assert.equal(preview.days[0].meals[0].items[2].procedure.length, 1);
 assert.equal(preview.hurom_references, 1);
 assert.equal(preview.autonomous_items, 2);
-assert.equal(preview.can_commit, false);
+assert.equal(preview.can_commit, true);
+
+const commitRequest = engine.buildCommitRequest(
+  validation.normalizedPacket,
+  engine.analyzeIdempotency(validation.normalizedPacket, canonicalHash, []),
+  clearResolutionPlan
+);
+assert.equal(commitRequest.ready, true);
+assert.equal(commitRequest.payload_hash, canonicalHash);
+assert.equal(commitRequest.canonical_payload, engine.canonicalStringify(validation.normalizedPacket));
+assert.deepEqual(commitRequest.expected_summary, {
+  days: 1,
+  meals: 1,
+  items: 3,
+  skipped_meals: 0,
+  skipped_items: 0
+});
+assert.deepEqual(commitRequest.resolutions, []);
+
+const manualCommitRequest = engine.buildCommitRequest(
+  validation.normalizedPacket,
+  engine.analyzeIdempotency(validation.normalizedPacket, canonicalHash, []),
+  resolvedManualPlan
+);
+assert.equal(manualCommitRequest.ready, true);
+assert.equal(manualCommitRequest.resolutions.length, 1);
+assert.equal(manualCommitRequest.resolutions[0].action, "keep_existing");
+assert.equal(manualCommitRequest.resolutions[0].existing_meal_id, "manual-meal");
+
+const skippedManualPlan = engine.buildResolutionPlan(resolved, manualConflict, {
+  [manualConflictId]: { action: "skip_incoming_meal" }
+}, recipes);
+assert.deepEqual(engine.summarizeCommitPlan(validation.normalizedPacket, skippedManualPlan), {
+  days: 1,
+  meals: 0,
+  items: 0,
+  skipped_meals: 1,
+  skipped_items: 0
+});
+
+assert.equal(engine.buildCommitRequest(
+  validation.normalizedPacket,
+  duplicateRetry,
+  clearResolutionPlan
+).ready, false);
+assert.equal(engine.buildCommitRequest(
+  validation.normalizedPacket,
+  engine.analyzeIdempotency(validation.normalizedPacket, canonicalHash, []),
+  unresolvedManualPlan
+).ready, false);
+assert.equal(engine.buildCommitRequest(
+  validation.normalizedPacket,
+  engine.analyzeIdempotency(validation.normalizedPacket, canonicalHash, []),
+  cancelledManualPlan
+).ready, false);
 
 const mappedPreview = engine.buildMenuPreview(validPacket, missing, mappedLibraryPlan, recipes);
 assert.equal(mappedPreview.days[0].meals[0].items[0].recipe_reference.status, "mapped");

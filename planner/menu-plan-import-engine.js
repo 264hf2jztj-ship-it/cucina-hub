@@ -1061,14 +1061,15 @@
     const cancelled = decisions.some(decision => decision.choice?.action === "cancel_import");
     const unresolved = decisions.filter(decision => !decision.resolved);
     const complete = available && (cancelled || unresolved.length === 0);
+    const readyForConfirmation = complete && !cancelled;
     const decisionById = new Map(decisions.map(decision => [decision.conflict_id, decision]));
 
     return {
       available,
       complete,
       cancelled,
-      ready_for_confirmation: complete && !cancelled,
-      can_commit: false,
+      ready_for_confirmation: readyForConfirmation,
+      can_commit: readyForConfirmation,
       total_conflicts: conflicts.length,
       resolved_conflicts: cancelled ? conflicts.length : decisions.length - unresolved.length,
       unresolved_conflicts: cancelled ? 0 : unresolved.length,
@@ -1168,7 +1169,113 @@
       hurom_references: huromReferences,
       autonomous_items: autonomousItems,
       days,
-      can_commit: false
+      can_commit: resolutionPlan?.can_commit === true
+    };
+  }
+
+  function summarizeCommitPlan(packet, resolutionPlan) {
+    const decisions = Array.isArray(resolutionPlan?.conflicts)
+      ? resolutionPlan.conflicts.filter(conflict => conflict?.decision?.choice)
+      : [];
+    const skippedMealKeys = new Set();
+    const skippedItemPaths = new Set();
+
+    decisions.forEach(conflict => {
+      const action = conflict.decision.choice.action;
+      const incomingMealKey = conflict.details?.incoming_meal_key;
+      if (
+        (conflict.code === "existing_manual_meal" && action === "skip_incoming_meal")
+        || (conflict.code === "user_modified_imported_meal" && action !== "use_incoming")
+      ) {
+        if (incomingMealKey) skippedMealKeys.add(incomingMealKey);
+      }
+      if (action === "skip_incoming_item") {
+        skippedItemPaths.add(conflict.path.replace(/\.recipe_code$/, ""));
+      }
+    });
+
+    let meals = 0;
+    let items = 0;
+    let skippedMeals = 0;
+    let skippedItems = 0;
+    (Array.isArray(packet?.days) ? packet.days : []).forEach((day, dayIndex) => {
+      (Array.isArray(day?.meals) ? day.meals : []).forEach((meal, mealIndex) => {
+        if (skippedMealKeys.has(meal?.key)) {
+          skippedMeals += 1;
+          return;
+        }
+        const includedItems = (Array.isArray(meal?.items) ? meal.items : []).filter((item, itemIndex) => {
+          const path = `days[${dayIndex}].meals[${mealIndex}].items[${itemIndex}]`;
+          if (!skippedItemPaths.has(path)) return true;
+          skippedItems += 1;
+          return false;
+        });
+        if (!includedItems.length) {
+          skippedMeals += 1;
+          return;
+        }
+        meals += 1;
+        items += includedItems.length;
+      });
+    });
+
+    return {
+      days: Array.isArray(packet?.days) ? packet.days.length : 0,
+      meals,
+      items,
+      skipped_meals: skippedMeals,
+      skipped_items: skippedItems
+    };
+  }
+
+  function buildCommitRequest(packet, idempotency, resolutionPlan) {
+    const payloadHash = idempotency?.payload_hash ?? null;
+    const ready = Boolean(
+      isPlainObject(packet)
+      && idempotency?.can_continue === true
+      && /^[0-9a-f]{64}$/.test(payloadHash)
+      && resolutionPlan?.ready_for_confirmation === true
+      && resolutionPlan?.can_commit === true
+      && !resolutionPlan?.cancelled
+      && resolutionPlan?.unresolved_conflicts === 0
+    );
+
+    if (!ready) {
+      return {
+        ready: false,
+        packet: null,
+        canonical_payload: null,
+        payload_hash: payloadHash,
+        resolutions: [],
+        expected_summary: null
+      };
+    }
+
+    const resolutions = resolutionPlan.conflicts.map(conflict => {
+      const choice = conflict.decision?.choice;
+      const details = isPlainObject(conflict.details) ? conflict.details : {};
+      return {
+        conflict_id: conflict.conflict_id,
+        code: conflict.code,
+        path: conflict.path,
+        action: choice.action,
+        recipe_id: choice.recipe_id ?? null,
+        package_id: details.package_id ?? null,
+        existing_meal_id: details.existing_meal_id ?? null,
+        existing_item_id: details.existing_item_id ?? null,
+        incoming_meal_key: details.incoming_meal_key ?? null,
+        source_item_key: details.source_item_key ?? null,
+        recipe_code: details.recipe_code ?? null
+      };
+    });
+
+    return {
+      ready: true,
+      packet,
+      canonical_payload: canonicalStringify(packet),
+      payload_hash: payloadHash,
+      resolutions,
+      expected_summary: summarizeCommitPlan(packet, resolutionPlan)
     };
   }
 
@@ -1225,6 +1332,7 @@
     analyze,
     analyzeConflicts,
     analyzeIdempotency,
+    buildCommitRequest,
     buildMenuPreview,
     buildResolutionPlan,
     canonicalStringify,
@@ -1243,6 +1351,7 @@
     resolutionActionsForConflict,
     resolveRecipeCodes,
     summarize,
+    summarizeCommitPlan,
     validatePacket
   });
 

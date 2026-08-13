@@ -124,6 +124,8 @@ const database = {
 let plannedMealsError = null;
 let plannerMenuPackagesError = null;
 let plannedMealItemsError = null;
+let menuCommitError = null;
+const menuCommitCalls = [];
 
 function queryFor(table) {
   const query = {
@@ -165,7 +167,29 @@ global.window = {
         error: null
       })
     },
-    from: queryFor
+    from: queryFor,
+    rpc: async (name, parameters) => {
+      menuCommitCalls.push({ name, parameters });
+      if (menuCommitError) return { data: null, error: menuCommitError };
+      return {
+        data: {
+          status: "committed",
+          created: true,
+          package_id: "committed-package",
+          source_external_id: parameters.p_packet.menu.external_id,
+          source_revision: parameters.p_packet.menu.revision,
+          payload_hash: parameters.p_payload_hash,
+          counts: {
+            days: 1,
+            meals: 1,
+            items: 3,
+            skipped_meals: 0,
+            skipped_items: 0
+          }
+        },
+        error: null
+      };
+    }
   },
   confirm: () => true,
   setTimeout,
@@ -237,6 +261,20 @@ global.window = {
   assert.match(elements.get("#menuPlanResult").innerHTML, /PREPARAZIONE/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /Ingredienti/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /Procedimento/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /CONFERMA E SALVA MENU/);
+
+  elements.get("#menuPlanResult").listeners.click({
+    target: { closest: () => ({ dataset: { menuAction: "commit" } }) }
+  });
+  await settle();
+  assert.equal(menuCommitCalls.length, 1);
+  assert.equal(menuCommitCalls[0].name, "commit_planner_menu_package");
+  assert.equal(menuCommitCalls[0].parameters.p_confirmed, true);
+  assert.equal(menuCommitCalls[0].parameters.p_resolutions.length, 0);
+  assert.match(menuCommitCalls[0].parameters.p_payload_hash, /^[0-9a-f]{64}$/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Menu aggiunto al Planner/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Commit atomico completato/);
+  assert.match(elements.get("#pageStatus").className, /ok/);
 
   const manualConflictPacket = structuredClone(smokePacket);
   manualConflictPacket.menu.external_id = "manual-conflict-menu";
@@ -264,6 +302,16 @@ global.window = {
   assert.match(elements.get("#menuPlanResult").innerHTML, /Anteprima pronta per la conferma/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /Scelte di risoluzione \(1\/1\)/);
   assert.match(elements.get("#pageStatus").className, /ok/);
+
+  menuCommitError = { message: "Function commit_planner_menu_package not found", code: "PGRST202" };
+  elements.get("#menuPlanResult").listeners.click({
+    target: { closest: () => ({ dataset: { menuAction: "commit" } }) }
+  });
+  await settle();
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Nessun dato è stato salvato/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /042_planner_menu_atomic_commit\.sql/);
+  assert.match(elements.get("#pageStatus").className, /error/);
+  menuCommitError = null;
 
   const normalizedSmokePacket = menuPlanEngine.validatePacket(smokePacket).normalizedPacket;
   const smokeHash = await menuPlanEngine.computePayloadHash(normalizedSmokePacket);

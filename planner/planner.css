@@ -699,6 +699,88 @@
   line-height: 1.5;
 }
 
+.menu-commit-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #b9d8c2;
+  border-radius: 14px;
+  background: #f4faf6;
+}
+
+.menu-commit-panel.error {
+  border-color: #e3b8b8;
+  background: #fff5f5;
+}
+
+.menu-commit-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.menu-commit-heading h3,
+.menu-commit-heading p {
+  margin: 0;
+}
+
+.menu-commit-heading p:not(.eyebrow) {
+  margin-top: 5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.menu-commit-icon {
+  font-size: 1.5rem;
+}
+
+.menu-commit-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 14px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.menu-commit-meta code {
+  overflow-wrap: anywhere;
+}
+
+.menu-commit-button {
+  width: 100%;
+  min-height: 54px;
+}
+
+.menu-commit-panel > small {
+  color: var(--muted);
+  line-height: 1.45;
+  text-align: center;
+}
+
+.menu-commit-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.menu-commit-stats > div {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.menu-commit-stats span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.menu-commit-stats strong {
+  font-size: 1.1rem;
+}
+
 .menu-import-boundary {
   margin-top: 16px;
   padding: 13px;
@@ -1121,6 +1203,33 @@
   overflow-wrap: anywhere;
 }
 
+.meal-item-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.meal-item-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-soft);
+  font-size: 0.78rem;
+}
+
+.meal-item-row strong {
+  overflow-wrap: anywhere;
+}
+
+.meal-item-row > span:last-child:not(.badge) {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .meal-actions {
   margin-top: 14px;
 }
@@ -1230,6 +1339,10 @@
     align-items: flex-start;
   }
 
+  .menu-commit-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .week-toolbar {
     align-items: stretch;
     flex-direction: column;
@@ -1265,6 +1378,14 @@
 
   .meal-heading {
     flex-direction: column;
+  }
+
+  .meal-item-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .meal-item-row > span:last-child:not(.badge) {
+    grid-column: 2;
   }
 }
 
