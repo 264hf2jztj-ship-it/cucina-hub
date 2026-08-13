@@ -12,7 +12,10 @@ const state = {
   editingId: null,
   menuAnalysisResult: null,
   menuResolutionSelections: Object.create(null),
+  menuCommitResult: null,
+  menuCommitError: null,
   menuAnalyzing: false,
+  menuCommitting: false,
   busy: false
 };
 
@@ -125,11 +128,49 @@ function recipeLabel(recipe) {
   return [recipe.code, recipe.title].filter(Boolean).join(" — ") || "Ricetta senza titolo";
 }
 
+function mealItems(meal) {
+  return (Array.isArray(meal?.planned_meal_items) ? meal.planned_meal_items : [])
+    .slice()
+    .sort((left, right) => Number(left.position ?? 0) - Number(right.position ?? 0));
+}
+
+function mealItemLabel(item) {
+  if (item?.item_type === "recipe") {
+    const recipe = recipeFor(item.recipe_id);
+    return recipe
+      ? recipeLabel(recipe)
+      : [item.recipe_code, item.label].filter(Boolean).join(" — ") || "Ricetta non disponibile";
+  }
+  return item?.label || "Elemento senza nome";
+}
+
+function mealDisplayLabel(meal) {
+  const items = mealItems(meal);
+  if (!items.length) return recipeLabel(recipeFor(meal.recipe_id));
+  const labels = items.map(mealItemLabel);
+  return labels.length > 2
+    ? `${labels.slice(0, 2).join(" · ")} +${labels.length - 2}`
+    : labels.join(" · ");
+}
+
+function mealItemsHtml(meal) {
+  const items = mealItems(meal);
+  if (!items.length) return "";
+  return `<div class="meal-item-list">${items.map(item => `
+    <div class="meal-item-row">
+      <span class="badge${item.item_type === "recipe" ? "" : " pending"}">${escapeHtml(item.item_type === "recipe" ? "RICETTA" : item.item_type === "food" ? "ALIMENTO" : "PREPARAZIONE")}</span>
+      <strong>${escapeHtml(mealItemLabel(item))}</strong>
+      ${item.quantity !== null && item.quantity !== undefined
+        ? `<span>${escapeHtml(item.quantity)}${item.unit ? ` ${escapeHtml(item.unit)}` : ""}</span>`
+        : ""}
+    </div>`).join("")}</div>`;
+}
+
 function menuImportIdleHtml(message = "Nessun pacchetto analizzato.") {
   return `
     <div class="menu-import-idle">
       <strong>${escapeHtml(message)}</strong>
-      <span>Il flusso si fermerà dopo l'anteprima e le scelte di risoluzione, senza salvare dati.</span>
+      <span>Analisi e anteprima non salvano dati. Il commit avviene soltanto dopo la tua conferma esplicita.</span>
     </div>`;
 }
 
@@ -426,6 +467,7 @@ function menuConflictChoiceValue(decision) {
 function menuConflictResolutionHtml(conflict, resolutionPlan) {
   const selectedValue = menuConflictChoiceValue(conflict.decision);
   const resolvedByCancellation = resolutionPlan?.cancelled && selectedValue !== "cancel_import";
+  const choicesLocked = resolvedByCancellation || Boolean(state.menuCommitResult) || Boolean(state.menuCommitError);
   const standardOptions = conflict.allowed_actions
     .filter(action => action !== "map_recipe")
     .map(action => `<option value="${escapeHtml(action)}"${selectedValue === action ? " selected" : ""}>${escapeHtml(menuResolutionLabel(conflict, action))}</option>`);
@@ -443,7 +485,7 @@ function menuConflictResolutionHtml(conflict, resolutionPlan) {
         id="resolution-${escapeHtml(conflict.conflict_id)}"
         data-menu-conflict-id="${escapeHtml(conflict.conflict_id)}"
         aria-label="Risoluzione ${escapeHtml(conflict.code)}"
-        ${resolvedByCancellation ? "disabled" : ""}
+        ${choicesLocked ? "disabled" : ""}
       >
         <option value="">Scegli come risolvere…</option>
         ${recipeOptions.join("")}
@@ -453,7 +495,7 @@ function menuConflictResolutionHtml(conflict, resolutionPlan) {
         ? "Nessun’altra scelta necessaria: l’importazione è annullata."
         : conflict.decision?.resolved
           ? "Scelta registrata soltanto nell’anteprima."
-          : "Scelta obbligatoria prima della futura conferma."}</small>
+          : "Scelta obbligatoria prima della conferma."}</small>
     </div>`;
 }
 
@@ -527,7 +569,7 @@ function menuConflictAnalysisHtml(analysis, resolutionPlan) {
   const summaryText = resolutionPlan.cancelled
     ? "La decisione resta locale alla pagina e nessun dato è stato modificato."
     : resolutionPlan.complete
-      ? "L’anteprima è pronta per la futura conferma esplicita; il salvataggio resta disattivato."
+      ? "L’anteprima è pronta: il salvataggio partirà solo dal pulsante di conferma finale."
       : "Scegli un’azione per ogni conflitto. Nessun valore viene applicato automaticamente.";
 
   return `
@@ -539,6 +581,95 @@ function menuConflictAnalysisHtml(analysis, resolutionPlan) {
         <span>${escapeHtml(summaryText)}</span>
       </div>
       <div class="menu-conflict-list">${resolutionPlan.conflicts.map(conflict => menuConflictHtml(conflict, resolutionPlan)).join("")}</div>
+    </section>`;
+}
+
+function menuCommitResultHtml(commitResult) {
+  const counts = commitResult?.counts ?? {};
+  const alreadyImported = commitResult?.status === "already_imported";
+  const stats = [
+    ["Pasti salvati", counts.meals ?? 0],
+    ["Elementi salvati", counts.items ?? 0],
+    ["Pasti saltati", counts.skipped_meals ?? 0],
+    ["Elementi saltati", counts.skipped_items ?? 0]
+  ];
+
+  return `
+    <section class="menu-import-section menu-commit-panel success" aria-label="Menu salvato">
+      <div class="menu-commit-heading">
+        <span class="menu-commit-icon" aria-hidden="true">${alreadyImported ? "🛡️" : "✅"}</span>
+        <div>
+          <p class="eyebrow">${alreadyImported ? "Retry sicuro" : "Commit atomico completato"}</p>
+          <h3>${alreadyImported ? "Il menu era già stato salvato" : "Menu aggiunto al Planner"}</h3>
+          <p>${alreadyImported
+            ? "Il database ha riconosciuto lo stesso hash e non ha creato duplicati."
+            : "Pacchetto, pasti ed elementi sono stati confermati nella stessa transazione."}</p>
+        </div>
+      </div>
+      <div class="menu-commit-stats">${stats.map(([label, value]) => `
+        <div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("")}</div>
+      <div class="menu-commit-meta">
+        <span>Revisione <strong>${escapeHtml(commitResult.source_revision ?? "—")}</strong></span>
+        <span>ID pacchetto <code>${escapeHtml(commitResult.package_id ?? "—")}</code></span>
+      </div>
+    </section>`;
+}
+
+function menuCommitPanelHtml(result) {
+  if (state.menuCommitResult) return menuCommitResultHtml(state.menuCommitResult);
+
+  if (state.menuCommitError) {
+    const uncertain = state.menuCommitError.outcome_unknown === true;
+    return `
+      <section class="menu-import-section menu-commit-panel error" aria-label="Salvataggio non eseguito">
+        <div class="menu-commit-heading">
+          <span class="menu-commit-icon" aria-hidden="true">⚠️</span>
+          <div>
+            <p class="eyebrow">${uncertain ? "Verifica necessaria" : "Commit annullato"}</p>
+            <h3>${uncertain ? "Esito della connessione da verificare" : "Nessun dato è stato salvato"}</h3>
+            <p>${escapeHtml(state.menuCommitError.message)}</p>
+          </div>
+        </div>
+        <button class="button secondary" type="button" data-menu-action="reanalyze">RIPETI L’ANALISI</button>
+      </section>`;
+  }
+
+  const plan = result?.resolutionPlan;
+  if (!plan?.ready_for_confirmation || !plan.can_commit) return "";
+  const commitRequest = menuPlanEngine.buildCommitRequest(
+    result.normalizedPacket,
+    result.idempotency,
+    plan
+  );
+  if (!commitRequest.ready) return "";
+  const summary = commitRequest.expected_summary ?? {};
+  const menu = result.normalizedPacket?.menu ?? {};
+
+  return `
+    <section class="menu-import-section menu-commit-panel ready" aria-label="Conferma importazione menu">
+      <div class="menu-commit-heading">
+        <span class="menu-commit-icon" aria-hidden="true">🔐</span>
+        <div>
+          <p class="eyebrow">Conferma finale</p>
+          <h3>Salvare questo menu nel Planner?</h3>
+          <p>
+            Verranno applicate le scelte mostrate sopra e salvati
+            <strong>${escapeHtml(summary.meals ?? 0)} pasti</strong> con
+            <strong>${escapeHtml(summary.items ?? 0)} elementi</strong>.
+          </p>
+        </div>
+      </div>
+      <div class="menu-commit-meta">
+        <span>${escapeHtml(menu.period_start ?? "—")} – ${escapeHtml(menu.period_end ?? "—")}</span>
+        <span>Revisione <strong>${escapeHtml(menu.revision ?? "—")}</strong></span>
+      </div>
+      <button
+        class="button menu-commit-button"
+        type="button"
+        data-menu-action="commit"
+        ${state.menuCommitting ? "disabled" : ""}
+      >${state.menuCommitting ? "SALVATAGGIO…" : "CONFERMA E SALVA MENU"}</button>
+      <small>Il database eseguirà un unico commit: in caso di errore non resteranno salvataggi parziali.</small>
     </section>`;
 }
 
@@ -572,7 +703,8 @@ function renderMenuPlanAnalysis(result) {
     library_resolution: "Risoluzione Biblioteca",
     idempotency: "Identità e retry",
     conflict_analysis: "Analisi conflitti",
-    preview: "Anteprima"
+    preview: "Anteprima",
+    committed: "Commit"
   };
   const phase = phaseLabels[result.stage] ?? "Analisi";
   const idempotency = result.idempotency ?? null;
@@ -584,11 +716,20 @@ function renderMenuPlanAnalysis(result) {
     && !resolutionPlan.cancelled
     && resolutionPlan.unresolved_conflicts > 0;
   const previewReady = resolutionPlan?.ready_for_confirmation === true;
+  const commitCompleted = Boolean(state.menuCommitResult);
   let tone = "error";
   let heading = "Il JSON non è stato letto";
   let description = `Il flusso si è fermato nella fase: ${phase}. Nessun dato è stato salvato.`;
 
-  if (idempotency?.blocking) {
+  if (commitCompleted) {
+    tone = "ok";
+    heading = state.menuCommitResult.status === "already_imported"
+      ? "Retry riconosciuto: nessun duplicato"
+      : "Menu salvato nel Planner";
+    description = state.menuCommitResult.status === "already_imported"
+      ? "Il pacchetto coincide con quello già confermato e non è stato scritto una seconda volta."
+      : "Conferma completata: pacchetto, pasti ed elementi sono stati salvati atomicamente.";
+  } else if (idempotency?.blocking) {
     heading = "Controllo retry bloccato";
   } else if (conflictUnavailable) {
     heading = "Analisi conflitti non disponibile";
@@ -609,7 +750,7 @@ function renderMenuPlanAnalysis(result) {
     heading = resolutionPlan.total_conflicts
       ? "Anteprima pronta per la conferma"
       : "Anteprima completa";
-    description = "Giorni, pasti, elementi, riferimenti e conflitti sono stati controllati. Conferma e salvataggio restano disattivati.";
+    description = "Giorni, pasti, elementi, riferimenti e conflitti sono stati controllati. Puoi confermare il commit finale.";
   } else if (result.stage === "library_resolution") {
     heading = "Riferimenti Biblioteca da correggere";
   } else if (result.stage === "validation") {
@@ -652,9 +793,10 @@ function renderMenuPlanAnalysis(result) {
     ${idempotency ? menuIdempotencyHtml(idempotency) : ""}
     ${result.preview ? menuFullPreviewHtml(result.preview) : ""}
     ${conflictAnalysis && resolutionPlan ? menuConflictAnalysisHtml(conflictAnalysis, resolutionPlan) : ""}
+    ${menuCommitPanelHtml(result)}
     <div class="menu-import-boundary">
-      <strong>Limite attuale del flusso: “Anteprima e scelte di risoluzione”.</strong><br>
-      Le decisioni restano nella memoria della pagina. Conferma esplicita e commit atomico non sono ancora attivi.
+      <strong>Flusso protetto: anteprima → scelte → conferma esplicita → commit atomico.</strong><br>
+      Nessun pacchetto viene salvato durante l’analisi; il database ricontrolla hash e conflitti al momento della conferma.
     </div>`;
 }
 
@@ -758,6 +900,8 @@ async function analyzeMenuPlan() {
   elements.menuResult.setAttribute("aria-busy", "true");
   state.menuAnalysisResult = null;
   state.menuResolutionSelections = Object.create(null);
+  state.menuCommitResult = null;
+  state.menuCommitError = null;
   setStatus("Analisi del menu e costruzione dell’anteprima…");
 
   try {
@@ -857,7 +1001,7 @@ async function analyzeMenuPlan() {
     } else if (resolutionPlan?.unresolved_conflicts) {
       setStatus(`${resolutionPlan.unresolved_conflicts} ${resolutionPlan.unresolved_conflicts === 1 ? "scelta da completare" : "scelte da completare"}. Nessun dato salvato.`, "warning");
     } else if (resolutionPlan?.ready_for_confirmation) {
-      setStatus("Anteprima completa. Conferma e salvataggio non sono ancora attivi.", "ok");
+      setStatus("Anteprima completa. Controlla il riepilogo e usa CONFERMA E SALVA MENU.", "ok");
     } else if (idempotency?.blocking) {
       setStatus("Controllo retry bloccato. Nessun dato salvato.", "error");
     } else if (idempotency?.status === "already_imported") {
@@ -908,8 +1052,110 @@ function handleMenuResolutionChange(event) {
   } else if (plan.unresolved_conflicts) {
     setStatus(`${plan.unresolved_conflicts} ${plan.unresolved_conflicts === 1 ? "scelta da completare" : "scelte da completare"}. Nessun dato salvato.`, "warning");
   } else {
-    setStatus("Scelte complete: anteprima pronta per la futura conferma. Nessun dato salvato.", "ok");
+    setStatus("Scelte complete: anteprima pronta per la conferma. Nessun dato ancora salvato.", "ok");
   }
+}
+
+function friendlyMenuCommitError(error) {
+  const message = String(error?.message ?? "Errore tecnico inatteso.");
+  if (message.includes("menu_commit_conflicts_changed")) {
+    return { message: "Il Planner è cambiato dopo l’anteprima. Ripeti l’analisi e conferma le nuove scelte.", outcome_unknown: false };
+  }
+  if (message.includes("menu_commit_library_resolution_changed")) {
+    return { message: "La Biblioteca è cambiata dopo l’anteprima. Ripeti l’analisi e ricontrolla le associazioni.", outcome_unknown: false };
+  }
+  if (message.includes("menu_commit_stale_revision")) {
+    return { message: "È già presente una revisione più recente. Il pacchetto non è stato salvato.", outcome_unknown: false };
+  }
+  if (message.includes("menu_commit_same_revision_payload_mismatch")) {
+    return { message: "La stessa revisione è già registrata con contenuto diverso. Incrementa la revisione del pacchetto.", outcome_unknown: false };
+  }
+  if (message.includes("menu_commit_hash_mismatch") || message.includes("menu_commit_payload_mismatch")) {
+    return { message: "Il contenuto è cambiato dopo l’analisi. Ripeti l’analisi prima di confermare.", outcome_unknown: false };
+  }
+  if (message.includes("menu_commit_confirmation_required")) {
+    return { message: "La conferma esplicita non è stata ricevuta. Nessun dato è stato salvato.", outcome_unknown: false };
+  }
+  if (error?.code === "PGRST202" || error?.code === "42883" || /commit_planner_menu_package/i.test(message)) {
+    return { message: "La funzione di commit non è disponibile. Applica la migration 042_planner_menu_atomic_commit.sql e riprova.", outcome_unknown: false };
+  }
+  if (error?.code) {
+    return { message: `${message} Il database ha annullato integralmente il commit.`, outcome_unknown: false };
+  }
+  return {
+    message: `${message} Ripeti l’analisi: il controllo hash verificherà l’esito senza creare duplicati.`,
+    outcome_unknown: true
+  };
+}
+
+async function commitMenuPlan() {
+  const result = state.menuAnalysisResult;
+  if (!result || state.busy || state.menuAnalyzing || state.menuCommitting) return;
+
+  const request = menuPlanEngine.buildCommitRequest(
+    result.normalizedPacket,
+    result.idempotency,
+    result.resolutionPlan
+  );
+  if (!request.ready) {
+    setStatus("Completa nuovamente l’analisi e tutte le scelte prima di confermare.", "warning");
+    return;
+  }
+
+  const menu = request.packet.menu;
+  const confirmed = window.confirm(
+    `Confermi il salvataggio di “${menu.title || menu.external_id}” (revisione ${menu.revision}) nel Planner?`
+  );
+  if (!confirmed) {
+    setStatus("Conferma annullata. Nessun dato è stato salvato.", "warning");
+    return;
+  }
+
+  state.menuCommitting = true;
+  state.menuCommitError = null;
+  setBusy(true);
+  elements.menuResult.setAttribute("aria-busy", "true");
+  setStatus("Commit atomico del menu in corso…");
+
+  try {
+    const { data, error } = await client.rpc("commit_planner_menu_package", {
+      p_packet: request.packet,
+      p_canonical_payload: request.canonical_payload,
+      p_payload_hash: request.payload_hash,
+      p_resolutions: request.resolutions,
+      p_confirmed: true
+    });
+    assertOk(error, "Commit menu");
+    if (!data || !["committed", "already_imported"].includes(data.status)) {
+      throw new Error("Il database non ha restituito un esito di commit verificabile.");
+    }
+
+    state.menuCommitResult = data;
+    state.menuAnalysisResult = { ...result, stage: "committed" };
+    state.weekAnchor = result.normalizedPacket.menu.period_start;
+    await reloadMeals();
+    setStatus(
+      data.status === "already_imported"
+        ? "Retry riconosciuto: il menu era già salvato e non è stato duplicato."
+        : `Menu salvato: ${data.counts?.meals ?? 0} pasti e ${data.counts?.items ?? 0} elementi.`,
+      "ok"
+    );
+  } catch (error) {
+    state.menuCommitError = friendlyMenuCommitError(error);
+    setStatus(state.menuCommitError.message, state.menuCommitError.outcome_unknown ? "warning" : "error");
+  } finally {
+    state.menuCommitting = false;
+    elements.menuResult.setAttribute("aria-busy", "false");
+    setBusy(false);
+    if (state.menuAnalysisResult) renderMenuPlanAnalysis(state.menuAnalysisResult);
+  }
+}
+
+function handleMenuResultClick(event) {
+  const button = event.target.closest?.("button[data-menu-action]");
+  if (!button) return;
+  if (button.dataset.menuAction === "commit") void commitMenuPlan();
+  if (button.dataset.menuAction === "reanalyze") void analyzeMenuPlan();
 }
 
 function renderMenuPlanUnavailable() {
@@ -927,6 +1173,8 @@ function renderMenuPlanUnavailable() {
 function resetMenuImport() {
   state.menuAnalysisResult = null;
   state.menuResolutionSelections = Object.create(null);
+  state.menuCommitResult = null;
+  state.menuCommitError = null;
   elements.menuInput.value = "";
   elements.menuFile.value = "";
   elements.menuFileStatus.textContent = "Puoi scegliere un file JSON, Markdown o testo fino a 2 MB.";
@@ -939,6 +1187,8 @@ async function loadMenuPlanFile() {
   if (!file) return;
   state.menuAnalysisResult = null;
   state.menuResolutionSelections = Object.create(null);
+  state.menuCommitResult = null;
+  state.menuCommitError = null;
   const maxBytes = 2 * 1024 * 1024;
   if (file.size > maxBytes) {
     elements.menuFile.value = "";
@@ -977,6 +1227,9 @@ function setBusy(busy) {
   });
   elements.menuInput.disabled = busy;
   elements.menuFile.disabled = busy;
+  elements.menuResult.querySelectorAll("select, button").forEach(control => {
+    control.disabled = busy;
+  });
   elements.workspace.querySelectorAll("button").forEach(button => {
     button.disabled = busy;
   });
@@ -1017,10 +1270,9 @@ function emptyStateHtml() {
 
 function weekMealCard(meal) {
   const slot = core.MEAL_SLOTS[meal.meal_slot] ?? core.MEAL_SLOTS.other;
-  const recipe = recipeFor(meal.recipe_id);
-  const label = recipeLabel(recipe);
+  const label = mealDisplayLabel(meal);
   const time = core.normalizeTime(meal.planned_time);
-  const ariaLabel = `Modifica ${slot.label}: ${label}${time ? ` alle ${time}` : ""}`;
+  const ariaLabel = `${meal.menu_package_id ? "Mostra dettaglio" : "Modifica"} ${slot.label}: ${label}${time ? ` alle ${time}` : ""}`;
 
   return `
     <button
@@ -1077,8 +1329,8 @@ function renderWeek() {
 
 function mealCard(meal) {
   const slot = core.MEAL_SLOTS[meal.meal_slot] ?? core.MEAL_SLOTS.other;
-  const recipe = recipeFor(meal.recipe_id);
   const time = core.normalizeTime(meal.planned_time);
+  const imported = Boolean(meal.menu_package_id);
   return `
     <article class="meal-card">
       <span class="meal-icon" aria-hidden="true">${escapeHtml(slot.icon)}</span>
@@ -1086,15 +1338,19 @@ function mealCard(meal) {
         <div class="meal-heading">
           <div>
             <span class="badge">${escapeHtml(slot.label)}</span>
-            <h4>${escapeHtml(recipeLabel(recipe))}</h4>
+            ${imported ? '<span class="badge pending">MENU IMPORTATO</span>' : ""}
+            <h4>${escapeHtml(mealDisplayLabel(meal))}</h4>
           </div>
           ${time ? `<time class="meal-time" datetime="${escapeHtml(time)}">${escapeHtml(time)}</time>` : ""}
         </div>
         ${meal.servings ? `<div class="meal-meta"><span class="badge pending">${escapeHtml(meal.servings)} ${meal.servings === 1 ? "porzione" : "porzioni"}</span></div>` : ""}
         ${meal.note ? `<p class="meal-note">${escapeHtml(meal.note)}</p>` : ""}
+        ${mealItemsHtml(meal)}
         <div class="meal-actions">
-          <button class="button secondary" type="button" data-action="edit" data-meal-id="${escapeHtml(meal.id)}">MODIFICA</button>
-          <button class="button danger" type="button" data-action="delete" data-meal-id="${escapeHtml(meal.id)}">ELIMINA</button>
+          ${imported
+            ? '<span class="field-help">Pasto composto collegato al Menu Package; la gestione degli elementi usa il flusso revisioni protetto.</span>'
+            : `<button class="button secondary" type="button" data-action="edit" data-meal-id="${escapeHtml(meal.id)}">MODIFICA</button>
+              <button class="button danger" type="button" data-action="delete" data-meal-id="${escapeHtml(meal.id)}">ELIMINA</button>`}
         </div>
       </div>
     </article>`;
@@ -1146,6 +1402,11 @@ function prepareNewMeal(plannedDate) {
 function editMeal(mealId) {
   const meal = state.meals.find(item => item.id === mealId);
   if (!meal) return;
+  if (meal.menu_package_id) {
+    setStatus("Questo è un pasto composto importato: il dettaglio degli elementi è visibile nell’elenco della settimana.", "warning");
+    elements.list.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    return;
+  }
 
   state.editingId = meal.id;
   elements.mealId.value = meal.id;
@@ -1180,7 +1441,7 @@ async function fetchMealsForWeek(anchorDate) {
 
   const { data, error } = await client
     .from("planned_meals")
-    .select("*")
+    .select("*,planned_meal_items(id,position,item_type,recipe_id,recipe_code,label,quantity,unit,note,source_item_key,is_user_modified)")
     .eq("owner_user_id", state.ownerUserId)
     .gte("planned_date", week.startDate)
     .lte("planned_date", week.endDate)
@@ -1293,8 +1554,7 @@ async function saveMeal(event) {
 async function deleteMeal(mealId) {
   const meal = state.meals.find(item => item.id === mealId);
   if (!meal || state.busy) return;
-  const recipe = recipeFor(meal.recipe_id);
-  const confirmed = window.confirm(`Eliminare ${recipeLabel(recipe)} dal ${formatDate(meal.planned_date)}?`);
+  const confirmed = window.confirm(`Eliminare ${mealDisplayLabel(meal)} dal ${formatDate(meal.planned_date)}?`);
   if (!confirmed) return;
 
   setBusy(true);
@@ -1393,6 +1653,7 @@ elements.nextWeek.addEventListener("click", () => {
 });
 elements.menuAnalyze.addEventListener("click", () => void analyzeMenuPlan());
 elements.menuResult.addEventListener("change", handleMenuResolutionChange);
+elements.menuResult.addEventListener("click", handleMenuResultClick);
 elements.menuClear.addEventListener("click", () => {
   resetMenuImport();
   setStatus("Analisi menu azzerata. Nessun dato è stato modificato.");
