@@ -12,7 +12,7 @@ create or replace function public.commit_planner_menu_package(
 returns jsonb
 language plpgsql
 security invoker
-set search_path = public, pg_temp
+set search_path = public, extensions, pg_temp
 as $$
 declare
   v_owner_user_id uuid := auth.uid();
@@ -676,6 +676,8 @@ comment on function public.commit_planner_menu_package(jsonb, text, text, jsonb,
   'Conferma e salva atomicamente un cucina-hub.menu-plan v1 ricontrollando hash, idempotenza, proprietà e conflitti.';
 
 commit;
+
+notify pgrst, 'reload schema';
 
 select
   to_regprocedure('public.commit_planner_menu_package(jsonb,text,text,jsonb,boolean)') is not null

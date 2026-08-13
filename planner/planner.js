@@ -1058,34 +1058,39 @@ function handleMenuResolutionChange(event) {
 
 function friendlyMenuCommitError(error) {
   const message = String(error?.message ?? "Errore tecnico inatteso.");
+  const technicalCode = String(error?.code ?? "").trim();
+  const response = (friendlyMessage, outcomeUnknown = false) => ({
+    message: technicalCode ? `${friendlyMessage} Codice tecnico: ${technicalCode}.` : friendlyMessage,
+    outcome_unknown: outcomeUnknown
+  });
   if (message.includes("menu_commit_conflicts_changed")) {
-    return { message: "Il Planner è cambiato dopo l’anteprima. Ripeti l’analisi e conferma le nuove scelte.", outcome_unknown: false };
+    return response("Il Planner è cambiato dopo l’anteprima. Ripeti l’analisi e conferma le nuove scelte.");
   }
   if (message.includes("menu_commit_library_resolution_changed")) {
-    return { message: "La Biblioteca è cambiata dopo l’anteprima. Ripeti l’analisi e ricontrolla le associazioni.", outcome_unknown: false };
+    return response("La Biblioteca è cambiata dopo l’anteprima. Ripeti l’analisi e ricontrolla le associazioni.");
   }
   if (message.includes("menu_commit_stale_revision")) {
-    return { message: "È già presente una revisione più recente. Il pacchetto non è stato salvato.", outcome_unknown: false };
+    return response("È già presente una revisione più recente. Il pacchetto non è stato salvato.");
   }
   if (message.includes("menu_commit_same_revision_payload_mismatch")) {
-    return { message: "La stessa revisione è già registrata con contenuto diverso. Incrementa la revisione del pacchetto.", outcome_unknown: false };
+    return response("La stessa revisione è già registrata con contenuto diverso. Incrementa la revisione del pacchetto.");
   }
   if (message.includes("menu_commit_hash_mismatch") || message.includes("menu_commit_payload_mismatch")) {
-    return { message: "Il contenuto è cambiato dopo l’analisi. Ripeti l’analisi prima di confermare.", outcome_unknown: false };
+    return response("Il contenuto è cambiato dopo l’analisi. Ripeti l’analisi prima di confermare.");
   }
   if (message.includes("menu_commit_confirmation_required")) {
-    return { message: "La conferma esplicita non è stata ricevuta. Nessun dato è stato salvato.", outcome_unknown: false };
+    return response("La conferma esplicita non è stata ricevuta. Nessun dato è stato salvato.");
   }
-  if (error?.code === "PGRST202" || error?.code === "42883" || /commit_planner_menu_package/i.test(message)) {
-    return { message: "La funzione di commit non è disponibile. Applica la migration 042_planner_menu_atomic_commit.sql e riprova.", outcome_unknown: false };
+  if (technicalCode === "42883" && /digest/i.test(message)) {
+    return response("La funzione di commit è presente, ma non trova il modulo crittografico pgcrypto. Applica la migration 043_planner_menu_commit_runtime_fix.sql e riprova.");
   }
-  if (error?.code) {
-    return { message: `${message} Il database ha annullato integralmente il commit.`, outcome_unknown: false };
+  if (technicalCode === "PGRST202") {
+    return response("La funzione di commit non è esposta dalla Data API. Applica la migration 042_planner_menu_atomic_commit.sql e aggiorna la cache PostgREST.");
   }
-  return {
-    message: `${message} Ripeti l’analisi: il controllo hash verificherà l’esito senza creare duplicati.`,
-    outcome_unknown: true
-  };
+  if (technicalCode) {
+    return response(`${message} Il database ha annullato integralmente il commit.`);
+  }
+  return response(`${message} Ripeti l’analisi: il controllo hash verificherà l’esito senza creare duplicati.`, true);
 }
 
 async function commitMenuPlan() {

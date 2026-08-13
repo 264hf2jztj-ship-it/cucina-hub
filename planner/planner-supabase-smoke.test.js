@@ -310,6 +310,23 @@ global.window = {
   await settle();
   assert.match(elements.get("#menuPlanResult").innerHTML, /Nessun dato è stato salvato/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /042_planner_menu_atomic_commit\.sql/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /PGRST202/);
+  assert.match(elements.get("#pageStatus").className, /error/);
+  menuCommitError = null;
+
+  elements.get("#menuPlanInput").value = JSON.stringify(smokePacket);
+  elements.get("#analyzeMenuPlan").listeners.click();
+  await settle();
+  menuCommitError = {
+    message: "function digest(bytea, unknown) does not exist",
+    code: "42883"
+  };
+  elements.get("#menuPlanResult").listeners.click({
+    target: { closest: () => ({ dataset: { menuAction: "commit" } }) }
+  });
+  await settle();
+  assert.match(elements.get("#menuPlanResult").innerHTML, /043_planner_menu_commit_runtime_fix\.sql/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /42883/);
   assert.match(elements.get("#pageStatus").className, /error/);
   menuCommitError = null;
 

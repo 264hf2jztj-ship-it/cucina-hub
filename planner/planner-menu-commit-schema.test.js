@@ -8,10 +8,15 @@ const sql = fs.readFileSync(
   path.join(__dirname, "../supabase/042_planner_menu_atomic_commit.sql"),
   "utf8"
 );
+const runtimeFixSql = fs.readFileSync(
+  path.join(__dirname, "../supabase/043_planner_menu_commit_runtime_fix.sql"),
+  "utf8"
+);
 
 assert.match(sql, /create or replace function public\.commit_planner_menu_package\s*\(/i);
 assert.match(sql, /language plpgsql/i);
 assert.match(sql, /security invoker/i);
+assert.match(sql, /set search_path = public, extensions, pg_temp/i);
 assert.match(sql, /v_owner_user_id uuid := auth\.uid\(\)/i);
 assert.match(sql, /p_confirmed is not true/i);
 assert.match(sql, /digest\(convert_to\(p_canonical_payload, 'UTF8'\), 'sha256'\)/i);
@@ -36,11 +41,18 @@ assert.match(sql, /'status', 'already_imported'/i);
 
 assert.match(sql, /revoke all on function public\.commit_planner_menu_package[\s\S]*from public/i);
 assert.match(sql, /grant execute on function public\.commit_planner_menu_package[\s\S]*to authenticated/i);
+assert.match(sql, /notify pgrst, 'reload schema'/i);
 assert.doesNotMatch(sql, /service_role/i);
 assert.doesNotMatch(sql, /p_owner_user_id/i);
 
 const firstBegin = sql.search(/^begin;/im);
 const firstCommit = sql.search(/^commit;/im);
 assert.ok(firstBegin >= 0 && firstCommit > firstBegin, "La migration deve essere transazionale.");
+
+assert.match(runtimeFixSql, /planner_menu_migration_042_required/i);
+assert.match(runtimeFixSql, /to_regprocedure\('extensions\.digest\(bytea,text\)'\)/i);
+assert.match(runtimeFixSql, /alter function public\.commit_planner_menu_package[\s\S]*set search_path = public, extensions, pg_temp/i);
+assert.match(runtimeFixSql, /notify pgrst, 'reload schema'/i);
+assert.match(runtimeFixSql, /authenticated_can_commit/i);
 
 console.log("Planner menu atomic commit RPC: controlli statici superati.");
