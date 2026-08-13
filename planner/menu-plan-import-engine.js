@@ -13,6 +13,14 @@
   ]);
   const ITEM_TYPES = Object.freeze(["recipe", "food", "preparation"]);
   const SOURCE_TYPES = Object.freeze(["chatgpt_project", "manual", "other"]);
+  const RESOLUTION_ACTIONS_BY_CONFLICT = Object.freeze({
+    missing_library_reference: Object.freeze(["map_recipe", "skip_incoming_item", "cancel_import"]),
+    ambiguous_library_reference: Object.freeze(["map_recipe", "skip_incoming_item", "cancel_import"]),
+    overlapping_menu_package: Object.freeze(["keep_existing", "use_incoming", "cancel_import"]),
+    existing_manual_meal: Object.freeze(["keep_existing", "use_incoming", "skip_incoming_meal", "cancel_import"]),
+    user_modified_imported_meal: Object.freeze(["keep_existing", "use_incoming", "skip_incoming_meal", "cancel_import"]),
+    user_modified_imported_item: Object.freeze(["keep_existing", "use_incoming", "skip_incoming_item", "cancel_import"])
+  });
   const HUROM_STABLE_CODES = Object.freeze([
     "RC-001",
     "RC-002A",
@@ -979,6 +987,191 @@
     };
   }
 
+  function conflictIdentifier(conflict, index = 0) {
+    const details = conflict?.details ?? {};
+    const target = [
+      details.package_id,
+      details.existing_meal_id,
+      details.existing_item_id,
+      details.incoming_meal_key,
+      details.source_item_key,
+      details.recipe_code
+    ].find(value => typeof value === "string" && value.trim()) ?? String(index);
+    return [conflict?.code ?? "conflict", conflict?.path ?? "$", target].join("::");
+  }
+
+  function resolutionActionsForConflict(conflict) {
+    return [...(RESOLUTION_ACTIONS_BY_CONFLICT[conflict?.code] ?? ["cancel_import"])];
+  }
+
+  function resolvableConflicts(libraryResolution = null, conflictAnalysis = null) {
+    const libraryConflicts = Array.isArray(libraryResolution?.conflicts)
+      ? libraryResolution.conflicts.map(conflict => ({ conflict, category: "library" }))
+      : [];
+    const plannerConflicts = Array.isArray(conflictAnalysis?.conflicts)
+      ? conflictAnalysis.conflicts.map(conflict => ({ conflict, category: "planner" }))
+      : [];
+
+    return [...libraryConflicts, ...plannerConflicts].map(({ conflict, category }, index) => ({
+      ...conflict,
+      conflict_id: conflictIdentifier(conflict, index),
+      category,
+      allowed_actions: resolutionActionsForConflict(conflict)
+    }));
+  }
+
+  function buildResolutionPlan(libraryResolution, conflictAnalysis, selections = {}, recipes = []) {
+    const available = Boolean(conflictAnalysis) && conflictAnalysis?.status !== "check_unavailable";
+    const recipeById = new Map(
+      (Array.isArray(recipes) ? recipes : [])
+        .filter(recipe => recipe?.id)
+        .map(recipe => [recipe.id, recipe])
+    );
+    const conflicts = resolvableConflicts(libraryResolution, conflictAnalysis);
+    const selectionFor = conflictId => selections instanceof Map
+      ? selections.get(conflictId)
+      : selections?.[conflictId];
+
+    const decisions = conflicts.map(conflict => {
+      const selected = selectionFor(conflict.conflict_id);
+      const choice = typeof selected === "string" ? { action: selected } : selected;
+      const allowed = conflict.allowed_actions.includes(choice?.action);
+      const mappedRecipe = choice?.action === "map_recipe"
+        ? recipeById.get(choice.recipe_id) ?? null
+        : null;
+      const resolved = Boolean(allowed && (choice?.action !== "map_recipe" || mappedRecipe));
+
+      return {
+        conflict_id: conflict.conflict_id,
+        code: conflict.code,
+        path: conflict.path,
+        category: conflict.category,
+        allowed_actions: conflict.allowed_actions,
+        choice: resolved
+          ? {
+              action: choice.action,
+              recipe_id: mappedRecipe?.id ?? null,
+              recipe_code: mappedRecipe?.code ?? null,
+              recipe_title: mappedRecipe?.title ?? null
+            }
+          : null,
+        resolved
+      };
+    });
+    const cancelled = decisions.some(decision => decision.choice?.action === "cancel_import");
+    const unresolved = decisions.filter(decision => !decision.resolved);
+    const complete = available && (cancelled || unresolved.length === 0);
+    const decisionById = new Map(decisions.map(decision => [decision.conflict_id, decision]));
+
+    return {
+      available,
+      complete,
+      cancelled,
+      ready_for_confirmation: complete && !cancelled,
+      can_commit: false,
+      total_conflicts: conflicts.length,
+      resolved_conflicts: cancelled ? conflicts.length : decisions.length - unresolved.length,
+      unresolved_conflicts: cancelled ? 0 : unresolved.length,
+      conflicts: conflicts.map(conflict => ({
+        ...conflict,
+        decision: decisionById.get(conflict.conflict_id) ?? null
+      })),
+      decisions
+    };
+  }
+
+  function buildMenuPreview(packet, libraryResolution = null, resolutionPlan = null, recipes = []) {
+    const referenceByPath = new Map(
+      (Array.isArray(libraryResolution?.references) ? libraryResolution.references : [])
+        .map(reference => [reference.path, reference])
+    );
+    const recipeById = new Map(
+      (Array.isArray(recipes) ? recipes : [])
+        .filter(recipe => recipe?.id)
+        .map(recipe => [recipe.id, recipe])
+    );
+    const decisionByPath = new Map(
+      (Array.isArray(resolutionPlan?.conflicts) ? resolutionPlan.conflicts : [])
+        .filter(conflict => conflict?.decision?.choice)
+        .map(conflict => [conflict.path, conflict.decision.choice])
+    );
+    const conflicts = Array.isArray(resolutionPlan?.conflicts) ? resolutionPlan.conflicts : [];
+    let huromReferences = 0;
+    let autonomousItems = 0;
+
+    const days = (Array.isArray(packet?.days) ? packet.days : []).map((day, dayIndex) => ({
+      date: day.date,
+      meals: (Array.isArray(day?.meals) ? day.meals : []).map((meal, mealIndex) => {
+        const mealPath = `days[${dayIndex}].meals[${mealIndex}]`;
+        const mealConflicts = conflicts.filter(conflict =>
+          conflict.details?.incoming_meal_key === meal.key
+          || conflict.path === mealPath
+          || conflict.path.startsWith(`${mealPath}.`)
+        );
+
+        return {
+          key: meal.key,
+          slot: meal.slot,
+          time: meal.time ?? null,
+          servings: meal.servings ?? null,
+          note: meal.note ?? null,
+          path: mealPath,
+          conflict_count: mealConflicts.length,
+          items: (Array.isArray(meal?.items) ? meal.items : []).map((item, itemIndex) => {
+            const itemPath = `${mealPath}.items[${itemIndex}]`;
+            const reference = referenceByPath.get(`${itemPath}.recipe_code`) ?? null;
+            const mappingChoice = decisionByPath.get(`${itemPath}.recipe_code`);
+            const mappedRecipe = mappingChoice?.action === "map_recipe"
+              ? recipeById.get(mappingChoice.recipe_id) ?? null
+              : null;
+            const resolvedRecipe = mappedRecipe ?? reference?.recipe ?? null;
+            if (reference?.is_hurom_reference) huromReferences += 1;
+            if (item.type !== "recipe") autonomousItems += 1;
+
+            return {
+              key: item.key,
+              type: item.type,
+              label: text(item.label) || text(resolvedRecipe?.title) || text(item.recipe_code) || "Elemento senza nome",
+              quantity: item.quantity ?? null,
+              unit: item.unit ?? null,
+              note: item.note ?? null,
+              ingredients: Array.isArray(item.ingredients) ? item.ingredients : [],
+              procedure: Array.isArray(item.procedure) ? item.procedure : [],
+              path: itemPath,
+              conflict_count: conflicts.filter(conflict => conflict.path === itemPath || conflict.path === `${itemPath}.recipe_code`).length,
+              recipe_reference: item.type === "recipe"
+                ? {
+                    recipe_code: item.recipe_code,
+                    status: mappedRecipe ? "mapped" : reference?.status ?? "unresolved",
+                    recipe_id: resolvedRecipe?.id ?? null,
+                    recipe_title: resolvedRecipe?.title ?? null,
+                    is_hurom_reference: reference?.is_hurom_reference === true
+                  }
+                : null
+            };
+          })
+        };
+      })
+    }));
+
+    return {
+      menu: {
+        external_id: packet?.menu?.external_id ?? null,
+        revision: packet?.menu?.revision ?? null,
+        title: packet?.menu?.title ?? null,
+        period_start: packet?.menu?.period_start ?? null,
+        period_end: packet?.menu?.period_end ?? null,
+        source_type: packet?.menu?.source?.type ?? null,
+        source_label: packet?.menu?.source?.label ?? null
+      },
+      summary: summarize(packet),
+      hurom_references: huromReferences,
+      autonomous_items: autonomousItems,
+      days,
+      can_commit: false
+    };
+  }
+
   function analyze(input, recipes = []) {
     let parsed;
     try {
@@ -992,7 +1185,8 @@
         packet: null,
         errors: [parseIssue],
         warnings: [],
-        resolution: null
+        resolution: null,
+        contractValid: false
       };
     }
 
@@ -1002,7 +1196,8 @@
         ...validation,
         stage: "validation",
         sourceFormat: parsed.sourceFormat,
-        resolution: null
+        resolution: null,
+        contractValid: false
       };
     }
 
@@ -1010,6 +1205,7 @@
     return {
       ...validation,
       valid: resolution.complete,
+      contractValid: true,
       stage: "library_resolution",
       sourceFormat: parsed.sourceFormat,
       resolution,
@@ -1023,14 +1219,18 @@
     MEAL_SLOTS,
     ITEM_TYPES,
     SOURCE_TYPES,
+    RESOLUTION_ACTIONS_BY_CONFLICT,
     HUROM_STABLE_CODES,
     STANDARD_UNITS,
     analyze,
     analyzeConflicts,
     analyzeIdempotency,
+    buildMenuPreview,
+    buildResolutionPlan,
     canonicalStringify,
     computePayloadHash,
     dateRangesOverlap,
+    conflictIdentifier,
     incomingMealEntries,
     isHuromRecipeCode,
     isRealDate,
@@ -1039,6 +1239,8 @@
     normalizeUnit,
     parse,
     recipeReferences,
+    resolvableConflicts,
+    resolutionActionsForConflict,
     resolveRecipeCodes,
     summarize,
     validatePacket

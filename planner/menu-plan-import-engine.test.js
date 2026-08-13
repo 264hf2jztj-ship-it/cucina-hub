@@ -366,7 +366,73 @@ assert.equal(engine.analyzeConflicts(validPacket, {
   meals: [unrelatedModifiedMeal]
 }).status, "clear");
 
-console.log("Menu plan import engine: contratto, hash, idempotenza e conflitti verificati.");
+const clearConflictAnalysis = engine.analyzeConflicts(validPacket);
+const clearResolutionPlan = engine.buildResolutionPlan(resolved, clearConflictAnalysis, {}, recipes);
+assert.equal(clearResolutionPlan.available, true);
+assert.equal(clearResolutionPlan.total_conflicts, 0);
+assert.equal(clearResolutionPlan.complete, true);
+assert.equal(clearResolutionPlan.ready_for_confirmation, true);
+assert.equal(clearResolutionPlan.can_commit, false);
+
+const unresolvedManualPlan = engine.buildResolutionPlan(resolved, manualConflict, {}, recipes);
+assert.equal(unresolvedManualPlan.total_conflicts, 1);
+assert.equal(unresolvedManualPlan.unresolved_conflicts, 1);
+assert.equal(unresolvedManualPlan.ready_for_confirmation, false);
+assert.deepEqual(unresolvedManualPlan.conflicts[0].allowed_actions, [
+  "keep_existing",
+  "use_incoming",
+  "skip_incoming_meal",
+  "cancel_import"
+]);
+const manualConflictId = unresolvedManualPlan.conflicts[0].conflict_id;
+const resolvedManualPlan = engine.buildResolutionPlan(resolved, manualConflict, {
+  [manualConflictId]: { action: "keep_existing" }
+}, recipes);
+assert.equal(resolvedManualPlan.complete, true);
+assert.equal(resolvedManualPlan.ready_for_confirmation, true);
+assert.equal(resolvedManualPlan.can_commit, false);
+
+const cancelledManualPlan = engine.buildResolutionPlan(resolved, manualConflict, {
+  [manualConflictId]: { action: "cancel_import" }
+}, recipes);
+assert.equal(cancelledManualPlan.complete, true);
+assert.equal(cancelledManualPlan.cancelled, true);
+assert.equal(cancelledManualPlan.ready_for_confirmation, false);
+
+const unresolvedLibraryPlan = engine.buildResolutionPlan(missing, clearConflictAnalysis, {}, recipes);
+assert.equal(unresolvedLibraryPlan.total_conflicts, 1);
+assert.equal(unresolvedLibraryPlan.conflicts[0].code, "missing_library_reference");
+assert.deepEqual(unresolvedLibraryPlan.conflicts[0].allowed_actions, [
+  "map_recipe",
+  "skip_incoming_item",
+  "cancel_import"
+]);
+const libraryConflictId = unresolvedLibraryPlan.conflicts[0].conflict_id;
+const mappedLibraryPlan = engine.buildResolutionPlan(missing, clearConflictAnalysis, {
+  [libraryConflictId]: { action: "map_recipe", recipe_id: "recipe-other" }
+}, recipes);
+assert.equal(mappedLibraryPlan.ready_for_confirmation, true);
+assert.equal(mappedLibraryPlan.decisions[0].choice.recipe_code, "OTHER-001");
+assert.equal(engine.buildResolutionPlan(missing, clearConflictAnalysis, {
+  [libraryConflictId]: { action: "map_recipe", recipe_id: "missing-id" }
+}, recipes).complete, false);
+
+const preview = engine.buildMenuPreview(validPacket, resolved, clearResolutionPlan, recipes);
+assert.equal(preview.days.length, 1);
+assert.equal(preview.days[0].meals.length, 1);
+assert.equal(preview.days[0].meals[0].items.length, 3);
+assert.equal(preview.days[0].meals[0].items[0].recipe_reference.status, "resolved");
+assert.equal(preview.days[0].meals[0].items[2].ingredients.length, 1);
+assert.equal(preview.days[0].meals[0].items[2].procedure.length, 1);
+assert.equal(preview.hurom_references, 1);
+assert.equal(preview.autonomous_items, 2);
+assert.equal(preview.can_commit, false);
+
+const mappedPreview = engine.buildMenuPreview(validPacket, missing, mappedLibraryPlan, recipes);
+assert.equal(mappedPreview.days[0].meals[0].items[0].recipe_reference.status, "mapped");
+assert.equal(mappedPreview.days[0].meals[0].items[0].recipe_reference.recipe_id, "recipe-other");
+
+console.log("Menu plan import engine: contratto, hash, conflitti, preview e risoluzioni verificati.");
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;

@@ -210,7 +210,17 @@ global.window = {
       meals: [{
         key: "smoke-breakfast",
         slot: "breakfast",
-        items: [{ key: "recipe", type: "recipe", recipe_code: "RC-1" }]
+        items: [
+          { key: "recipe", type: "recipe", recipe_code: "RC-1" },
+          { key: "yogurt", type: "food", label: "Yogurt greco", quantity: 170, unit: "g" },
+          {
+            key: "salad",
+            type: "preparation",
+            label: "Insalata veloce",
+            ingredients: [{ name: "Insalata mista", quantity: 120, unit: "g" }],
+            procedure: ["Condisci subito prima di servire."]
+          }
+        ]
       }]
     }],
     guardrails: { preview_only: true, automatic_save: false, requires_user_confirmation: true }
@@ -218,12 +228,15 @@ global.window = {
   elements.get("#menuPlanInput").value = JSON.stringify(smokePacket);
   elements.get("#analyzeMenuPlan").listeners.click();
   await settle();
-  assert.match(elements.get("#menuPlanResult").innerHTML, /Analisi tecnica completata/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Anteprima completa/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /RISOLTA/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /NUOVO PACCHETTO/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /SHA-256 del payload normalizzato/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /Nessun conflitto rilevato/);
-  assert.doesNotMatch(elements.get("#menuPlanResult").innerHTML, /ingredienti|procedimento/i);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /ALIMENTO/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /PREPARAZIONE/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Ingredienti/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Procedimento/);
 
   const manualConflictPacket = structuredClone(smokePacket);
   manualConflictPacket.menu.external_id = "manual-conflict-menu";
@@ -232,10 +245,25 @@ global.window = {
   elements.get("#menuPlanInput").value = JSON.stringify(manualConflictPacket);
   elements.get("#analyzeMenuPlan").listeners.click();
   await settle();
-  assert.match(elements.get("#menuPlanResult").innerHTML, /Conflitti da risolvere/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Scelte di risoluzione \(0\/1\)/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /PASTO MANUALE/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /existing_manual_meal/);
   assert.match(elements.get("#pageStatus").className, /warning/);
+
+  const manualConflictId = elements.get("#menuPlanResult").innerHTML
+    .match(/data-menu-conflict-id="([^"]*existing_manual_meal[^"]*)"/)?.[1];
+  assert.ok(manualConflictId);
+  elements.get("#menuPlanResult").listeners.change({
+    target: {
+      closest: () => ({
+        dataset: { menuConflictId: manualConflictId },
+        value: "keep_existing"
+      })
+    }
+  });
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Anteprima pronta per la conferma/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Scelte di risoluzione \(1\/1\)/);
+  assert.match(elements.get("#pageStatus").className, /ok/);
 
   const normalizedSmokePacket = menuPlanEngine.validatePacket(smokePacket).normalizedPacket;
   const smokeHash = await menuPlanEngine.computePayloadHash(normalizedSmokePacket);
@@ -330,12 +358,32 @@ global.window = {
   assert.match(elements.get("#menuPlanResult").innerHTML, /user_modified_imported_item/);
 
   const missingPacket = structuredClone(smokePacket);
+  missingPacket.menu.external_id = "missing-reference-menu";
+  missingPacket.menu.period_start = core.addDays(core.localDateValue(), 1);
+  missingPacket.menu.period_end = missingPacket.menu.period_start;
+  missingPacket.days[0].date = missingPacket.menu.period_start;
   missingPacket.days[0].meals[0].items[0].recipe_code = "RC-999";
   elements.get("#menuPlanInput").value = JSON.stringify(missingPacket);
   elements.get("#analyzeMenuPlan").listeners.click();
   await settle();
   assert.match(elements.get("#menuPlanResult").innerHTML, /missing_library_reference/);
-  assert.match(elements.get("#pageStatus").className, /error/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /RICETTA MANCANTE/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Mappa a: RC-1 — Pollo al forno/);
+  assert.match(elements.get("#pageStatus").className, /warning/);
+
+  const libraryConflictId = elements.get("#menuPlanResult").innerHTML
+    .match(/data-menu-conflict-id="([^"]*missing_library_reference[^"]*)"/)?.[1];
+  assert.ok(libraryConflictId);
+  elements.get("#menuPlanResult").listeners.change({
+    target: {
+      closest: () => ({
+        dataset: { menuConflictId: libraryConflictId },
+        value: "map_recipe:recipe-1"
+      })
+    }
+  });
+  assert.match(elements.get("#menuPlanResult").innerHTML, /MAPPATA/);
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Anteprima pronta per la conferma/);
 
   missingPacket.days[0].meals[0].items[0].recipe_code = "DUP-1";
   elements.get("#menuPlanInput").value = JSON.stringify(missingPacket);
@@ -344,6 +392,7 @@ global.window = {
   assert.match(elements.get("#menuPlanResult").innerHTML, /ambiguous_library_reference/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /Duplicata uno/);
   assert.match(elements.get("#menuPlanResult").innerHTML, /Duplicata due/);
+  assert.match(elements.get("#pageStatus").className, /warning/);
 
   const initialRange = elements.get("#weekRange").textContent;
   elements.get("#nextWeek").listeners.click();
