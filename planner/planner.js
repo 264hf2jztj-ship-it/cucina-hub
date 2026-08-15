@@ -16,6 +16,12 @@ const state = {
   menuCommitError: null,
   menuAnalyzing: false,
   menuCommitting: false,
+  menuPreviewRequests: [],
+  menuPreviewLoading: false,
+  menuPreviewAvailable: true,
+  menuPreviewError: null,
+  menuStaging: false,
+  activeMenuPreviewRequestId: null,
   busy: false
 };
 
@@ -36,6 +42,10 @@ const elements = {
   menuInput: document.querySelector("#menuPlanInput"),
   menuFile: document.querySelector("#menuPlanFile"),
   menuFileStatus: document.querySelector("#menuPlanFileStatus"),
+  menuPreviewCount: document.querySelector("#menuPreviewCount"),
+  menuPreviewRefresh: document.querySelector("#refreshMenuPreviews"),
+  menuPreviewInbox: document.querySelector("#menuPreviewInbox"),
+  menuStage: document.querySelector("#stageMenuPlan"),
   menuAnalyze: document.querySelector("#analyzeMenuPlan"),
   menuClear: document.querySelector("#clearMenuPlan"),
   menuResult: document.querySelector("#menuPlanResult"),
@@ -233,6 +243,268 @@ function menuImportStatsHtml(summary = {}) {
   ];
   return `<div class="menu-import-stats">${stats.map(([label, value]) => `
     <div class="menu-import-stat"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("")}</div>`;
+}
+
+function formatMenuPreviewTimestamp(value) {
+  if (!value) return "data non disponibile";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function menuPreviewRequestHtml(request) {
+  const title = request.title || request.source_external_id || "Menu senza titolo";
+  const statusLabel = request.status === "opened" ? "APERTA" : "NUOVA";
+  const period = request.period_start === request.period_end
+    ? formatDate(request.period_start)
+    : `${formatDate(request.period_start)} → ${formatDate(request.period_end)}`;
+  return `
+    <article class="menu-preview-request" data-menu-preview-request-id="${escapeHtml(request.id)}">
+      <div class="menu-preview-request-heading">
+        <div>
+          <strong>${escapeHtml(title)}</strong>
+          <code>${escapeHtml(request.source_external_id)} · rev. ${escapeHtml(request.source_revision)}</code>
+        </div>
+        <span class="badge${request.status === "opened" ? "" : " pending"}">${statusLabel}</span>
+      </div>
+      <div class="menu-preview-request-meta">
+        <span>${escapeHtml(period)}</span>
+        <span>${escapeHtml(request.source_label)}</span>
+        <span>Ricevuta ${escapeHtml(formatMenuPreviewTimestamp(request.created_at))}</span>
+      </div>
+      <div class="menu-preview-request-actions">
+        <button class="button" type="button" data-menu-preview-action="open" data-menu-preview-id="${escapeHtml(request.id)}">APRI E ANALIZZA</button>
+        <button class="button secondary" type="button" data-menu-preview-action="cancel" data-menu-preview-id="${escapeHtml(request.id)}">ANNULLA RICHIESTA</button>
+      </div>
+    </article>`;
+}
+
+function renderMenuPreviewInbox() {
+  elements.menuPreviewCount.textContent = String(state.menuPreviewRequests.length);
+  elements.menuPreviewCount.className = `badge${state.menuPreviewRequests.length ? "" : " pending"}`;
+  elements.menuPreviewInbox.setAttribute("aria-busy", String(state.menuPreviewLoading));
+
+  if (state.menuPreviewLoading) {
+    elements.menuPreviewInbox.innerHTML = `
+      <div class="menu-preview-inbox-empty">
+        <strong>Controllo delle richieste in corso…</strong>
+        <span>Nessun dato viene attivato durante la lettura.</span>
+      </div>`;
+    return;
+  }
+
+  if (!state.menuPreviewAvailable) {
+    elements.menuPreviewInbox.innerHTML = `
+      <div class="menu-preview-inbox-empty warning">
+        <strong>Staging diretto non ancora disponibile</strong>
+        <span>${escapeHtml(state.menuPreviewError || "Applica la migration 044_planner_menu_preview_staging.sql.")}</span>
+      </div>`;
+    return;
+  }
+
+  if (!state.menuPreviewRequests.length) {
+    elements.menuPreviewInbox.innerHTML = `
+      <div class="menu-preview-inbox-empty">
+        <strong>Nessuna anteprima in attesa.</strong>
+        <span>Quando l’endpoint riceverà un menu, comparirà qui senza modificare il Planner.</span>
+      </div>`;
+    return;
+  }
+
+  elements.menuPreviewInbox.innerHTML = state.menuPreviewRequests.map(menuPreviewRequestHtml).join("");
+}
+
+function menuPreviewSchemaMessage(error) {
+  const code = String(error?.code ?? "");
+  if (["42P01", "PGRST200", "PGRST205"].includes(code) || /planner_menu_import_requests/i.test(error?.message ?? "")) {
+    return "Applica la migration 044_planner_menu_preview_staging.sql e poi tocca AGGIORNA.";
+  }
+  return `Lettura non riuscita: ${error?.message || "errore tecnico inatteso"}`;
+}
+
+function updateMenuPreviewControls() {
+  elements.menuPreviewRefresh.disabled = state.busy || state.menuPreviewLoading || state.menuStaging;
+  elements.menuStage.disabled = state.busy || state.menuAnalyzing || state.menuStaging || !menuPlanEngine;
+}
+
+async function loadMenuPreviewRequests({ announce = false } = {}) {
+  if (!state.ownerUserId || state.menuPreviewLoading) return false;
+  state.menuPreviewLoading = true;
+  renderMenuPreviewInbox();
+  updateMenuPreviewControls();
+
+  try {
+    const { data, error } = await client
+      .from("planner_menu_import_requests")
+      .select("id,source_type,source_external_id,source_revision,source_label,title,period_start,period_end,payload_hash,packet,status,opened_at,created_at,updated_at")
+      .eq("owner_user_id", state.ownerUserId)
+      .in("status", ["pending", "opened"])
+      .order("created_at", { ascending: false });
+    assertOk(error, "Lettura anteprime ricevute");
+    state.menuPreviewRequests = data ?? [];
+    state.menuPreviewAvailable = true;
+    state.menuPreviewError = null;
+    if (announce) {
+      setStatus(
+        state.menuPreviewRequests.length
+          ? `${state.menuPreviewRequests.length} ${state.menuPreviewRequests.length === 1 ? "anteprima ricevuta" : "anteprime ricevute"} in attesa.`
+          : "Nessuna anteprima ricevuta in attesa.",
+        "ok"
+      );
+    }
+    return true;
+  } catch (error) {
+    state.menuPreviewRequests = [];
+    state.menuPreviewAvailable = false;
+    state.menuPreviewError = menuPreviewSchemaMessage(error);
+    if (announce) setStatus(state.menuPreviewError, "warning");
+    return false;
+  } finally {
+    state.menuPreviewLoading = false;
+    renderMenuPreviewInbox();
+    updateMenuPreviewControls();
+  }
+}
+
+async function readableFunctionError(error, fallbackData = null) {
+  let details = fallbackData;
+  const response = error?.context;
+  if (!details && response && typeof response.clone === "function") {
+    try {
+      details = await response.clone().json();
+    } catch {
+      details = null;
+    }
+  }
+  const wrapped = new Error(details?.message || error?.message || "Invio all’endpoint non riuscito.");
+  wrapped.code = details?.error || error?.code || "EDGE_FUNCTION_ERROR";
+  return wrapped;
+}
+
+async function stageMenuPlan() {
+  if (!menuPlanEngine || state.busy || state.menuAnalyzing || state.menuStaging) return;
+
+  let validation;
+  try {
+    validation = menuPlanEngine.validatePacket(menuPlanEngine.parse(elements.menuInput.value).packet);
+  } catch {
+    await analyzeMenuPlan();
+    return;
+  }
+
+  if (!validation.valid) {
+    await analyzeMenuPlan();
+    return;
+  }
+  if (validation.normalizedPacket.menu.source.type !== "chatgpt_project") {
+    setStatus("L’endpoint diretto richiede menu.source.type = chatgpt_project. Nessuna richiesta creata.", "warning");
+    return;
+  }
+
+  state.menuStaging = true;
+  updateMenuPreviewControls();
+  setStatus("Invio autenticato allo staging personale…");
+
+  try {
+    const { data, error } = await client.functions.invoke("planner-menu-preview", {
+      body: { packet: validation.normalizedPacket }
+    });
+    if (error) throw await readableFunctionError(error, data);
+    if (!data?.ok || !data?.state) throw new Error("L’endpoint non ha restituito un esito verificabile.");
+
+    await loadMenuPreviewRequests();
+    if (data.state === "already_committed") {
+      setStatus("Il menu risulta già confermato: nessun duplicato e nessuna nuova richiesta.", "warning");
+    } else if (data.state === "already_staged") {
+      setStatus("La stessa anteprima era già in attesa: nessun duplicato creato.", "ok");
+    } else if (data.state === "reopened") {
+      setStatus("Richiesta riaperta nello staging. Ora puoi aprirla e analizzarla.", "ok");
+    } else {
+      setStatus("Richiesta ricevuta nello staging. Nessun pasto è stato ancora salvato.", "ok");
+    }
+    elements.menuPreviewInbox.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  } catch (error) {
+    const migrationHint = error.code === "preview_staging_unavailable"
+      ? " Applica prima la migration 044_planner_menu_preview_staging.sql."
+      : "";
+    setStatus(`${error.message}${migrationHint} Nessun dato è stato salvato.`, "error");
+  } finally {
+    state.menuStaging = false;
+    updateMenuPreviewControls();
+  }
+}
+
+async function openMenuPreviewRequest(requestId) {
+  const request = state.menuPreviewRequests.find(item => item.id === requestId);
+  if (!request || state.busy || state.menuPreviewLoading) return;
+  setBusy(true);
+  setStatus("Apertura dell’anteprima ricevuta…");
+
+  try {
+    const { error } = await client.rpc("update_planner_menu_preview_request", {
+      p_request_id: request.id,
+      p_action: "open"
+    });
+    assertOk(error, "Apertura anteprima");
+
+    state.activeMenuPreviewRequestId = request.id;
+    state.menuAnalysisResult = null;
+    state.menuResolutionSelections = Object.create(null);
+    state.menuCommitResult = null;
+    state.menuCommitError = null;
+    elements.menuInput.value = JSON.stringify(request.packet, null, 2);
+    elements.menuFile.value = "";
+    elements.menuResult.innerHTML = menuImportIdleHtml("Richiesta caricata: avvio dell’analisi…");
+    request.status = "opened";
+    renderMenuPreviewInbox();
+  } catch (error) {
+    setStatus(`${error.message}. Nessun dato è stato modificato.`, "error");
+    await loadMenuPreviewRequests();
+    return;
+  } finally {
+    setBusy(false);
+  }
+
+  await analyzeMenuPlan();
+}
+
+async function cancelMenuPreviewRequest(requestId) {
+  const request = state.menuPreviewRequests.find(item => item.id === requestId);
+  if (!request || state.busy || state.menuPreviewLoading) return;
+  const confirmed = window.confirm(`Annullare la richiesta “${request.title || request.source_external_id}”? Il Planner non verrà modificato.`);
+  if (!confirmed) return;
+
+  setBusy(true);
+  setStatus("Annullamento della richiesta in corso…");
+  try {
+    const { error } = await client.rpc("update_planner_menu_preview_request", {
+      p_request_id: request.id,
+      p_action: "cancel"
+    });
+    assertOk(error, "Annullamento anteprima");
+    state.menuPreviewRequests = state.menuPreviewRequests.filter(item => item.id !== request.id);
+    if (state.activeMenuPreviewRequestId === request.id) resetMenuImport();
+    renderMenuPreviewInbox();
+    setStatus("Richiesta annullata. Nessun pasto è stato salvato o modificato.", "ok");
+  } catch (error) {
+    setStatus(`${error.message}. Nessun dato è stato modificato.`, "error");
+    await loadMenuPreviewRequests();
+  } finally {
+    setBusy(false);
+  }
+}
+
+function handleMenuPreviewInboxClick(event) {
+  const button = event.target.closest?.("button[data-menu-preview-action][data-menu-preview-id]");
+  if (!button) return;
+  if (button.dataset.menuPreviewAction === "open") void openMenuPreviewRequest(button.dataset.menuPreviewId);
+  if (button.dataset.menuPreviewAction === "cancel") void cancelMenuPreviewRequest(button.dataset.menuPreviewId);
 }
 
 function menuPreviewQuantityHtml(item) {
@@ -887,6 +1159,7 @@ function setMenuAnalysisBusy(busy) {
   elements.menuClear.disabled = busy || state.busy;
   elements.menuInput.disabled = busy || state.busy;
   elements.menuFile.disabled = busy || state.busy;
+  updateMenuPreviewControls();
 }
 
 async function analyzeMenuPlan() {
@@ -1139,6 +1412,7 @@ async function commitMenuPlan() {
     state.menuAnalysisResult = { ...result, stage: "committed" };
     state.weekAnchor = result.normalizedPacket.menu.period_start;
     await reloadMeals();
+    await loadMenuPreviewRequests();
     setStatus(
       data.status === "already_imported"
         ? "Retry riconosciuto: il menu era già salvato e non è stato duplicato."
@@ -1180,9 +1454,10 @@ function resetMenuImport() {
   state.menuResolutionSelections = Object.create(null);
   state.menuCommitResult = null;
   state.menuCommitError = null;
+  state.activeMenuPreviewRequestId = null;
   elements.menuInput.value = "";
   elements.menuFile.value = "";
-  elements.menuFileStatus.textContent = "Puoi scegliere un file JSON, Markdown o testo fino a 2 MB.";
+  elements.menuFileStatus.textContent = "Puoi scegliere un file fino a 2 MB. “Testa invio diretto” usa l’endpoint autenticato e crea soltanto una richiesta di anteprima.";
   elements.menuResult.innerHTML = menuImportIdleHtml();
   elements.menuResult.setAttribute("aria-busy", "false");
 }
@@ -1242,6 +1517,7 @@ function setBusy(busy) {
   elements.menuClear.disabled = busy || state.menuAnalyzing;
   elements.menuInput.disabled = busy || state.menuAnalyzing;
   elements.menuFile.disabled = busy || state.menuAnalyzing;
+  updateMenuPreviewControls();
   updateFormAvailability();
 }
 
@@ -1619,11 +1895,16 @@ async function initialize() {
     resetMenuImport();
     if (!menuPlanEngine) renderMenuPlanUnavailable();
     elements.workspace.hidden = false;
+    const previewAvailable = await loadMenuPreviewRequests();
+    const baseStatus = state.recipes.length
+      ? "Planner pronto. I pasti sono collegati alle ricette della tua Biblioteca."
+      : "Planner pronto, ma la Biblioteca non contiene ricette selezionabili.";
+    const inboxStatus = state.menuPreviewRequests.length
+      ? ` ${state.menuPreviewRequests.length} ${state.menuPreviewRequests.length === 1 ? "anteprima ricevuta" : "anteprime ricevute"} in attesa.`
+      : "";
     setStatus(
-      state.recipes.length
-        ? "Planner pronto. I pasti sono collegati alle ricette della tua Biblioteca."
-        : "Planner pronto, ma la Biblioteca non contiene ricette selezionabili.",
-      state.recipes.length ? "ok" : "warning"
+      previewAvailable ? `${baseStatus}${inboxStatus}` : `${baseStatus} Per le anteprime dirette applica la migration 044.`,
+      previewAvailable && state.recipes.length ? "ok" : "warning"
     );
   } catch (error) {
     showFatalError(error);
@@ -1657,6 +1938,9 @@ elements.nextWeek.addEventListener("click", () => {
   void selectWeek(core.addDays(state.weekAnchor, 7));
 });
 elements.menuAnalyze.addEventListener("click", () => void analyzeMenuPlan());
+elements.menuStage.addEventListener("click", () => void stageMenuPlan());
+elements.menuPreviewRefresh.addEventListener("click", () => void loadMenuPreviewRequests({ announce: true }));
+elements.menuPreviewInbox.addEventListener("click", handleMenuPreviewInboxClick);
 elements.menuResult.addEventListener("change", handleMenuResolutionChange);
 elements.menuResult.addEventListener("click", handleMenuResultClick);
 elements.menuClear.addEventListener("click", () => {

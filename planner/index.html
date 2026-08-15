@@ -8,7 +8,7 @@
   <title>Planner — Cucina Hub</title>
   <link rel="icon" href="../icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../style.css?v=13">
-  <link rel="stylesheet" href="planner.css?v=7">
+  <link rel="stylesheet" href="planner.css?v=8">
 </head>
 <body>
   <a class="skip-link" href="#plannerMain">Vai al contenuto</a>
@@ -104,6 +104,28 @@
           Il Planner controlla struttura, Biblioteca, hash, retry e conflitti. Dopo l’anteprima e le scelte esplicite, salva solo con la tua conferma finale.
         </p>
 
+        <section class="menu-preview-inbox" aria-labelledby="menuPreviewInboxTitle">
+          <div class="menu-preview-inbox-heading">
+            <div>
+              <p class="eyebrow">Endpoint autenticato</p>
+              <h3 id="menuPreviewInboxTitle">Anteprime ricevute</h3>
+            </div>
+            <div class="menu-preview-inbox-tools">
+              <span id="menuPreviewCount" class="badge pending">0</span>
+              <button id="refreshMenuPreviews" class="button secondary compact" type="button">AGGIORNA</button>
+            </div>
+          </div>
+          <p class="menu-preview-inbox-copy">
+            Le richieste inviate dalla chat restano qui in staging. Aprirle avvia soltanto l’analisi: nessun menu diventa attivo senza la conferma finale nell’app.
+          </p>
+          <div id="menuPreviewInbox" class="menu-preview-inbox-list" aria-live="polite" aria-busy="false">
+            <div class="menu-preview-inbox-empty">
+              <strong>Caricamento richieste…</strong>
+              <span>Nessun dato viene scritto nel Planner durante questo controllo.</span>
+            </div>
+          </div>
+        </section>
+
         <div class="planner-field">
           <label for="menuPlanInput">Pacchetto JSON</label>
           <textarea
@@ -124,10 +146,13 @@
             accept=".json,.md,.txt,application/json,text/plain,text/markdown"
             aria-label="Scegli un file menu JSON, Markdown o testo"
           >
+          <button id="stageMenuPlan" class="button secondary" type="button">TESTA INVIO DIRETTO</button>
           <button id="analyzeMenuPlan" class="button" type="button">ANALIZZA MENU</button>
           <button id="clearMenuPlan" class="button secondary" type="button">AZZERA</button>
         </div>
-        <p id="menuPlanFileStatus" class="field-help">Puoi scegliere un file JSON, Markdown o testo fino a 2 MB.</p>
+        <p id="menuPlanFileStatus" class="field-help">
+          Puoi scegliere un file fino a 2 MB. “Testa invio diretto” usa l’endpoint autenticato e crea soltanto una richiesta di anteprima.
+        </p>
 
         <div
           id="menuPlanResult"
@@ -227,6 +252,6 @@
   <script src="../supabase-client.js?v=12"></script>
   <script src="planner-core.js?v=2"></script>
   <script src="menu-plan-import-engine.js?v=5"></script>
-  <script src="planner.js?v=8"></script>
+  <script src="planner.js?v=9"></script>
 </body>
 </html>
