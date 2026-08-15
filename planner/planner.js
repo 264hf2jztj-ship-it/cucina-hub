@@ -2,12 +2,17 @@
 
 const client = window.cucinaHubSupabase;
 const core = window.CucinaHubPlannerCore;
+const mealPrepCore = window.CucinaHubMealPrepCore;
 const menuPlanEngine = window.CucinaHubMenuPlanImportEngine;
 
 const state = {
   ownerUserId: null,
   recipes: [],
   meals: [],
+  mealPrepTasks: [],
+  mealPrepAvailable: true,
+  mealPrepError: null,
+  mealPrepEditingId: null,
   weekAnchor: null,
   editingId: null,
   menuAnalysisResult: null,
@@ -39,6 +44,33 @@ const elements = {
   previousWeek: document.querySelector("#previousWeek"),
   currentWeek: document.querySelector("#currentWeek"),
   nextWeek: document.querySelector("#nextWeek"),
+  mealPrepPanel: document.querySelector("#mealPrepPanel"),
+  mealPrepCount: document.querySelector("#mealPrepCount"),
+  mealPrepTodoCount: document.querySelector("#mealPrepTodoCount"),
+  mealPrepProgressCount: document.querySelector("#mealPrepProgressCount"),
+  mealPrepDoneCount: document.querySelector("#mealPrepDoneCount"),
+  mealPrepStatus: document.querySelector("#mealPrepStatus"),
+  mealPrepUnavailable: document.querySelector("#mealPrepUnavailable"),
+  mealPrepBody: document.querySelector("#mealPrepBody"),
+  mealPrepEditor: document.querySelector("#mealPrepEditor"),
+  mealPrepForm: document.querySelector("#mealPrepForm"),
+  mealPrepFormTitle: document.querySelector("#mealPrepFormTitle"),
+  mealPrepTaskId: document.querySelector("#mealPrepTaskId"),
+  mealPrepMealId: document.querySelector("#mealPrepMealId"),
+  mealPrepItemId: document.querySelector("#mealPrepItemId"),
+  mealPrepType: document.querySelector("#mealPrepType"),
+  mealPrepTaskTitle: document.querySelector("#mealPrepTaskTitle"),
+  mealPrepDate: document.querySelector("#mealPrepDate"),
+  mealPrepTime: document.querySelector("#mealPrepTime"),
+  mealPrepServings: document.querySelector("#mealPrepServings"),
+  mealPrepQuantity: document.querySelector("#mealPrepQuantity"),
+  mealPrepUnit: document.querySelector("#mealPrepUnit"),
+  mealPrepStorage: document.querySelector("#mealPrepStorage"),
+  mealPrepStorageNote: document.querySelector("#mealPrepStorageNote"),
+  mealPrepNote: document.querySelector("#mealPrepNote"),
+  mealPrepSave: document.querySelector("#saveMealPrepTask"),
+  mealPrepCancel: document.querySelector("#cancelMealPrepEdit"),
+  mealPrepList: document.querySelector("#mealPrepList"),
   menuInput: document.querySelector("#menuPlanInput"),
   menuFile: document.querySelector("#menuPlanFile"),
   menuFileStatus: document.querySelector("#menuPlanFileStatus"),
@@ -174,6 +206,37 @@ function mealItemsHtml(meal) {
         ? `<span>${escapeHtml(item.quantity)}${item.unit ? ` ${escapeHtml(item.unit)}` : ""}</span>`
         : ""}
     </div>`).join("")}</div>`;
+}
+
+function mealFor(mealId) {
+  return state.meals.find(meal => meal.id === mealId) ?? null;
+}
+
+function mealItemFor(meal, itemId) {
+  return mealItems(meal).find(item => item.id === itemId) ?? null;
+}
+
+function mealPrepMealLabel(meal) {
+  if (!meal) return "Pasto non disponibile";
+  const slot = core.MEAL_SLOTS[meal.meal_slot] ?? core.MEAL_SLOTS.other;
+  return `${formatDate(meal.planned_date)} · ${slot.label} · ${mealDisplayLabel(meal)}`;
+}
+
+function setMealPrepStatus(message = "", type = "") {
+  elements.mealPrepStatus.textContent = message;
+  elements.mealPrepStatus.className = `meal-prep-status${type ? ` ${type}` : ""}`;
+}
+
+function isMissingMealPrepTable(error) {
+  if (!error) return false;
+  return ["42P01", "PGRST204", "PGRST205"].includes(error.code)
+    || /meal_prep_tasks|schema cache|could not find the table/i.test(error.message ?? "");
+}
+
+function formatMealPrepQuantity(task) {
+  if (task.quantity === null || task.quantity === undefined) return null;
+  const quantity = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 3 }).format(Number(task.quantity));
+  return `${quantity} ${task.unit ?? ""}`.trim();
 }
 
 function menuImportIdleHtml(message = "Nessun pacchetto analizzato.") {
@@ -1493,6 +1556,261 @@ async function loadMenuPlanFile() {
   }
 }
 
+function populateMealPrepItems(preferredItemId = elements.mealPrepItemId.value) {
+  const meal = mealFor(elements.mealPrepMealId.value);
+  const items = mealItems(meal);
+  elements.mealPrepItemId.innerHTML = [
+    '<option value="">Intero pasto</option>',
+    ...items.map(item => `
+      <option value="${escapeHtml(item.id)}">${escapeHtml(mealItemLabel(item))}</option>`)
+  ].join("");
+  elements.mealPrepItemId.value = items.some(item => item.id === preferredItemId)
+    ? preferredItemId
+    : "";
+}
+
+function populateMealPrepMeals(preferredMealId = elements.mealPrepMealId.value) {
+  if (!state.meals.length) {
+    elements.mealPrepMealId.innerHTML = '<option value="">Nessun pasto nella settimana</option>';
+    elements.mealPrepMealId.value = "";
+    populateMealPrepItems("");
+    return;
+  }
+
+  elements.mealPrepMealId.innerHTML = [
+    '<option value="">Seleziona un pasto…</option>',
+    ...state.meals.map(meal => `
+      <option value="${escapeHtml(meal.id)}">${escapeHtml(mealPrepMealLabel(meal))}</option>`)
+  ].join("");
+  elements.mealPrepMealId.value = state.meals.some(meal => meal.id === preferredMealId)
+    ? preferredMealId
+    : state.meals[0].id;
+  populateMealPrepItems();
+}
+
+function suggestedMealPrepTitle(meal, item = null) {
+  const subject = item ? mealItemLabel(item) : mealDisplayLabel(meal);
+  const verb = {
+    prepare: "Prepara",
+    cook: "Cuoci",
+    portion: "Porziona",
+    store: "Conserva",
+    defrost: "Scongela",
+    other: "Gestisci"
+  }[elements.mealPrepType.value] ?? "Prepara";
+  return subject ? `${verb} ${subject}`.slice(0, 200) : "";
+}
+
+function applyMealPrepMealDefaults({ updateTitle = true } = {}) {
+  const meal = mealFor(elements.mealPrepMealId.value);
+  populateMealPrepItems();
+  if (!meal) return;
+  elements.mealPrepDate.value = mealPrepCore.defaultScheduledDate(meal);
+  elements.mealPrepDate.max = meal.planned_date;
+  elements.mealPrepServings.value = meal.servings ?? "";
+  if (updateTitle) elements.mealPrepTaskTitle.value = suggestedMealPrepTitle(meal);
+}
+
+function resetMealPrepForm(preferredMealId = elements.mealPrepMealId.value) {
+  state.mealPrepEditingId = null;
+  elements.mealPrepForm.reset();
+  elements.mealPrepTaskId.value = "";
+  elements.mealPrepType.value = "prepare";
+  elements.mealPrepStorage.value = "none";
+  populateMealPrepMeals(preferredMealId);
+  applyMealPrepMealDefaults();
+  elements.mealPrepFormTitle.textContent = "Aggiungi una preparazione";
+  elements.mealPrepSave.textContent = "AGGIUNGI ATTIVITÀ";
+  elements.mealPrepCancel.hidden = true;
+  updateMealPrepAvailability();
+}
+
+function prepareNewMealPrepTask(mealId, itemId = "") {
+  if (!state.mealPrepAvailable || !mealPrepCore) {
+    setMealPrepStatus("Applica prima la migration 045_meal_prep_core.sql.", "warning");
+    elements.mealPrepPanel.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    return;
+  }
+  const meal = mealFor(mealId) ?? state.meals[0];
+  if (!meal) {
+    setMealPrepStatus("Pianifica prima almeno un pasto nella settimana.", "warning");
+    return;
+  }
+
+  resetMealPrepForm(meal.id);
+  populateMealPrepItems(itemId);
+  elements.mealPrepTaskTitle.value = suggestedMealPrepTitle(meal, mealItemFor(meal, itemId));
+  elements.mealPrepFormTitle.textContent = `Prepara per ${formatDate(meal.planned_date)}`;
+  elements.mealPrepEditor.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  window.setTimeout(() => elements.mealPrepTaskTitle.focus(), 250);
+  setMealPrepStatus("Pasto collegato. Completa i dettagli e salva l’attività.");
+}
+
+function editMealPrepTask(taskId) {
+  const task = state.mealPrepTasks.find(item => item.id === taskId);
+  if (!task) return;
+  const meal = mealFor(task.planned_meal_id);
+  if (!meal) {
+    setMealPrepStatus("Il pasto collegato non è disponibile in questa settimana.", "error");
+    return;
+  }
+
+  state.mealPrepEditingId = task.id;
+  elements.mealPrepTaskId.value = task.id;
+  populateMealPrepMeals(task.planned_meal_id);
+  populateMealPrepItems(task.planned_meal_item_id ?? "");
+  elements.mealPrepType.value = task.task_type;
+  elements.mealPrepTaskTitle.value = task.title;
+  elements.mealPrepDate.value = task.scheduled_date;
+  elements.mealPrepDate.max = meal.planned_date;
+  elements.mealPrepTime.value = mealPrepCore.normalizeTime(task.scheduled_time) ?? "";
+  elements.mealPrepServings.value = task.servings ?? "";
+  elements.mealPrepQuantity.value = task.quantity ?? "";
+  elements.mealPrepUnit.value = task.unit ?? "";
+  elements.mealPrepStorage.value = task.storage_method;
+  elements.mealPrepStorageNote.value = task.storage_note ?? "";
+  elements.mealPrepNote.value = task.note ?? "";
+  elements.mealPrepFormTitle.textContent = "Modifica la preparazione";
+  elements.mealPrepSave.textContent = "SALVA MODIFICHE";
+  elements.mealPrepCancel.hidden = false;
+  elements.mealPrepEditor.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  window.setTimeout(() => elements.mealPrepTaskTitle.focus(), 250);
+  setMealPrepStatus(`Modifica “${task.title}”.`);
+}
+
+function mealPrepEmptyHtml() {
+  if (!state.meals.length) {
+    return `
+      <div class="meal-prep-empty">
+        <span aria-hidden="true">🍽️</span>
+        <div>
+          <h4>Nessun pasto da preparare</h4>
+          <p>Aggiungi almeno un pasto alla settimana; comparirà subito tra le opzioni del Meal Prep.</p>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="meal-prep-empty">
+      <span aria-hidden="true">🔪</span>
+      <div>
+        <h4>Nessuna attività di Meal Prep</h4>
+        <p>Scegli un pasto nel modulo e aggiungi la prima preparazione della settimana.</p>
+      </div>
+    </div>`;
+}
+
+function mealPrepTaskCard(task) {
+  const meal = mealFor(task.planned_meal_id);
+  const item = mealItemFor(meal, task.planned_meal_item_id);
+  const type = mealPrepCore.TASK_TYPES[task.task_type] ?? mealPrepCore.TASK_TYPES.other;
+  const status = mealPrepCore.TASK_STATUSES[task.status] ?? mealPrepCore.TASK_STATUSES.todo;
+  const storage = mealPrepCore.STORAGE_METHODS[task.storage_method] ?? mealPrepCore.STORAGE_METHODS.none;
+  const time = mealPrepCore.normalizeTime(task.scheduled_time);
+  const quantity = formatMealPrepQuantity(task);
+  const stateClass = task.status === "done" ? " is-done" : task.status === "in_progress" ? " is-progress" : "";
+  const statusClass = task.status === "done" ? " done" : task.status === "in_progress" ? " in-progress" : "";
+  const statusActions = task.status === "todo"
+    ? `
+      <button class="button secondary" type="button" data-prep-action="status" data-prep-status="in_progress" data-prep-id="${escapeHtml(task.id)}">AVVIA</button>
+      <button class="button" type="button" data-prep-action="status" data-prep-status="done" data-prep-id="${escapeHtml(task.id)}">COMPLETA</button>`
+    : task.status === "in_progress"
+      ? `
+        <button class="button secondary" type="button" data-prep-action="status" data-prep-status="todo" data-prep-id="${escapeHtml(task.id)}">DA FARE</button>
+        <button class="button" type="button" data-prep-action="status" data-prep-status="done" data-prep-id="${escapeHtml(task.id)}">COMPLETA</button>`
+      : `<button class="button secondary" type="button" data-prep-action="status" data-prep-status="todo" data-prep-id="${escapeHtml(task.id)}">RIAPRI</button>`;
+
+  return `
+    <article class="meal-prep-card${stateClass}">
+      <span class="meal-prep-card-icon" aria-hidden="true">${escapeHtml(type.icon)}</span>
+      <div class="meal-prep-card-content">
+        <div class="meal-prep-card-heading">
+          <div>
+            <span class="badge meal-prep-status-badge${statusClass}">${escapeHtml(status.label)}</span>
+            <h5>${escapeHtml(task.title)}</h5>
+          </div>
+          ${time ? `<time datetime="${escapeHtml(time)}">${escapeHtml(time)}</time>` : ""}
+        </div>
+        <div class="meal-prep-link">
+          <span>Per il pasto</span>
+          <strong>${escapeHtml(mealPrepMealLabel(meal))}</strong>
+          ${item ? `<span>Elemento: ${escapeHtml(mealItemLabel(item))}</span>` : "<span>Intero pasto</span>"}
+        </div>
+        <div class="meal-prep-card-meta">
+          <span>${escapeHtml(type.label)}</span>
+          ${task.servings ? `<span>${escapeHtml(task.servings)} ${task.servings === 1 ? "porzione" : "porzioni"}</span>` : ""}
+          ${quantity ? `<span>${escapeHtml(quantity)}</span>` : ""}
+          ${task.storage_method !== "none" ? `<span>${escapeHtml(storage.icon)} ${escapeHtml(storage.label)}</span>` : ""}
+        </div>
+        ${task.storage_note ? `<p class="meal-prep-card-note"><strong>Conservazione:</strong> ${escapeHtml(task.storage_note)}</p>` : ""}
+        ${task.note ? `<p class="meal-prep-card-note">${escapeHtml(task.note)}</p>` : ""}
+        <div class="meal-prep-actions">
+          ${statusActions}
+          <button class="button secondary" type="button" data-prep-action="edit" data-prep-id="${escapeHtml(task.id)}">MODIFICA</button>
+          <button class="button danger" type="button" data-prep-action="delete" data-prep-id="${escapeHtml(task.id)}">ELIMINA</button>
+        </div>
+      </div>
+    </article>`;
+}
+
+function renderMealPrep() {
+  const moduleAvailable = Boolean(mealPrepCore);
+  elements.mealPrepUnavailable.hidden = moduleAvailable && state.mealPrepAvailable;
+  elements.mealPrepBody.hidden = !moduleAvailable || !state.mealPrepAvailable;
+
+  if (!moduleAvailable) {
+    setMealPrepStatus("Il modulo Meal Prep non è stato caricato. Ricarica la pagina.", "error");
+    return;
+  }
+
+  if (!state.mealPrepAvailable) {
+    elements.mealPrepCount.textContent = "0";
+    setMealPrepStatus("Database Meal Prep non disponibile: nessun dato è stato modificato.", "warning");
+    return;
+  }
+
+  const summary = mealPrepCore.summarizeTasks(state.mealPrepTasks);
+  elements.mealPrepCount.textContent = String(summary.total);
+  elements.mealPrepTodoCount.textContent = String(summary.todo);
+  elements.mealPrepProgressCount.textContent = String(summary.in_progress);
+  elements.mealPrepDoneCount.textContent = String(summary.done);
+  populateMealPrepMeals();
+
+  if (state.mealPrepError) {
+    setMealPrepStatus(state.mealPrepError, "error");
+  } else if (!state.meals.length) {
+    setMealPrepStatus("Pianifica almeno un pasto per attivare il Meal Prep della settimana.", "warning");
+  } else {
+    setMealPrepStatus();
+  }
+
+  elements.mealPrepList.innerHTML = state.mealPrepTasks.length
+    ? mealPrepCore.groupTasksByDate(state.mealPrepTasks).map(group => `
+      <section class="meal-prep-day" aria-labelledby="meal-prep-day-${escapeHtml(group.date)}">
+        <div class="meal-prep-day-heading">
+          <h4 id="meal-prep-day-${escapeHtml(group.date)}">${escapeHtml(formatDate(group.date))}</h4>
+          <span class="badge pending">${group.tasks.length} attività</span>
+        </div>
+        ${group.tasks.map(mealPrepTaskCard).join("")}
+      </section>`).join("")
+    : mealPrepEmptyHtml();
+  elements.mealPrepList.setAttribute("aria-busy", "false");
+  updateMealPrepAvailability();
+}
+
+function updateMealPrepAvailability() {
+  if (!elements.mealPrepForm) return;
+  const disabled = state.busy
+    || !mealPrepCore
+    || !state.mealPrepAvailable
+    || Boolean(state.mealPrepError)
+    || !state.meals.length;
+  elements.mealPrepForm.querySelectorAll("input, select, textarea").forEach(field => {
+    field.disabled = disabled;
+  });
+  elements.mealPrepSave.disabled = disabled;
+  elements.mealPrepCancel.disabled = state.busy || !state.mealPrepAvailable;
+}
+
 function updateFormAvailability() {
   elements.save.disabled = state.busy || state.recipes.length === 0;
   elements.cancel.disabled = state.busy;
@@ -1502,6 +1820,8 @@ function setBusy(busy) {
   state.busy = busy;
   elements.form.setAttribute("aria-busy", String(busy));
   elements.weekGrid.setAttribute("aria-busy", String(busy));
+  elements.mealPrepForm.setAttribute("aria-busy", String(busy));
+  elements.mealPrepList.setAttribute("aria-busy", String(busy));
   elements.form.querySelectorAll("input, select, textarea").forEach(field => {
     field.disabled = busy;
   });
@@ -1519,6 +1839,7 @@ function setBusy(busy) {
   elements.menuFile.disabled = busy || state.menuAnalyzing;
   updateMenuPreviewControls();
   updateFormAvailability();
+  updateMealPrepAvailability();
 }
 
 function populateRecipes() {
@@ -1628,6 +1949,7 @@ function mealCard(meal) {
         ${meal.note ? `<p class="meal-note">${escapeHtml(meal.note)}</p>` : ""}
         ${mealItemsHtml(meal)}
         <div class="meal-actions">
+          <button class="button" type="button" data-action="prep" data-meal-id="${escapeHtml(meal.id)}">MEAL PREP</button>
           ${imported
             ? '<span class="field-help">Pasto composto collegato al Menu Package; la gestione degli elementi usa il flusso revisioni protetto.</span>'
             : `<button class="button secondary" type="button" data-action="edit" data-meal-id="${escapeHtml(meal.id)}">MODIFICA</button>
@@ -1657,6 +1979,7 @@ function renderMeals() {
 function renderPlanner() {
   renderWeek();
   renderMeals();
+  renderMealPrep();
 }
 
 function resetForm(plannedDate = core.localDateValue()) {
@@ -1711,6 +2034,9 @@ function friendlyWriteError(error) {
   if (error.code === "23503") {
     return "La ricetta collegata non è più disponibile. Ricarica il Planner e scegline un’altra.";
   }
+  if (error.code === "23514" && /meal prep/i.test(error.message ?? "")) {
+    return "Il pasto non può essere spostato prima di una preparazione già programmata. Modifica prima il Meal Prep collegato.";
+  }
   return error.message;
 }
 
@@ -1731,6 +2057,45 @@ async function fetchMealsForWeek(anchorDate) {
   return data ?? [];
 }
 
+async function fetchMealPrepTasksForMeals(meals = state.meals) {
+  if (!mealPrepCore || !meals.length) return [];
+  const mealIds = meals.map(meal => meal.id);
+  const { data, error } = await client
+    .from("meal_prep_tasks")
+    .select("id,owner_user_id,planned_meal_id,planned_meal_item_id,task_type,title,scheduled_date,scheduled_time,servings,quantity,unit,storage_method,storage_note,note,status,completed_at,created_at,updated_at")
+    .eq("owner_user_id", state.ownerUserId)
+    .in("planned_meal_id", mealIds)
+    .order("scheduled_date", { ascending: true })
+    .order("scheduled_time", { ascending: true });
+  assertOk(error, "Lettura Meal Prep");
+  return data ?? [];
+}
+
+async function loadMealPrepTasks(meals = state.meals) {
+  state.mealPrepError = null;
+  if (!mealPrepCore) {
+    state.mealPrepAvailable = false;
+    state.mealPrepTasks = [];
+    return false;
+  }
+
+  try {
+    state.mealPrepTasks = await fetchMealPrepTasksForMeals(meals);
+    state.mealPrepAvailable = true;
+    return true;
+  } catch (error) {
+    state.mealPrepTasks = [];
+    if (isMissingMealPrepTable(error)) {
+      state.mealPrepAvailable = false;
+      state.mealPrepError = null;
+    } else {
+      state.mealPrepAvailable = true;
+      state.mealPrepError = `${error.message}. Riprova ricaricando la settimana.`;
+    }
+    return false;
+  }
+}
+
 async function loadData() {
   const [recipesResult, meals] = await Promise.all([
     client
@@ -1744,10 +2109,16 @@ async function loadData() {
   assertOk(recipesResult.error, "Lettura ricette");
   state.recipes = recipesResult.data ?? [];
   state.meals = meals;
+  await loadMealPrepTasks(state.meals);
 }
 
 async function reloadMeals() {
   state.meals = await fetchMealsForWeek(state.weekAnchor);
+  await loadMealPrepTasks(state.meals);
+  if (!state.mealPrepEditingId
+      || !state.mealPrepTasks.some(task => task.id === state.mealPrepEditingId)) {
+    resetMealPrepForm(state.meals[0]?.id ?? "");
+  }
   renderPlanner();
 }
 
@@ -1762,11 +2133,19 @@ async function selectWeek(anchorDate) {
     const meals = await fetchMealsForWeek(anchorDate);
     state.weekAnchor = anchorDate;
     state.meals = meals;
+    await loadMealPrepTasks(state.meals);
     if (state.editingId && !state.meals.some(meal => meal.id === state.editingId)) {
       resetForm(anchorDate);
     }
+    resetMealPrepForm(state.meals[0]?.id ?? "");
     renderPlanner();
-    setStatus("Settimana caricata.", "ok");
+    if (!state.mealPrepAvailable) {
+      setStatus("Settimana caricata. Per attivare Meal Prep applica la migration 045.", "warning");
+    } else if (state.mealPrepError) {
+      setStatus("Settimana caricata, ma le attività Meal Prep non sono disponibili.", "warning");
+    } else {
+      setStatus("Settimana caricata.", "ok");
+    }
   } catch (error) {
     state.weekAnchor = previousAnchor;
     state.meals = previousMeals;
@@ -1848,11 +2227,152 @@ async function deleteMeal(mealId) {
       .eq("owner_user_id", state.ownerUserId);
     assertOk(error, "Eliminazione pasto");
     state.meals = state.meals.filter(item => item.id !== meal.id);
+    state.mealPrepTasks = state.mealPrepTasks.filter(task => task.planned_meal_id !== meal.id);
     if (state.editingId === meal.id) resetForm(state.weekAnchor);
+    if (state.mealPrepEditingId
+        && !state.mealPrepTasks.some(task => task.id === state.mealPrepEditingId)) {
+      resetMealPrepForm(state.meals[0]?.id ?? "");
+    }
     renderPlanner();
     setStatus("Pasto eliminato dal Planner.", "ok");
   } catch (error) {
     setStatus(error.message, "error");
+  } finally {
+    setBusy(false);
+  }
+}
+
+function friendlyMealPrepWriteError(error) {
+  if (isMissingMealPrepTable(error)) {
+    return "Meal Prep non è ancora attivo. Applica la migration 045_meal_prep_core.sql.";
+  }
+  if (error.code === "23514") {
+    return "La preparazione non può essere programmata dopo il pasto collegato.";
+  }
+  if (error.code === "23503") {
+    return "Il pasto o l’elemento collegato non è più disponibile. Ricarica la settimana.";
+  }
+  return error.message;
+}
+
+async function saveMealPrepTask(event) {
+  event.preventDefault();
+  if (state.busy || !state.mealPrepAvailable || state.mealPrepError || !mealPrepCore) return;
+
+  const meal = mealFor(elements.mealPrepMealId.value);
+  const existing = state.mealPrepTasks.find(task => task.id === state.mealPrepEditingId) ?? null;
+  const candidate = mealPrepCore.normalizeTask({
+    planned_meal_id: elements.mealPrepMealId.value,
+    planned_meal_item_id: elements.mealPrepItemId.value,
+    task_type: elements.mealPrepType.value,
+    title: elements.mealPrepTaskTitle.value,
+    scheduled_date: elements.mealPrepDate.value,
+    scheduled_time: elements.mealPrepTime.value,
+    servings: elements.mealPrepServings.value,
+    quantity: elements.mealPrepQuantity.value,
+    unit: elements.mealPrepUnit.value,
+    storage_method: elements.mealPrepStorage.value,
+    storage_note: elements.mealPrepStorageNote.value,
+    note: elements.mealPrepNote.value,
+    status: existing?.status ?? "todo"
+  }, meal);
+
+  if (!candidate.valid) {
+    setMealPrepStatus(candidate.errors.join(" "), "error");
+    elements.mealPrepPanel.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    return;
+  }
+
+  const wasEditing = Boolean(existing);
+  const payload = {
+    ...candidate.value,
+    owner_user_id: state.ownerUserId,
+    updated_at: new Date().toISOString()
+  };
+
+  setBusy(true);
+  setMealPrepStatus(wasEditing ? "Salvataggio delle modifiche…" : "Aggiunta dell’attività…");
+
+  try {
+    const result = wasEditing
+      ? await client
+        .from("meal_prep_tasks")
+        .update(payload)
+        .eq("id", existing.id)
+        .eq("owner_user_id", state.ownerUserId)
+        .select("id")
+        .single()
+      : await client
+        .from("meal_prep_tasks")
+        .insert(payload)
+        .select("id")
+        .single();
+
+    assertOk(result.error, wasEditing ? "Modifica Meal Prep" : "Creazione Meal Prep");
+    await loadMealPrepTasks();
+    resetMealPrepForm(candidate.value.planned_meal_id);
+    renderMealPrep();
+    setMealPrepStatus(
+      wasEditing ? "Attività aggiornata correttamente." : "Attività aggiunta al Meal Prep.",
+      "ok"
+    );
+  } catch (error) {
+    if (isMissingMealPrepTable(error)) {
+      state.mealPrepAvailable = false;
+      renderMealPrep();
+    }
+    setMealPrepStatus(friendlyMealPrepWriteError(error), "error");
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function updateMealPrepTaskStatus(taskId, nextStatus) {
+  const task = state.mealPrepTasks.find(item => item.id === taskId);
+  if (!task || state.busy || !mealPrepCore.TASK_STATUSES[nextStatus]) return;
+
+  setBusy(true);
+  setMealPrepStatus("Aggiornamento dello stato…");
+  try {
+    const { error } = await client
+      .from("meal_prep_tasks")
+      .update({ status: nextStatus, updated_at: new Date().toISOString() })
+      .eq("id", task.id)
+      .eq("owner_user_id", state.ownerUserId)
+      .select("id")
+      .single();
+    assertOk(error, "Aggiornamento Meal Prep");
+    await loadMealPrepTasks();
+    renderMealPrep();
+    setMealPrepStatus(`“${task.title}”: ${mealPrepCore.TASK_STATUSES[nextStatus].label.toLowerCase()}.`, "ok");
+  } catch (error) {
+    setMealPrepStatus(friendlyMealPrepWriteError(error), "error");
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function deleteMealPrepTask(taskId) {
+  const task = state.mealPrepTasks.find(item => item.id === taskId);
+  if (!task || state.busy) return;
+  const confirmed = window.confirm(`Eliminare l’attività “${task.title}”?`);
+  if (!confirmed) return;
+
+  setBusy(true);
+  setMealPrepStatus("Eliminazione dell’attività…");
+  try {
+    const { error } = await client
+      .from("meal_prep_tasks")
+      .delete()
+      .eq("id", task.id)
+      .eq("owner_user_id", state.ownerUserId);
+    assertOk(error, "Eliminazione Meal Prep");
+    state.mealPrepTasks = state.mealPrepTasks.filter(item => item.id !== task.id);
+    if (state.mealPrepEditingId === task.id) resetMealPrepForm(task.planned_meal_id);
+    renderMealPrep();
+    setMealPrepStatus("Attività eliminata.", "ok");
+  } catch (error) {
+    setMealPrepStatus(friendlyMealPrepWriteError(error), "error");
   } finally {
     setBusy(false);
   }
@@ -1892,6 +2412,7 @@ async function initialize() {
     populateRecipes();
     renderPlanner();
     resetForm(state.weekAnchor);
+    resetMealPrepForm(state.meals[0]?.id ?? "");
     resetMenuImport();
     if (!menuPlanEngine) renderMenuPlanUnavailable();
     elements.workspace.hidden = false;
@@ -1902,9 +2423,14 @@ async function initialize() {
     const inboxStatus = state.menuPreviewRequests.length
       ? ` ${state.menuPreviewRequests.length} ${state.menuPreviewRequests.length === 1 ? "anteprima ricevuta" : "anteprime ricevute"} in attesa.`
       : "";
+    const mealPrepNotice = state.mealPrepAvailable
+      ? ""
+      : " Per attivare Meal Prep applica la migration 045.";
     setStatus(
-      previewAvailable ? `${baseStatus}${inboxStatus}` : `${baseStatus} Per le anteprime dirette applica la migration 044.`,
-      previewAvailable && state.recipes.length ? "ok" : "warning"
+      previewAvailable
+        ? `${baseStatus}${inboxStatus}${mealPrepNotice}`
+        : `${baseStatus} Per le anteprime dirette applica la migration 044.${mealPrepNotice}`,
+      previewAvailable && state.recipes.length && state.mealPrepAvailable ? "ok" : "warning"
     );
   } catch (error) {
     showFatalError(error);
@@ -1921,6 +2447,7 @@ elements.list.addEventListener("click", event => {
   if (!button) return;
   if (button.dataset.action === "edit") editMeal(button.dataset.mealId);
   if (button.dataset.action === "delete") void deleteMeal(button.dataset.mealId);
+  if (button.dataset.action === "prep") prepareNewMealPrepTask(button.dataset.mealId);
 });
 elements.weekGrid.addEventListener("click", event => {
   const button = event.target.closest("button[data-action]");
@@ -1936,6 +2463,35 @@ elements.currentWeek.addEventListener("click", () => {
 });
 elements.nextWeek.addEventListener("click", () => {
   void selectWeek(core.addDays(state.weekAnchor, 7));
+});
+elements.mealPrepForm.addEventListener("submit", saveMealPrepTask);
+elements.mealPrepCancel.addEventListener("click", () => {
+  resetMealPrepForm(elements.mealPrepMealId.value);
+  setMealPrepStatus("Modifica annullata.");
+});
+elements.mealPrepMealId.addEventListener("change", () => {
+  applyMealPrepMealDefaults();
+});
+elements.mealPrepItemId.addEventListener("change", () => {
+  if (state.mealPrepEditingId) return;
+  const meal = mealFor(elements.mealPrepMealId.value);
+  const item = mealItemFor(meal, elements.mealPrepItemId.value);
+  elements.mealPrepTaskTitle.value = suggestedMealPrepTitle(meal, item);
+});
+elements.mealPrepType.addEventListener("change", () => {
+  if (state.mealPrepEditingId) return;
+  const meal = mealFor(elements.mealPrepMealId.value);
+  const item = mealItemFor(meal, elements.mealPrepItemId.value);
+  elements.mealPrepTaskTitle.value = suggestedMealPrepTitle(meal, item);
+});
+elements.mealPrepList.addEventListener("click", event => {
+  const button = event.target.closest("button[data-prep-action][data-prep-id]");
+  if (!button) return;
+  if (button.dataset.prepAction === "edit") editMealPrepTask(button.dataset.prepId);
+  if (button.dataset.prepAction === "delete") void deleteMealPrepTask(button.dataset.prepId);
+  if (button.dataset.prepAction === "status") {
+    void updateMealPrepTaskStatus(button.dataset.prepId, button.dataset.prepStatus);
+  }
 });
 elements.menuAnalyze.addEventListener("click", () => void analyzeMenuPlan());
 elements.menuStage.addEventListener("click", () => void stageMenuPlan());

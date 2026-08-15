@@ -8,7 +8,7 @@
   <title>Planner — Cucina Hub</title>
   <link rel="icon" href="../icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../style.css?v=13">
-  <link rel="stylesheet" href="planner.css?v=8">
+  <link rel="stylesheet" href="planner.css?v=9">
 </head>
 <body>
   <a class="skip-link" href="#plannerMain">Vai al contenuto</a>
@@ -88,6 +88,178 @@
           Nessun pasto in questa settimana. Usa “Aggiungi” nel giorno che preferisci.
         </p>
         <div id="weekGrid" class="week-grid" role="list" aria-live="polite" aria-busy="true"></div>
+      </section>
+
+      <section id="mealPrepPanel" class="planner-panel meal-prep-panel" aria-labelledby="mealPrepTitle">
+        <div class="panel-heading meal-prep-heading">
+          <div>
+            <p class="eyebrow">Meal Prep</p>
+            <h2 id="mealPrepTitle">Prepara in anticipo i pasti della settimana</h2>
+          </div>
+          <span id="mealPrepCount" class="badge">0</span>
+        </div>
+
+        <p class="meal-prep-description">
+          Collega ogni attività a un pasto già pianificato, scegli quando eseguirla e annota quantità e conservazione.
+          Le ricette restano nella Biblioteca: qui organizzi soltanto il lavoro pratico.
+        </p>
+
+        <p id="mealPrepStatus" class="meal-prep-status" role="status" aria-live="polite"></p>
+
+        <div id="mealPrepUnavailable" class="meal-prep-unavailable" hidden>
+          <span aria-hidden="true">🧰</span>
+          <div>
+            <strong>Meal Prep non ancora attivato</strong>
+            <p>Applica la migration <code>045_meal_prep_core.sql</code> in Supabase e ricarica questa pagina.</p>
+          </div>
+        </div>
+
+        <div id="mealPrepBody">
+          <div class="meal-prep-stats" aria-label="Riepilogo attività Meal Prep">
+            <div class="meal-prep-stat">
+              <span>Da fare</span>
+              <strong id="mealPrepTodoCount">0</strong>
+            </div>
+            <div class="meal-prep-stat">
+              <span>In corso</span>
+              <strong id="mealPrepProgressCount">0</strong>
+            </div>
+            <div class="meal-prep-stat completed">
+              <span>Completate</span>
+              <strong id="mealPrepDoneCount">0</strong>
+            </div>
+          </div>
+
+          <div class="meal-prep-layout">
+            <section id="mealPrepEditor" class="meal-prep-editor" aria-labelledby="mealPrepFormTitle">
+              <div class="meal-prep-subheading">
+                <div>
+                  <p class="eyebrow">Attività</p>
+                  <h3 id="mealPrepFormTitle">Aggiungi una preparazione</h3>
+                </div>
+              </div>
+
+              <form id="mealPrepForm" class="planner-form">
+                <input id="mealPrepTaskId" type="hidden">
+
+                <div class="form-grid meal-prep-form-grid">
+                  <div class="planner-field form-wide">
+                    <label for="mealPrepMealId">Pasto collegato</label>
+                    <select id="mealPrepMealId" name="planned_meal_id" required>
+                      <option value="">Caricamento pasti…</option>
+                    </select>
+                  </div>
+
+                  <div class="planner-field form-wide">
+                    <label for="mealPrepItemId">Elemento del pasto <span>facoltativo</span></label>
+                    <select id="mealPrepItemId" name="planned_meal_item_id">
+                      <option value="">Intero pasto</option>
+                    </select>
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="mealPrepType">Tipo di attività</label>
+                    <select id="mealPrepType" name="task_type" required>
+                      <option value="prepare">🔪 Preparare</option>
+                      <option value="cook">🔥 Cuocere</option>
+                      <option value="portion">⚖️ Porzionare</option>
+                      <option value="store">🫙 Conservare</option>
+                      <option value="defrost">❄️ Scongelare</option>
+                      <option value="other">📌 Altro</option>
+                    </select>
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="mealPrepDate">Data di preparazione</label>
+                    <input id="mealPrepDate" name="scheduled_date" type="date" required>
+                  </div>
+
+                  <div class="planner-field form-wide">
+                    <label for="mealPrepTaskTitle">Cosa devi fare</label>
+                    <input
+                      id="mealPrepTaskTitle"
+                      name="title"
+                      type="text"
+                      maxlength="200"
+                      autocomplete="off"
+                      placeholder="Es. lava e taglia le verdure"
+                      required
+                    >
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="mealPrepTime">Orario <span>facoltativo</span></label>
+                    <input id="mealPrepTime" name="scheduled_time" type="time">
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="mealPrepServings">Porzioni <span>facoltative</span></label>
+                    <input id="mealPrepServings" name="servings" type="number" min="1" max="50" step="1" inputmode="numeric">
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="mealPrepQuantity">Quantità <span>facoltativa</span></label>
+                    <input id="mealPrepQuantity" name="quantity" type="number" min="0.001" step="any" inputmode="decimal" placeholder="Es. 500">
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="mealPrepUnit">Unità <span>con quantità</span></label>
+                    <input id="mealPrepUnit" name="unit" type="text" maxlength="40" autocomplete="off" placeholder="g, ml, porzioni…">
+                  </div>
+
+                  <div class="planner-field form-wide">
+                    <label for="mealPrepStorage">Conservazione</label>
+                    <select id="mealPrepStorage" name="storage_method">
+                      <option value="none">Nessuna conservazione</option>
+                      <option value="refrigerator">🧊 Frigorifero</option>
+                      <option value="freezer">❄️ Freezer</option>
+                      <option value="room_temperature">🏠 Temperatura ambiente</option>
+                      <option value="other">📦 Altro</option>
+                    </select>
+                  </div>
+
+                  <div class="planner-field form-wide">
+                    <label for="mealPrepStorageNote">Indicazioni di conservazione <span>facoltative</span></label>
+                    <input
+                      id="mealPrepStorageNote"
+                      name="storage_note"
+                      type="text"
+                      maxlength="500"
+                      autocomplete="off"
+                      placeholder="Es. contenitore ermetico, massimo 2 giorni"
+                    >
+                  </div>
+
+                  <div class="planner-field form-wide">
+                    <label for="mealPrepNote">Nota operativa <span>facoltativa</span></label>
+                    <textarea
+                      id="mealPrepNote"
+                      name="note"
+                      rows="4"
+                      maxlength="2000"
+                      placeholder="Passaggi, promemoria o dettagli utili"
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div class="form-actions meal-prep-form-actions">
+                  <button id="saveMealPrepTask" class="button" type="submit">AGGIUNGI ATTIVITÀ</button>
+                  <button id="cancelMealPrepEdit" class="button secondary" type="button" hidden>ANNULLA MODIFICA</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="meal-prep-list-section" aria-labelledby="mealPrepListTitle">
+              <div class="meal-prep-subheading">
+                <div>
+                  <p class="eyebrow">Agenda operativa</p>
+                  <h3 id="mealPrepListTitle">Attività della settimana</h3>
+                </div>
+              </div>
+              <div id="mealPrepList" class="meal-prep-list" aria-live="polite" aria-busy="true"></div>
+            </section>
+          </div>
+        </div>
       </section>
 
       <section class="planner-panel menu-import-panel" aria-labelledby="menuImportTitle">
@@ -251,7 +423,8 @@
   <script src="../supabase-config.js?v=12"></script>
   <script src="../supabase-client.js?v=12"></script>
   <script src="planner-core.js?v=2"></script>
+  <script src="meal-prep-core.js?v=1"></script>
   <script src="menu-plan-import-engine.js?v=5"></script>
-  <script src="planner.js?v=9"></script>
+  <script src="planner.js?v=10"></script>
 </body>
 </html>

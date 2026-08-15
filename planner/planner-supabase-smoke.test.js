@@ -69,6 +69,33 @@ const selectors = [
   "#previousWeek",
   "#currentWeek",
   "#nextWeek",
+  "#mealPrepPanel",
+  "#mealPrepCount",
+  "#mealPrepTodoCount",
+  "#mealPrepProgressCount",
+  "#mealPrepDoneCount",
+  "#mealPrepStatus",
+  "#mealPrepUnavailable",
+  "#mealPrepBody",
+  "#mealPrepEditor",
+  "#mealPrepForm",
+  "#mealPrepFormTitle",
+  "#mealPrepTaskId",
+  "#mealPrepMealId",
+  "#mealPrepItemId",
+  "#mealPrepType",
+  "#mealPrepTaskTitle",
+  "#mealPrepDate",
+  "#mealPrepTime",
+  "#mealPrepServings",
+  "#mealPrepQuantity",
+  "#mealPrepUnit",
+  "#mealPrepStorage",
+  "#mealPrepStorageNote",
+  "#mealPrepNote",
+  "#saveMealPrepTask",
+  "#cancelMealPrepEdit",
+  "#mealPrepList",
   "#menuPlanInput",
   "#menuPlanFile",
   "#menuPlanFileStatus",
@@ -101,6 +128,8 @@ elements.get("#authGate").hidden = true;
 elements.get("#errorPanel").hidden = true;
 elements.get("#plannerWorkspace").hidden = true;
 elements.get("#cancelEdit").hidden = true;
+elements.get("#mealPrepUnavailable").hidden = true;
+elements.get("#cancelMealPrepEdit").hidden = true;
 
 const database = {
   recipes: [
@@ -111,6 +140,26 @@ const database = {
   planner_menu_import_requests: [],
   planner_menu_packages: [],
   planned_meal_items: [],
+  meal_prep_tasks: [
+    {
+      id: "prep-1",
+      owner_user_id: "user-1",
+      planned_meal_id: "meal-1",
+      planned_meal_item_id: null,
+      task_type: "prepare",
+      title: "Taglia le verdure",
+      scheduled_date: core.localDateValue(),
+      scheduled_time: "18:00:00",
+      servings: 3,
+      quantity: 500,
+      unit: "g",
+      storage_method: "refrigerator",
+      storage_note: "Contenitore ermetico",
+      note: "Tenere separate le erbe",
+      status: "todo",
+      created_at: "2026-08-11T17:00:00Z"
+    }
+  ],
   planned_meals: [
     {
       id: "meal-1",
@@ -130,12 +179,79 @@ let plannedMealsError = null;
 let plannerMenuPackagesError = null;
 let plannedMealItemsError = null;
 let plannerMenuImportRequestsError = null;
+let mealPrepTasksError = null;
 let menuCommitError = null;
 const menuCommitCalls = [];
 const menuPreviewFunctionCalls = [];
 const menuPreviewActionCalls = [];
 
 function queryFor(table) {
+  if (table === "meal_prep_tasks") {
+    let operation = "select";
+    let payload = null;
+    let singleRow = false;
+    const filters = [];
+    const query = {
+      select() { return query; },
+      eq(column, value) {
+        filters.push(row => row[column] === value);
+        return query;
+      },
+      in(column, values) {
+        filters.push(row => values.includes(row[column]));
+        return query;
+      },
+      order() { return query; },
+      insert(value) {
+        operation = "insert";
+        payload = value;
+        return query;
+      },
+      update(value) {
+        operation = "update";
+        payload = value;
+        return query;
+      },
+      delete() {
+        operation = "delete";
+        return query;
+      },
+      single() {
+        singleRow = true;
+        return execute();
+      },
+      then(resolve, reject) {
+        return execute().then(resolve, reject);
+      }
+    };
+
+    async function execute() {
+      if (mealPrepTasksError) return { data: null, error: mealPrepTasksError };
+      const matches = row => filters.every(filter => filter(row));
+      let rows = database.meal_prep_tasks.filter(matches);
+
+      if (operation === "insert") {
+        const created = {
+          ...payload,
+          id: `prep-${database.meal_prep_tasks.length + 1}`,
+          created_at: "2026-08-15T16:00:00Z",
+          updated_at: "2026-08-15T16:00:00Z"
+        };
+        database.meal_prep_tasks.push(created);
+        rows = [created];
+      } else if (operation === "update") {
+        rows.forEach(row => Object.assign(row, payload));
+      } else if (operation === "delete") {
+        database.meal_prep_tasks = database.meal_prep_tasks.filter(row => !matches(row));
+        rows = [];
+      }
+
+      return { data: singleRow ? rows[0] ?? null : rows, error: null };
+    }
+
+    return query;
+  }
+
   const query = {
     select() { return query; },
     eq() { return query; },
@@ -169,6 +285,7 @@ global.document = {
 
 global.window = {
   CucinaHubPlannerCore: core,
+  CucinaHubMealPrepCore: require("./meal-prep-core.js"),
   CucinaHubMenuPlanImportEngine: menuPlanEngine,
   cucinaHubSupabase: {
     auth: {
@@ -271,6 +388,48 @@ global.window = {
   assert.match(elements.get("#mealList").innerHTML, /3 porzioni/);
   assert.match(elements.get("#pageStatus").className, /ok/);
   assert.match(elements.get("#menuPreviewInbox").innerHTML, /Nessuna anteprima in attesa/);
+  assert.equal(elements.get("#mealPrepUnavailable").hidden, true);
+  assert.equal(elements.get("#mealPrepCount").textContent, "1");
+  assert.equal(elements.get("#mealPrepTodoCount").textContent, "1");
+  assert.match(elements.get("#mealPrepList").innerHTML, /Taglia le verdure/);
+  assert.match(elements.get("#mealPrepList").innerHTML, /Contenitore ermetico/);
+  assert.match(elements.get("#mealPrepMealId").innerHTML, /Pollo al forno/);
+
+  elements.get("#mealPrepForm").listeners.submit({ preventDefault() {} });
+  await settle();
+  assert.equal(database.meal_prep_tasks.length, 2);
+  assert.equal(elements.get("#mealPrepCount").textContent, "2");
+  const createdPrepTask = database.meal_prep_tasks.find(task => task.id === "prep-2");
+  assert.ok(createdPrepTask);
+  assert.equal(createdPrepTask.planned_meal_id, "meal-1");
+
+  elements.get("#mealPrepList").listeners.click({
+    target: {
+      closest: () => ({ dataset: { prepAction: "edit", prepId: "prep-2" } })
+    }
+  });
+  elements.get("#mealPrepTaskTitle").value = "Prepara il pollo in anticipo";
+  elements.get("#mealPrepForm").listeners.submit({ preventDefault() {} });
+  await settle();
+  assert.equal(createdPrepTask.title, "Prepara il pollo in anticipo");
+
+  elements.get("#mealPrepList").listeners.click({
+    target: {
+      closest: () => ({ dataset: { prepAction: "status", prepStatus: "in_progress", prepId: "prep-2" } })
+    }
+  });
+  await settle();
+  assert.equal(createdPrepTask.status, "in_progress");
+  assert.match(elements.get("#mealPrepList").innerHTML, /In corso/);
+
+  elements.get("#mealPrepList").listeners.click({
+    target: {
+      closest: () => ({ dataset: { prepAction: "delete", prepId: "prep-2" } })
+    }
+  });
+  await settle();
+  assert.equal(database.meal_prep_tasks.length, 1);
+  assert.equal(elements.get("#mealPrepCount").textContent, "1");
 
   const smokePacket = {
     contract: "cucina-hub.menu-plan",
@@ -574,6 +733,23 @@ global.window = {
   });
   assert.equal(elements.get("#mealId").value, "meal-1");
   assert.equal(elements.get("#formTitle").textContent, "Modifica il pasto");
+
+  mealPrepTasksError = {
+    message: "Could not find the table public.meal_prep_tasks in the schema cache",
+    code: "PGRST205"
+  };
+  elements.get("#currentWeek").listeners.click();
+  await settle();
+  assert.equal(elements.get("#mealPrepUnavailable").hidden, false);
+  assert.equal(elements.get("#mealPrepBody").hidden, true);
+  assert.match(elements.get("#mealPrepStatus").textContent, /nessun dato è stato modificato/i);
+  assert.match(elements.get("#pageStatus").textContent, /migration 045/i);
+  mealPrepTasksError = null;
+
+  elements.get("#currentWeek").listeners.click();
+  await settle();
+  assert.equal(elements.get("#mealPrepUnavailable").hidden, true);
+  assert.equal(elements.get("#mealPrepBody").hidden, false);
 
   console.log("Planner Supabase UI: smoke test simulato superato.");
 })().catch(error => {
