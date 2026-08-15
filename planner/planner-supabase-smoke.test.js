@@ -72,6 +72,10 @@ const selectors = [
   "#menuPlanInput",
   "#menuPlanFile",
   "#menuPlanFileStatus",
+  "#menuPreviewCount",
+  "#refreshMenuPreviews",
+  "#menuPreviewInbox",
+  "#stageMenuPlan",
   "#analyzeMenuPlan",
   "#clearMenuPlan",
   "#menuPlanResult",
@@ -104,6 +108,7 @@ const database = {
     { id: "recipe-dup-1", owner_user_id: "user-1", code: "DUP-1", title: "Duplicata uno" },
     { id: "recipe-dup-2", owner_user_id: "user-1", code: "dup-1", title: "Duplicata due" }
   ],
+  planner_menu_import_requests: [],
   planner_menu_packages: [],
   planned_meal_items: [],
   planned_meals: [
@@ -124,8 +129,11 @@ const database = {
 let plannedMealsError = null;
 let plannerMenuPackagesError = null;
 let plannedMealItemsError = null;
+let plannerMenuImportRequestsError = null;
 let menuCommitError = null;
 const menuCommitCalls = [];
+const menuPreviewFunctionCalls = [];
+const menuPreviewActionCalls = [];
 
 function queryFor(table) {
   const query = {
@@ -142,6 +150,8 @@ function queryFor(table) {
           ? plannedMealsError
           : table === "planner_menu_packages"
             ? plannerMenuPackagesError
+            : table === "planner_menu_import_requests"
+              ? plannerMenuImportRequestsError
             : table === "planned_meal_items"
               ? plannedMealItemsError
               : null
@@ -169,6 +179,13 @@ global.window = {
     },
     from: queryFor,
     rpc: async (name, parameters) => {
+      if (name === "update_planner_menu_preview_request") {
+        menuPreviewActionCalls.push({ name, parameters });
+        const request = database.planner_menu_import_requests.find(item => item.id === parameters.p_request_id);
+        if (!request) return { data: null, error: { message: "menu_preview_request_not_found", code: "P0002" } };
+        request.status = parameters.p_action === "open" ? "opened" : "cancelled";
+        return { data: { request_id: request.id, status: request.status }, error: null };
+      }
       menuCommitCalls.push({ name, parameters });
       if (menuCommitError) return { data: null, error: menuCommitError };
       return {
@@ -189,6 +206,40 @@ global.window = {
         },
         error: null
       };
+    },
+    functions: {
+      invoke: async (name, options) => {
+        menuPreviewFunctionCalls.push({ name, options });
+        const packet = options.body.packet;
+        const request = {
+          id: `preview-${menuPreviewFunctionCalls.length}`,
+          owner_user_id: "user-1",
+          source_type: packet.menu.source.type,
+          source_external_id: packet.menu.external_id,
+          source_revision: packet.menu.revision,
+          source_label: packet.menu.source.label,
+          title: packet.menu.title ?? null,
+          period_start: packet.menu.period_start,
+          period_end: packet.menu.period_end,
+          payload_hash: await menuPlanEngine.computePayloadHash(packet),
+          packet,
+          status: "pending",
+          created_at: "2026-08-13T08:00:00Z",
+          updated_at: "2026-08-13T08:00:00Z"
+        };
+        database.planner_menu_import_requests.push(request);
+        return {
+          data: {
+            ok: true,
+            state: "staged",
+            request_id: request.id,
+            payload_hash: request.payload_hash,
+            preview_only: true,
+            requires_user_confirmation: true
+          },
+          error: null
+        };
+      }
     }
   },
   confirm: () => true,
@@ -199,8 +250,9 @@ global.window = {
 (async () => {
   require("./planner.js");
   const settle = async () => {
-    await new Promise(resolve => setTimeout(resolve, 0));
-    await new Promise(resolve => setTimeout(resolve, 0));
+    for (let turn = 0; turn < 8; turn += 1) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
   };
   await settle();
 
@@ -218,6 +270,7 @@ global.window = {
   assert.match(elements.get("#mealList").innerHTML, /20:00/);
   assert.match(elements.get("#mealList").innerHTML, /3 porzioni/);
   assert.match(elements.get("#pageStatus").className, /ok/);
+  assert.match(elements.get("#menuPreviewInbox").innerHTML, /Nessuna anteprima in attesa/);
 
   const smokePacket = {
     contract: "cucina-hub.menu-plan",
@@ -249,6 +302,34 @@ global.window = {
     }],
     guardrails: { preview_only: true, automatic_save: false, requires_user_confirmation: true }
   };
+
+  const directPacket = structuredClone(smokePacket);
+  directPacket.menu.external_id = "direct-preview-menu";
+  directPacket.menu.source = { type: "chatgpt_project", label: "Chat Allenamento e Dieta" };
+  directPacket.days[0].meals[0].key = "direct-preview-breakfast";
+  elements.get("#menuPlanInput").value = JSON.stringify(directPacket);
+  elements.get("#stageMenuPlan").listeners.click();
+  await settle();
+  assert.equal(menuPreviewFunctionCalls.length, 1);
+  assert.equal(menuPreviewFunctionCalls[0].name, "planner-menu-preview");
+  assert.equal(menuPreviewFunctionCalls[0].options.body.packet.menu.source.type, "chatgpt_project");
+  assert.match(elements.get("#menuPreviewInbox").innerHTML, /direct-preview-menu/);
+  assert.match(elements.get("#menuPreviewInbox").innerHTML, /APRI E ANALIZZA/);
+  assert.match(elements.get("#pageStatus").textContent, /Nessun pasto è stato ancora salvato/);
+
+  elements.get("#menuPreviewInbox").listeners.click({
+    target: {
+      closest: () => ({
+        dataset: { menuPreviewAction: "open", menuPreviewId: "preview-1" }
+      })
+    }
+  });
+  await settle();
+  assert.equal(menuPreviewActionCalls.length, 1);
+  assert.equal(menuPreviewActionCalls[0].parameters.p_action, "open");
+  assert.match(elements.get("#menuPlanResult").innerHTML, /Anteprima completa/);
+  assert.match(elements.get("#menuPreviewInbox").innerHTML, /APERTA/);
+
   elements.get("#menuPlanInput").value = JSON.stringify(smokePacket);
   elements.get("#analyzeMenuPlan").listeners.click();
   await settle();

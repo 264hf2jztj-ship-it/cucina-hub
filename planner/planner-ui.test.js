@@ -25,6 +25,10 @@ for (const stateId of [
   "menuPlanInput",
   "menuPlanFile",
   "menuPlanFileStatus",
+  "menuPreviewCount",
+  "refreshMenuPreviews",
+  "menuPreviewInbox",
+  "stageMenuPlan",
   "analyzeMenuPlan",
   "clearMenuPlan",
   "menuPlanResult"
@@ -38,10 +42,10 @@ for (const fieldId of ["plannedDate", "mealSlot", "plannedTime", "servings", "re
 
 assert.match(html, /aria-live="polite"/i);
 assert.match(html, /planner-core\.js\?v=2/i);
-assert.match(html, /planner\.css\?v=7/i);
+assert.match(html, /planner\.css\?v=8/i);
 assert.match(html, /menu-plan-import-engine\.js\?v=5/i);
-assert.match(html, /planner\.js\?v=8/i);
-assert.match(home, /href="planner\/index\.html\?v=8"/i);
+assert.match(html, /planner\.js\?v=9/i);
+assert.match(home, /href="planner\/index\.html\?v=9"/i);
 assert.match(html, /accept="\.json,\.md,\.txt/i);
 assert.match(html, /IMPORTA/i);
 assert.match(css, /min-height:\s*48px/i);
@@ -50,6 +54,8 @@ assert.match(css, /grid-template-columns:\s*repeat\(7,\s*minmax/i);
 assert.match(css, /overflow-x:\s*auto/i);
 assert.match(css, /\.week-day-add/i);
 assert.match(css, /\.menu-import-panel/i);
+assert.match(css, /\.menu-preview-inbox/i);
+assert.match(css, /\.menu-preview-request/i);
 assert.match(css, /\.menu-file-input::file-selector-button/i);
 assert.match(css, /\.menu-idempotency/i);
 assert.match(css, /\.menu-payload-hash/i);
@@ -82,6 +88,10 @@ assert.match(js, /menuPlanEngine\.buildResolutionPlan/i);
 assert.match(js, /menuPlanEngine\.buildMenuPreview/i);
 assert.match(js, /menuPlanEngine\.buildCommitRequest/i);
 assert.match(js, /client\.rpc\("commit_planner_menu_package"/i);
+assert.match(js, /client\.functions\.invoke\("planner-menu-preview"/i);
+assert.match(js, /\.from\("planner_menu_import_requests"\)/i);
+assert.match(js, /client\.rpc\("update_planner_menu_preview_request"/i);
+assert.match(js, /source\.type = chatgpt_project/i);
 assert.match(js, /043_planner_menu_commit_runtime_fix\.sql/i);
 assert.match(js, /Codice tecnico:/i);
 assert.match(js, /p_confirmed:\s*true/i);
