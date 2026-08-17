@@ -22,6 +22,19 @@ for (const stateId of [
   "previousWeek",
   "currentWeek",
   "nextWeek",
+  "shoppingListPanel",
+  "shoppingListCount",
+  "shoppingListActiveCount",
+  "shoppingListCheckedCount",
+  "shoppingListExcludedCount",
+  "shoppingListStatus",
+  "shoppingListUnavailable",
+  "shoppingListBody",
+  "shoppingListWeekRange",
+  "refreshShoppingList",
+  "shoppingListForm",
+  "shoppingListFilter",
+  "shoppingListItems",
   "mealPrepPanel",
   "mealPrepCount",
   "mealPrepTodoCount",
@@ -51,6 +64,17 @@ for (const fieldId of ["plannedDate", "mealSlot", "plannedTime", "servings", "re
 }
 
 for (const fieldId of [
+  "shoppingItemName",
+  "shoppingItemQuantity",
+  "shoppingItemUnit",
+  "shoppingItemCategory",
+  "shoppingItemNote",
+  "addShoppingItem"
+]) {
+  assert.match(html, new RegExp(`id=["']${fieldId}["']`));
+}
+
+for (const fieldId of [
   "mealPrepMealId",
   "mealPrepItemId",
   "mealPrepType",
@@ -70,10 +94,11 @@ for (const fieldId of [
 assert.match(html, /aria-live="polite"/i);
 assert.match(html, /planner-core\.js\?v=2/i);
 assert.match(html, /meal-prep-core\.js\?v=1/i);
-assert.match(html, /planner\.css\?v=9/i);
+assert.match(html, /shopping-list-core\.js\?v=1/i);
+assert.match(html, /planner\.css\?v=10/i);
 assert.match(html, /menu-plan-import-engine\.js\?v=5/i);
-assert.match(html, /planner\.js\?v=10/i);
-assert.match(home, /href="planner\/index\.html\?v=10"/i);
+assert.match(html, /planner\.js\?v=11/i);
+assert.match(home, /href="planner\/index\.html\?v=11"/i);
 assert.match(html, /accept="\.json,\.md,\.txt/i);
 assert.match(html, /IMPORTA/i);
 assert.match(css, /min-height:\s*48px/i);
@@ -101,9 +126,15 @@ assert.match(css, /\.meal-prep-stats/i);
 assert.match(css, /\.meal-prep-layout/i);
 assert.match(css, /\.meal-prep-card/i);
 assert.match(css, /\.meal-prep-actions/i);
+assert.match(css, /\.shopping-list-panel/i);
+assert.match(css, /\.shopping-list-stats/i);
+assert.match(css, /\.shopping-list-layout/i);
+assert.match(css, /\.shopping-list-item/i);
+assert.match(css, /\.shopping-list-actions/i);
 assert.match(js, /\.from\("recipes"\)/i);
 assert.match(js, /\.from\("planned_meals"\)/i);
 assert.match(js, /\.from\("meal_prep_tasks"\)/i);
+assert.match(js, /\.from\("shopping_list_items"\)/i);
 assert.match(js, /\.gte\("planned_date",\s*week\.startDate\)/i);
 assert.match(js, /\.lte\("planned_date",\s*week\.endDate\)/i);
 assert.match(js, /\.insert\(payload\)/i);
@@ -120,6 +151,12 @@ assert.match(js, /function saveMealPrepTask\(event\)/i);
 assert.match(js, /function updateMealPrepTaskStatus\(taskId, nextStatus\)/i);
 assert.match(js, /function deleteMealPrepTask\(taskId\)/i);
 assert.match(js, /045_meal_prep_core\.sql/i);
+assert.match(js, /function renderShoppingList\(\)/i);
+assert.match(js, /function saveShoppingItem\(event\)/i);
+assert.match(js, /function updateShoppingItemState\(itemId, action\)/i);
+assert.match(js, /function deleteShoppingItem\(itemId\)/i);
+assert.match(js, /client\.rpc\("refresh_weekly_shopping_list"/i);
+assert.match(js, /046_shopping_list_core\.sql/i);
 assert.match(js, /menuPlanEngine\.analyze\(elements\.menuInput\.value,\s*state\.recipes\)/i);
 assert.match(js, /menuPlanEngine\.computePayloadHash\(result\.normalizedPacket\)/i);
 assert.match(js, /menuPlanEngine\.analyzeIdempotency/i);

@@ -8,7 +8,7 @@
   <title>Planner — Cucina Hub</title>
   <link rel="icon" href="../icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../style.css?v=13">
-  <link rel="stylesheet" href="planner.css?v=9">
+  <link rel="stylesheet" href="planner.css?v=10">
 </head>
 <body>
   <a class="skip-link" href="#plannerMain">Vai al contenuto</a>
@@ -88,6 +88,142 @@
           Nessun pasto in questa settimana. Usa “Aggiungi” nel giorno che preferisci.
         </p>
         <div id="weekGrid" class="week-grid" role="list" aria-live="polite" aria-busy="true"></div>
+      </section>
+
+      <section id="shoppingListPanel" class="planner-panel shopping-list-panel" aria-labelledby="shoppingListTitle">
+        <div class="panel-heading shopping-list-heading">
+          <div>
+            <p class="eyebrow">Lista spesa</p>
+            <h2 id="shoppingListTitle">Porta con te ciò che serve per la settimana</h2>
+          </div>
+          <span id="shoppingListCount" class="badge">0</span>
+        </div>
+
+        <p class="shopping-list-description">
+          Genera le voci dai pasti pianificati, aggiungi ciò che manca e spunta gli acquisti direttamente dal telefono.
+          La lista segue la settimana selezionata nel Planner.
+        </p>
+
+        <p id="shoppingListStatus" class="shopping-list-status" role="status" aria-live="polite"></p>
+
+        <div id="shoppingListUnavailable" class="shopping-list-unavailable" hidden>
+          <span aria-hidden="true">🛒</span>
+          <div>
+            <strong>Lista spesa non ancora attivata</strong>
+            <p>Applica la migration <code>046_shopping_list_core.sql</code> in Supabase e ricarica questa pagina.</p>
+          </div>
+        </div>
+
+        <div id="shoppingListBody">
+          <div class="shopping-list-toolbar">
+            <div class="shopping-list-week-copy">
+              <span>Settimana della lista</span>
+              <strong id="shoppingListWeekRange">Caricamento settimana…</strong>
+            </div>
+            <button id="refreshShoppingList" class="button" type="button">AGGIORNA DAL PLANNER</button>
+          </div>
+
+          <div class="shopping-list-stats" aria-label="Riepilogo lista spesa">
+            <div class="shopping-list-stat">
+              <span>Da comprare</span>
+              <strong id="shoppingListActiveCount">0</strong>
+            </div>
+            <div class="shopping-list-stat completed">
+              <span>Acquistati</span>
+              <strong id="shoppingListCheckedCount">0</strong>
+            </div>
+            <div class="shopping-list-stat excluded">
+              <span>Esclusi</span>
+              <strong id="shoppingListExcludedCount">0</strong>
+            </div>
+          </div>
+
+          <div class="shopping-list-layout">
+            <section class="shopping-list-editor" aria-labelledby="shoppingListFormTitle">
+              <div class="shopping-list-subheading">
+                <div>
+                  <p class="eyebrow">Voce manuale</p>
+                  <h3 id="shoppingListFormTitle">Aggiungi alla lista</h3>
+                </div>
+              </div>
+
+              <form id="shoppingListForm" class="planner-form">
+                <div class="form-grid shopping-list-form-grid">
+                  <div class="planner-field form-wide">
+                    <label for="shoppingItemName">Cosa devi comprare</label>
+                    <input
+                      id="shoppingItemName"
+                      name="name"
+                      type="text"
+                      maxlength="200"
+                      autocomplete="off"
+                      placeholder="Es. limoni"
+                      required
+                    >
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="shoppingItemQuantity">Quantità <span>facoltativa</span></label>
+                    <input id="shoppingItemQuantity" name="quantity" type="number" min="0.001" step="any" inputmode="decimal" placeholder="Es. 4">
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="shoppingItemUnit">Unità <span>con quantità</span></label>
+                    <input id="shoppingItemUnit" name="unit" type="text" maxlength="40" autocomplete="off" placeholder="pz, g, ml…">
+                  </div>
+
+                  <div class="planner-field form-wide">
+                    <label for="shoppingItemCategory">Categoria</label>
+                    <select id="shoppingItemCategory" name="category" required>
+                      <option value="produce">🥬 Frutta e verdura</option>
+                      <option value="protein">🥩 Carne, pesce e proteine</option>
+                      <option value="dairy">🥛 Freschi e latticini</option>
+                      <option value="bakery">🥖 Pane e forno</option>
+                      <option value="pantry">🥫 Dispensa</option>
+                      <option value="frozen">❄️ Surgelati</option>
+                      <option value="beverages">🧃 Bevande</option>
+                      <option value="household">🧻 Casa</option>
+                      <option value="other" selected>🛒 Altro</option>
+                    </select>
+                  </div>
+
+                  <div class="planner-field form-wide">
+                    <label for="shoppingItemNote">Nota <span>facoltativa</span></label>
+                    <textarea id="shoppingItemNote" name="note" rows="3" maxlength="1000" placeholder="Marca, formato o altra indicazione"></textarea>
+                  </div>
+                </div>
+
+                <div class="form-actions shopping-list-form-actions">
+                  <button id="addShoppingItem" class="button" type="submit">AGGIUNGI ALLA LISTA</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="shopping-list-list-section" aria-labelledby="shoppingListItemsTitle">
+              <div class="shopping-list-subheading shopping-list-list-heading">
+                <div>
+                  <p class="eyebrow">Corsie</p>
+                  <h3 id="shoppingListItemsTitle">Voci della settimana</h3>
+                </div>
+                <div class="shopping-list-filter-wrap">
+                  <label for="shoppingListFilter">Mostra</label>
+                  <select id="shoppingListFilter">
+                    <option value="active">Da comprare</option>
+                    <option value="checked">Acquistati</option>
+                    <option value="excluded">Esclusi</option>
+                    <option value="all">Tutti</option>
+                  </select>
+                </div>
+              </div>
+              <div id="shoppingListItems" class="shopping-list-items" aria-live="polite" aria-busy="true"></div>
+            </section>
+          </div>
+
+          <div class="shopping-list-protection" role="note">
+            <strong>Controllo esplicito.</strong>
+            <span>“Aggiorna dal Planner” rigenera soltanto le voci automatiche; conserva aggiunte manuali, acquisti già spuntati ed esclusioni.</span>
+          </div>
+        </div>
       </section>
 
       <section id="mealPrepPanel" class="planner-panel meal-prep-panel" aria-labelledby="mealPrepTitle">
@@ -424,7 +560,8 @@
   <script src="../supabase-client.js?v=12"></script>
   <script src="planner-core.js?v=2"></script>
   <script src="meal-prep-core.js?v=1"></script>
+  <script src="shopping-list-core.js?v=1"></script>
   <script src="menu-plan-import-engine.js?v=5"></script>
-  <script src="planner.js?v=10"></script>
+  <script src="planner.js?v=11"></script>
 </body>
 </html>
