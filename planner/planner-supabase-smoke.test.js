@@ -2,6 +2,7 @@
 
 const assert = require("node:assert/strict");
 const core = require("./planner-core.js");
+const shoppingListCore = require("./shopping-list-core.js");
 const menuPlanEngine = require("./menu-plan-import-engine.js");
 
 class FakeClassList {
@@ -69,6 +70,25 @@ const selectors = [
   "#previousWeek",
   "#currentWeek",
   "#nextWeek",
+  "#shoppingListPanel",
+  "#shoppingListCount",
+  "#shoppingListActiveCount",
+  "#shoppingListCheckedCount",
+  "#shoppingListExcludedCount",
+  "#shoppingListStatus",
+  "#shoppingListUnavailable",
+  "#shoppingListBody",
+  "#shoppingListWeekRange",
+  "#refreshShoppingList",
+  "#shoppingListForm",
+  "#shoppingItemName",
+  "#shoppingItemQuantity",
+  "#shoppingItemUnit",
+  "#shoppingItemCategory",
+  "#shoppingItemNote",
+  "#addShoppingItem",
+  "#shoppingListFilter",
+  "#shoppingListItems",
   "#mealPrepPanel",
   "#mealPrepCount",
   "#mealPrepTodoCount",
@@ -128,6 +148,7 @@ elements.get("#authGate").hidden = true;
 elements.get("#errorPanel").hidden = true;
 elements.get("#plannerWorkspace").hidden = true;
 elements.get("#cancelEdit").hidden = true;
+elements.get("#shoppingListUnavailable").hidden = true;
 elements.get("#mealPrepUnavailable").hidden = true;
 elements.get("#cancelMealPrepEdit").hidden = true;
 
@@ -140,6 +161,31 @@ const database = {
   planner_menu_import_requests: [],
   planner_menu_packages: [],
   planned_meal_items: [],
+  shopping_list_items: [
+    {
+      id: "shopping-1",
+      owner_user_id: "user-1",
+      week_start: core.weekForDate(core.localDateValue()).startDate,
+      name: "Carta forno",
+      normalized_name: "carta forno",
+      quantity: 1,
+      unit: "rotolo",
+      quantity_text: null,
+      category: "household",
+      source_type: "manual",
+      source_key: null,
+      source_label: null,
+      planned_meal_id: null,
+      planned_meal_item_id: null,
+      recipe_id: null,
+      note: null,
+      is_checked: false,
+      is_excluded: false,
+      checked_at: null,
+      created_at: "2026-08-15T12:00:00Z",
+      updated_at: "2026-08-15T12:00:00Z"
+    }
+  ],
   meal_prep_tasks: [
     {
       id: "prep-1",
@@ -180,12 +226,76 @@ let plannerMenuPackagesError = null;
 let plannedMealItemsError = null;
 let plannerMenuImportRequestsError = null;
 let mealPrepTasksError = null;
+let shoppingListItemsError = null;
 let menuCommitError = null;
 const menuCommitCalls = [];
 const menuPreviewFunctionCalls = [];
 const menuPreviewActionCalls = [];
 
 function queryFor(table) {
+  if (table === "shopping_list_items") {
+    let operation = "select";
+    let payload = null;
+    let singleRow = false;
+    const filters = [];
+    const query = {
+      select() { return query; },
+      eq(column, value) {
+        filters.push(row => row[column] === value);
+        return query;
+      },
+      order() { return query; },
+      insert(value) {
+        operation = "insert";
+        payload = value;
+        return query;
+      },
+      update(value) {
+        operation = "update";
+        payload = value;
+        return query;
+      },
+      delete() {
+        operation = "delete";
+        return query;
+      },
+      single() {
+        singleRow = true;
+        return execute();
+      },
+      then(resolve, reject) {
+        return execute().then(resolve, reject);
+      }
+    };
+
+    async function execute() {
+      if (shoppingListItemsError) return { data: null, error: shoppingListItemsError };
+      const matches = row => filters.every(filter => filter(row));
+      let rows = database.shopping_list_items.filter(matches);
+
+      if (operation === "insert") {
+        const created = {
+          ...payload,
+          id: `shopping-${database.shopping_list_items.length + 1}`,
+          checked_at: null,
+          created_at: "2026-08-15T16:00:00Z",
+          updated_at: "2026-08-15T16:00:00Z"
+        };
+        database.shopping_list_items.push(created);
+        rows = [created];
+      } else if (operation === "update") {
+        rows.forEach(row => Object.assign(row, payload));
+      } else if (operation === "delete") {
+        database.shopping_list_items = database.shopping_list_items.filter(row => !matches(row));
+        rows = [];
+      }
+
+      return { data: singleRow ? rows[0] ?? null : rows, error: null };
+    }
+
+    return query;
+  }
+
   if (table === "meal_prep_tasks") {
     let operation = "select";
     let payload = null;
@@ -286,6 +396,7 @@ global.document = {
 global.window = {
   CucinaHubPlannerCore: core,
   CucinaHubMealPrepCore: require("./meal-prep-core.js"),
+  CucinaHubShoppingListCore: shoppingListCore,
   CucinaHubMenuPlanImportEngine: menuPlanEngine,
   cucinaHubSupabase: {
     auth: {
@@ -296,6 +407,45 @@ global.window = {
     },
     from: queryFor,
     rpc: async (name, parameters) => {
+      if (name === "refresh_weekly_shopping_list") {
+        if (!database.shopping_list_items.some(item => item.source_key === "meal:meal-1:recipe-ingredient:potato")) {
+          database.shopping_list_items.push({
+            id: "shopping-generated-1",
+            owner_user_id: "user-1",
+            week_start: parameters.p_week_start,
+            name: "Patate",
+            normalized_name: "patate",
+            quantity: 600,
+            unit: "g",
+            quantity_text: null,
+            category: "produce",
+            source_type: "planner_recipe",
+            source_key: "meal:meal-1:recipe-ingredient:potato",
+            source_label: "Cena · Pollo al forno",
+            planned_meal_id: "meal-1",
+            planned_meal_item_id: null,
+            recipe_id: "recipe-1",
+            note: null,
+            is_checked: false,
+            is_excluded: false,
+            checked_at: null,
+            created_at: "2026-08-15T16:00:00Z",
+            updated_at: "2026-08-15T16:00:00Z"
+          });
+        }
+        const rows = database.shopping_list_items.filter(item => item.week_start === parameters.p_week_start);
+        return {
+          data: [{
+            week_start: parameters.p_week_start,
+            generated_count: 1,
+            active_count: rows.filter(item => !item.is_checked && !item.is_excluded).length,
+            checked_count: rows.filter(item => item.is_checked).length,
+            excluded_count: rows.filter(item => item.is_excluded).length,
+            deleted_count: 0
+          }],
+          error: null
+        };
+      }
       if (name === "update_planner_menu_preview_request") {
         menuPreviewActionCalls.push({ name, parameters });
         const request = database.planner_menu_import_requests.find(item => item.id === parameters.p_request_id);
@@ -394,6 +544,61 @@ global.window = {
   assert.match(elements.get("#mealPrepList").innerHTML, /Taglia le verdure/);
   assert.match(elements.get("#mealPrepList").innerHTML, /Contenitore ermetico/);
   assert.match(elements.get("#mealPrepMealId").innerHTML, /Pollo al forno/);
+  assert.equal(elements.get("#shoppingListUnavailable").hidden, true);
+  assert.equal(elements.get("#shoppingListCount").textContent, "1");
+  assert.equal(elements.get("#shoppingListActiveCount").textContent, "1");
+  assert.match(elements.get("#shoppingListItems").innerHTML, /Carta forno/);
+  assert.ok(elements.get("#shoppingListWeekRange").textContent.length > 0);
+
+  elements.get("#refreshShoppingList").listeners.click();
+  await settle();
+  assert.equal(elements.get("#shoppingListCount").textContent, "2");
+  assert.match(elements.get("#shoppingListItems").innerHTML, /Patate/);
+  assert.match(elements.get("#shoppingListStatus").className, /ok/);
+
+  elements.get("#shoppingItemName").value = "Limoni";
+  elements.get("#shoppingItemQuantity").value = "4";
+  elements.get("#shoppingItemUnit").value = "pz";
+  elements.get("#shoppingItemCategory").value = "produce";
+  elements.get("#shoppingItemNote").value = "Non trattati";
+  elements.get("#shoppingListForm").listeners.submit({ preventDefault() {} });
+  await settle();
+  const createdShoppingItem = database.shopping_list_items.find(item => item.name === "Limoni");
+  assert.ok(createdShoppingItem);
+  assert.equal(elements.get("#shoppingListCount").textContent, "3");
+  assert.match(elements.get("#shoppingListItems").innerHTML, /Limoni/);
+
+  elements.get("#shoppingListItems").listeners.click({
+    target: {
+      closest: () => ({ dataset: { shoppingAction: "check", shoppingId: createdShoppingItem.id } })
+    }
+  });
+  await settle();
+  assert.equal(createdShoppingItem.is_checked, true);
+  assert.equal(elements.get("#shoppingListCheckedCount").textContent, "1");
+
+  elements.get("#shoppingListFilter").value = "checked";
+  elements.get("#shoppingListFilter").listeners.change();
+  assert.match(elements.get("#shoppingListItems").innerHTML, /Limoni/);
+
+  elements.get("#shoppingListItems").listeners.click({
+    target: {
+      closest: () => ({ dataset: { shoppingAction: "reopen", shoppingId: createdShoppingItem.id } })
+    }
+  });
+  await settle();
+  assert.equal(createdShoppingItem.is_checked, false);
+
+  elements.get("#shoppingListFilter").value = "active";
+  elements.get("#shoppingListFilter").listeners.change();
+  elements.get("#shoppingListItems").listeners.click({
+    target: {
+      closest: () => ({ dataset: { shoppingAction: "delete", shoppingId: createdShoppingItem.id } })
+    }
+  });
+  await settle();
+  assert.equal(database.shopping_list_items.some(item => item.id === createdShoppingItem.id), false);
+  assert.equal(elements.get("#shoppingListCount").textContent, "2");
 
   elements.get("#mealPrepForm").listeners.submit({ preventDefault() {} });
   await settle();

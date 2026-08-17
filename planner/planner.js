@@ -3,6 +3,7 @@
 const client = window.cucinaHubSupabase;
 const core = window.CucinaHubPlannerCore;
 const mealPrepCore = window.CucinaHubMealPrepCore;
+const shoppingListCore = window.CucinaHubShoppingListCore;
 const menuPlanEngine = window.CucinaHubMenuPlanImportEngine;
 
 const state = {
@@ -13,6 +14,10 @@ const state = {
   mealPrepAvailable: true,
   mealPrepError: null,
   mealPrepEditingId: null,
+  shoppingListItems: [],
+  shoppingListAvailable: true,
+  shoppingListError: null,
+  shoppingListFilter: "active",
   weekAnchor: null,
   editingId: null,
   menuAnalysisResult: null,
@@ -44,6 +49,25 @@ const elements = {
   previousWeek: document.querySelector("#previousWeek"),
   currentWeek: document.querySelector("#currentWeek"),
   nextWeek: document.querySelector("#nextWeek"),
+  shoppingListPanel: document.querySelector("#shoppingListPanel"),
+  shoppingListCount: document.querySelector("#shoppingListCount"),
+  shoppingListActiveCount: document.querySelector("#shoppingListActiveCount"),
+  shoppingListCheckedCount: document.querySelector("#shoppingListCheckedCount"),
+  shoppingListExcludedCount: document.querySelector("#shoppingListExcludedCount"),
+  shoppingListStatus: document.querySelector("#shoppingListStatus"),
+  shoppingListUnavailable: document.querySelector("#shoppingListUnavailable"),
+  shoppingListBody: document.querySelector("#shoppingListBody"),
+  shoppingListWeekRange: document.querySelector("#shoppingListWeekRange"),
+  shoppingListRefresh: document.querySelector("#refreshShoppingList"),
+  shoppingListForm: document.querySelector("#shoppingListForm"),
+  shoppingItemName: document.querySelector("#shoppingItemName"),
+  shoppingItemQuantity: document.querySelector("#shoppingItemQuantity"),
+  shoppingItemUnit: document.querySelector("#shoppingItemUnit"),
+  shoppingItemCategory: document.querySelector("#shoppingItemCategory"),
+  shoppingItemNote: document.querySelector("#shoppingItemNote"),
+  shoppingItemAdd: document.querySelector("#addShoppingItem"),
+  shoppingListFilter: document.querySelector("#shoppingListFilter"),
+  shoppingListItems: document.querySelector("#shoppingListItems"),
   mealPrepPanel: document.querySelector("#mealPrepPanel"),
   mealPrepCount: document.querySelector("#mealPrepCount"),
   mealPrepTodoCount: document.querySelector("#mealPrepTodoCount"),
@@ -231,6 +255,17 @@ function isMissingMealPrepTable(error) {
   if (!error) return false;
   return ["42P01", "PGRST204", "PGRST205"].includes(error.code)
     || /meal_prep_tasks|schema cache|could not find the table/i.test(error.message ?? "");
+}
+
+function setShoppingListStatus(message = "", type = "") {
+  elements.shoppingListStatus.textContent = message;
+  elements.shoppingListStatus.className = `shopping-list-status${type ? ` ${type}` : ""}`;
+}
+
+function isMissingShoppingListSchema(error) {
+  if (!error) return false;
+  return ["42P01", "PGRST202", "PGRST204", "PGRST205"].includes(error.code)
+    || /shopping_list_items|refresh_weekly_shopping_list|schema cache|could not find the (?:table|function)/i.test(error.message ?? "");
 }
 
 function formatMealPrepQuantity(task) {
@@ -1556,6 +1591,156 @@ async function loadMenuPlanFile() {
   }
 }
 
+function resetShoppingListForm() {
+  elements.shoppingListForm.reset();
+  elements.shoppingItemCategory.value = "other";
+  updateShoppingListAvailability();
+}
+
+function shoppingListEmptyHtml() {
+  const copy = {
+    active: {
+      icon: "🛒",
+      title: "Niente da comprare",
+      description: state.shoppingListItems.length
+        ? "Tutte le voci sono state acquistate o escluse. Puoi cambiare il filtro per rivederle."
+        : "Tocca “Aggiorna dal Planner” oppure aggiungi una voce manuale."
+    },
+    checked: {
+      icon: "✅",
+      title: "Nessun acquisto spuntato",
+      description: "Le voci che segni come comprate compariranno qui."
+    },
+    excluded: {
+      icon: "↩️",
+      title: "Nessuna voce esclusa",
+      description: "Gli ingredienti che decidi di non comprare compariranno qui e potranno essere ripristinati."
+    },
+    all: {
+      icon: "🛒",
+      title: "Lista ancora vuota",
+      description: "Generala dai pasti della settimana oppure aggiungi una voce manuale."
+    }
+  }[state.shoppingListFilter] ?? {};
+
+  return `
+    <div class="shopping-list-empty">
+      <span aria-hidden="true">${escapeHtml(copy.icon ?? "🛒")}</span>
+      <div>
+        <h4>${escapeHtml(copy.title ?? "Nessuna voce")}</h4>
+        <p>${escapeHtml(copy.description ?? "")}</p>
+      </div>
+    </div>`;
+}
+
+function shoppingListItemCard(item) {
+  const category = shoppingListCore.CATEGORIES[item.category] ?? shoppingListCore.CATEGORIES.other;
+  const source = shoppingListCore.SOURCES[item.source_type] ?? shoppingListCore.SOURCES.manual;
+  const status = shoppingListCore.itemStatus(item);
+  const quantity = shoppingListCore.formatQuantity(item);
+  const statusLabel = status === "checked" ? "ACQUISTATO" : status === "excluded" ? "ESCLUSO" : "DA COMPRARE";
+  const statusClass = status === "checked" ? " is-checked" : status === "excluded" ? " is-excluded" : "";
+  const stateActions = status === "active"
+    ? `
+      <button class="button" type="button" data-shopping-action="check" data-shopping-id="${escapeHtml(item.id)}">COMPRATO</button>
+      <button class="button secondary" type="button" data-shopping-action="exclude" data-shopping-id="${escapeHtml(item.id)}">ESCLUDI</button>`
+    : status === "checked"
+      ? `
+        <button class="button secondary" type="button" data-shopping-action="reopen" data-shopping-id="${escapeHtml(item.id)}">RIAPRI</button>
+        <button class="button secondary" type="button" data-shopping-action="exclude" data-shopping-id="${escapeHtml(item.id)}">ESCLUDI</button>`
+      : `<button class="button secondary" type="button" data-shopping-action="restore" data-shopping-id="${escapeHtml(item.id)}">RIPRISTINA</button>`;
+
+  return `
+    <article class="shopping-list-item${statusClass}">
+      <span class="shopping-list-item-icon" aria-hidden="true">${escapeHtml(category.icon)}</span>
+      <div class="shopping-list-item-content">
+        <div class="shopping-list-item-heading">
+          <div>
+            <span class="badge${status === "active" ? "" : " pending"}">${escapeHtml(statusLabel)}</span>
+            <h5>${escapeHtml(item.name)}</h5>
+          </div>
+          ${quantity ? `<span class="shopping-list-quantity">${escapeHtml(quantity)}</span>` : ""}
+        </div>
+        <div class="shopping-list-source">
+          <span>${escapeHtml(source.icon)} ${escapeHtml(source.label)}</span>
+          ${item.source_label ? `<strong>${escapeHtml(item.source_label)}</strong>` : ""}
+        </div>
+        ${item.note ? `<p class="shopping-list-note">${escapeHtml(item.note)}</p>` : ""}
+        <div class="shopping-list-actions">
+          ${stateActions}
+          ${item.source_type === "manual"
+            ? `<button class="button danger" type="button" data-shopping-action="delete" data-shopping-id="${escapeHtml(item.id)}">ELIMINA</button>`
+            : ""}
+        </div>
+      </div>
+    </article>`;
+}
+
+function renderShoppingList() {
+  const moduleAvailable = Boolean(shoppingListCore);
+  const week = core.weekForDate(state.weekAnchor);
+  elements.shoppingListWeekRange.textContent = formatWeekRange(week.startDate, week.endDate);
+  elements.shoppingListUnavailable.hidden = moduleAvailable && state.shoppingListAvailable;
+  elements.shoppingListBody.hidden = !moduleAvailable || !state.shoppingListAvailable;
+
+  if (!moduleAvailable) {
+    setShoppingListStatus("Il modulo Lista spesa non è stato caricato. Ricarica la pagina.", "error");
+    return;
+  }
+
+  if (!state.shoppingListAvailable) {
+    elements.shoppingListCount.textContent = "0";
+    setShoppingListStatus("Database Lista spesa non disponibile: nessun dato è stato modificato.", "warning");
+    return;
+  }
+
+  const summary = shoppingListCore.summarizeItems(state.shoppingListItems);
+  elements.shoppingListCount.textContent = String(summary.total);
+  elements.shoppingListActiveCount.textContent = String(summary.active);
+  elements.shoppingListCheckedCount.textContent = String(summary.checked);
+  elements.shoppingListExcludedCount.textContent = String(summary.excluded);
+  elements.shoppingListFilter.value = state.shoppingListFilter;
+
+  if (state.shoppingListError) {
+    setShoppingListStatus(state.shoppingListError, "error");
+  } else if (!state.shoppingListItems.length) {
+    setShoppingListStatus("La lista è vuota. Puoi generarla dal Planner o aggiungere una voce manuale.");
+  } else {
+    setShoppingListStatus();
+  }
+
+  const groups = shoppingListCore.groupItemsByCategory(
+    state.shoppingListItems,
+    state.shoppingListFilter
+  );
+  elements.shoppingListItems.innerHTML = groups.length
+    ? groups.map(group => {
+      const category = shoppingListCore.CATEGORIES[group.category] ?? shoppingListCore.CATEGORIES.other;
+      return `
+        <section class="shopping-list-category" aria-labelledby="shopping-category-${escapeHtml(group.category)}">
+          <div class="shopping-list-category-heading">
+            <h4 id="shopping-category-${escapeHtml(group.category)}">${escapeHtml(category.icon)} ${escapeHtml(category.label)}</h4>
+            <span class="badge pending">${group.items.length}</span>
+          </div>
+          ${group.items.map(shoppingListItemCard).join("")}
+        </section>`;
+    }).join("")
+    : shoppingListEmptyHtml();
+  elements.shoppingListItems.setAttribute("aria-busy", "false");
+  updateShoppingListAvailability();
+}
+
+function updateShoppingListAvailability() {
+  if (!elements.shoppingListForm) return;
+  const disabled = state.busy || !shoppingListCore || !state.shoppingListAvailable;
+  elements.shoppingListForm.querySelectorAll("input, select, textarea").forEach(field => {
+    field.disabled = disabled;
+  });
+  elements.shoppingItemAdd.disabled = disabled;
+  elements.shoppingListRefresh.disabled = disabled;
+  elements.shoppingListFilter.disabled = disabled;
+}
+
 function populateMealPrepItems(preferredItemId = elements.mealPrepItemId.value) {
   const meal = mealFor(elements.mealPrepMealId.value);
   const items = mealItems(meal);
@@ -1820,6 +2005,8 @@ function setBusy(busy) {
   state.busy = busy;
   elements.form.setAttribute("aria-busy", String(busy));
   elements.weekGrid.setAttribute("aria-busy", String(busy));
+  elements.shoppingListForm.setAttribute("aria-busy", String(busy));
+  elements.shoppingListItems.setAttribute("aria-busy", String(busy));
   elements.mealPrepForm.setAttribute("aria-busy", String(busy));
   elements.mealPrepList.setAttribute("aria-busy", String(busy));
   elements.form.querySelectorAll("input, select, textarea").forEach(field => {
@@ -1839,6 +2026,7 @@ function setBusy(busy) {
   elements.menuFile.disabled = busy || state.menuAnalyzing;
   updateMenuPreviewControls();
   updateFormAvailability();
+  updateShoppingListAvailability();
   updateMealPrepAvailability();
 }
 
@@ -1979,6 +2167,7 @@ function renderMeals() {
 function renderPlanner() {
   renderWeek();
   renderMeals();
+  renderShoppingList();
   renderMealPrep();
 }
 
@@ -2096,6 +2285,45 @@ async function loadMealPrepTasks(meals = state.meals) {
   }
 }
 
+async function fetchShoppingListForWeek(anchorDate = state.weekAnchor) {
+  const week = core.weekForDate(anchorDate);
+  if (!week.startDate) throw new Error("Settimana della lista spesa non valida");
+  const { data, error } = await client
+    .from("shopping_list_items")
+    .select("id,owner_user_id,week_start,name,normalized_name,quantity,unit,quantity_text,category,source_type,source_key,source_label,planned_meal_id,planned_meal_item_id,recipe_id,note,is_checked,is_excluded,checked_at,created_at,updated_at")
+    .eq("owner_user_id", state.ownerUserId)
+    .eq("week_start", week.startDate)
+    .order("category", { ascending: true })
+    .order("created_at", { ascending: true });
+  assertOk(error, "Lettura Lista spesa");
+  return data ?? [];
+}
+
+async function loadShoppingList(anchorDate = state.weekAnchor) {
+  state.shoppingListError = null;
+  if (!shoppingListCore) {
+    state.shoppingListAvailable = false;
+    state.shoppingListItems = [];
+    return false;
+  }
+
+  try {
+    state.shoppingListItems = await fetchShoppingListForWeek(anchorDate);
+    state.shoppingListAvailable = true;
+    return true;
+  } catch (error) {
+    state.shoppingListItems = [];
+    if (isMissingShoppingListSchema(error)) {
+      state.shoppingListAvailable = false;
+      state.shoppingListError = null;
+    } else {
+      state.shoppingListAvailable = true;
+      state.shoppingListError = `${error.message}. Riprova ricaricando la settimana.`;
+    }
+    return false;
+  }
+}
+
 async function loadData() {
   const [recipesResult, meals] = await Promise.all([
     client
@@ -2109,7 +2337,10 @@ async function loadData() {
   assertOk(recipesResult.error, "Lettura ricette");
   state.recipes = recipesResult.data ?? [];
   state.meals = meals;
-  await loadMealPrepTasks(state.meals);
+  await Promise.all([
+    loadMealPrepTasks(state.meals),
+    loadShoppingList(state.weekAnchor)
+  ]);
 }
 
 async function reloadMeals() {
@@ -2126,6 +2357,7 @@ async function selectWeek(anchorDate) {
   if (state.busy || !core.isRealDate(anchorDate)) return;
   const previousAnchor = state.weekAnchor;
   const previousMeals = state.meals;
+  const previousShoppingListItems = state.shoppingListItems;
   setBusy(true);
   setStatus("Caricamento della settimana…");
 
@@ -2133,13 +2365,21 @@ async function selectWeek(anchorDate) {
     const meals = await fetchMealsForWeek(anchorDate);
     state.weekAnchor = anchorDate;
     state.meals = meals;
-    await loadMealPrepTasks(state.meals);
+    state.shoppingListFilter = "active";
+    await Promise.all([
+      loadMealPrepTasks(state.meals),
+      loadShoppingList(state.weekAnchor)
+    ]);
     if (state.editingId && !state.meals.some(meal => meal.id === state.editingId)) {
       resetForm(anchorDate);
     }
     resetMealPrepForm(state.meals[0]?.id ?? "");
     renderPlanner();
-    if (!state.mealPrepAvailable) {
+    if (!state.shoppingListAvailable) {
+      setStatus("Settimana caricata. Per attivare la Lista spesa applica la migration 046.", "warning");
+    } else if (state.shoppingListError) {
+      setStatus("Settimana caricata, ma la Lista spesa non è disponibile.", "warning");
+    } else if (!state.mealPrepAvailable) {
       setStatus("Settimana caricata. Per attivare Meal Prep applica la migration 045.", "warning");
     } else if (state.mealPrepError) {
       setStatus("Settimana caricata, ma le attività Meal Prep non sono disponibili.", "warning");
@@ -2149,6 +2389,7 @@ async function selectWeek(anchorDate) {
   } catch (error) {
     state.weekAnchor = previousAnchor;
     state.meals = previousMeals;
+    state.shoppingListItems = previousShoppingListItems;
     renderPlanner();
     setStatus(error.message, "error");
   } finally {
@@ -2233,10 +2474,166 @@ async function deleteMeal(mealId) {
         && !state.mealPrepTasks.some(task => task.id === state.mealPrepEditingId)) {
       resetMealPrepForm(state.meals[0]?.id ?? "");
     }
+    await loadShoppingList(state.weekAnchor);
     renderPlanner();
     setStatus("Pasto eliminato dal Planner.", "ok");
   } catch (error) {
     setStatus(error.message, "error");
+  } finally {
+    setBusy(false);
+  }
+}
+
+function friendlyShoppingListWriteError(error) {
+  if (isMissingShoppingListSchema(error)) {
+    return "Lista spesa non ancora attiva. Applica la migration 046_shopping_list_core.sql.";
+  }
+  if (error.code === "23514") {
+    return "La voce non rispetta i vincoli della settimana o dello stato selezionato.";
+  }
+  if (error.code === "23503") {
+    return "Il pasto o la ricetta collegata non è più disponibile. Aggiorna la lista dal Planner.";
+  }
+  return error.message;
+}
+
+async function refreshShoppingList() {
+  if (state.busy || !state.shoppingListAvailable || !shoppingListCore) return;
+  const week = core.weekForDate(state.weekAnchor);
+  if (!week.startDate) return;
+
+  setBusy(true);
+  setShoppingListStatus("Generazione della lista dai pasti della settimana…");
+  try {
+    const { data, error } = await client.rpc("refresh_weekly_shopping_list", {
+      p_week_start: week.startDate
+    });
+    assertOk(error, "Aggiornamento Lista spesa");
+    const result = Array.isArray(data) ? data[0] : data;
+    await loadShoppingList(state.weekAnchor);
+    renderShoppingList();
+    const generated = Number(result?.generated_count ?? 0);
+    setShoppingListStatus(
+      `Lista aggiornata: ${generated} ${generated === 1 ? "voce automatica letta" : "voci automatiche lette"} dal Planner. Aggiunte manuali e scelte precedenti sono state conservate.`,
+      "ok"
+    );
+  } catch (error) {
+    if (isMissingShoppingListSchema(error)) {
+      state.shoppingListAvailable = false;
+      state.shoppingListItems = [];
+      renderShoppingList();
+    }
+    setShoppingListStatus(friendlyShoppingListWriteError(error), "error");
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function saveShoppingItem(event) {
+  event.preventDefault();
+  if (state.busy || !state.shoppingListAvailable || !shoppingListCore) return;
+
+  const candidate = shoppingListCore.normalizeManualItem({
+    name: elements.shoppingItemName.value,
+    quantity: elements.shoppingItemQuantity.value,
+    unit: elements.shoppingItemUnit.value,
+    category: elements.shoppingItemCategory.value,
+    note: elements.shoppingItemNote.value
+  });
+  if (!candidate.valid) {
+    setShoppingListStatus(candidate.errors.join(" "), "error");
+    elements.shoppingListPanel.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    return;
+  }
+
+  const week = core.weekForDate(state.weekAnchor);
+  const payload = {
+    ...candidate.value,
+    owner_user_id: state.ownerUserId,
+    week_start: week.startDate
+  };
+
+  setBusy(true);
+  setShoppingListStatus("Aggiunta della voce…");
+  try {
+    const { error } = await client
+      .from("shopping_list_items")
+      .insert(payload)
+      .select("id")
+      .single();
+    assertOk(error, "Aggiunta Lista spesa");
+    await loadShoppingList(state.weekAnchor);
+    resetShoppingListForm();
+    renderShoppingList();
+    setShoppingListStatus(`“${candidate.value.name}” è stato aggiunto alla lista.`, "ok");
+  } catch (error) {
+    if (isMissingShoppingListSchema(error)) {
+      state.shoppingListAvailable = false;
+      renderShoppingList();
+    }
+    setShoppingListStatus(friendlyShoppingListWriteError(error), "error");
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function updateShoppingItemState(itemId, action) {
+  const item = state.shoppingListItems.find(candidate => candidate.id === itemId);
+  if (!item || state.busy) return;
+  const changes = {
+    check: { is_checked: true, is_excluded: false },
+    reopen: { is_checked: false, is_excluded: false },
+    exclude: { is_checked: false, is_excluded: true },
+    restore: { is_checked: false, is_excluded: false }
+  }[action];
+  if (!changes) return;
+
+  setBusy(true);
+  setShoppingListStatus("Aggiornamento della voce…");
+  try {
+    const { error } = await client
+      .from("shopping_list_items")
+      .update(changes)
+      .eq("id", item.id)
+      .eq("owner_user_id", state.ownerUserId)
+      .select("id")
+      .single();
+    assertOk(error, "Aggiornamento Lista spesa");
+    await loadShoppingList(state.weekAnchor);
+    renderShoppingList();
+    const message = action === "check"
+      ? `“${item.name}” segnato come acquistato.`
+      : action === "exclude"
+        ? `“${item.name}” escluso dalla spesa.`
+        : `“${item.name}” è di nuovo tra le cose da comprare.`;
+    setShoppingListStatus(message, "ok");
+  } catch (error) {
+    setShoppingListStatus(friendlyShoppingListWriteError(error), "error");
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function deleteShoppingItem(itemId) {
+  const item = state.shoppingListItems.find(candidate => candidate.id === itemId);
+  if (!item || state.busy || item.source_type !== "manual") return;
+  const confirmed = window.confirm(`Eliminare “${item.name}” dalla lista?`);
+  if (!confirmed) return;
+
+  setBusy(true);
+  setShoppingListStatus("Eliminazione della voce…");
+  try {
+    const { error } = await client
+      .from("shopping_list_items")
+      .delete()
+      .eq("id", item.id)
+      .eq("owner_user_id", state.ownerUserId);
+    assertOk(error, "Eliminazione Lista spesa");
+    state.shoppingListItems = state.shoppingListItems.filter(candidate => candidate.id !== item.id);
+    renderShoppingList();
+    setShoppingListStatus("Voce manuale eliminata.", "ok");
+  } catch (error) {
+    setShoppingListStatus(friendlyShoppingListWriteError(error), "error");
   } finally {
     setBusy(false);
   }
@@ -2412,6 +2809,7 @@ async function initialize() {
     populateRecipes();
     renderPlanner();
     resetForm(state.weekAnchor);
+    resetShoppingListForm();
     resetMealPrepForm(state.meals[0]?.id ?? "");
     resetMenuImport();
     if (!menuPlanEngine) renderMenuPlanUnavailable();
@@ -2423,14 +2821,28 @@ async function initialize() {
     const inboxStatus = state.menuPreviewRequests.length
       ? ` ${state.menuPreviewRequests.length} ${state.menuPreviewRequests.length === 1 ? "anteprima ricevuta" : "anteprime ricevute"} in attesa.`
       : "";
-    const mealPrepNotice = state.mealPrepAvailable
-      ? ""
-      : " Per attivare Meal Prep applica la migration 045.";
+    const mealPrepNotice = !state.mealPrepAvailable
+      ? " Per attivare Meal Prep applica la migration 045."
+      : state.mealPrepError
+        ? " Le attività Meal Prep non sono disponibili al momento."
+        : "";
+    const shoppingListNotice = !state.shoppingListAvailable
+      ? " Per attivare la Lista spesa applica la migration 046."
+      : state.shoppingListError
+        ? " La Lista spesa non è disponibile al momento."
+        : "";
     setStatus(
       previewAvailable
-        ? `${baseStatus}${inboxStatus}${mealPrepNotice}`
-        : `${baseStatus} Per le anteprime dirette applica la migration 044.${mealPrepNotice}`,
-      previewAvailable && state.recipes.length && state.mealPrepAvailable ? "ok" : "warning"
+        ? `${baseStatus}${inboxStatus}${mealPrepNotice}${shoppingListNotice}`
+        : `${baseStatus} Per le anteprime dirette applica la migration 044.${mealPrepNotice}${shoppingListNotice}`,
+      previewAvailable
+        && state.recipes.length
+        && state.mealPrepAvailable
+        && !state.mealPrepError
+        && state.shoppingListAvailable
+        && !state.shoppingListError
+        ? "ok"
+        : "warning"
     );
   } catch (error) {
     showFatalError(error);
@@ -2463,6 +2875,23 @@ elements.currentWeek.addEventListener("click", () => {
 });
 elements.nextWeek.addEventListener("click", () => {
   void selectWeek(core.addDays(state.weekAnchor, 7));
+});
+elements.shoppingListForm.addEventListener("submit", saveShoppingItem);
+elements.shoppingListRefresh.addEventListener("click", () => void refreshShoppingList());
+elements.shoppingListFilter.addEventListener("change", () => {
+  state.shoppingListFilter = shoppingListCore?.FILTERS[elements.shoppingListFilter.value]
+    ? elements.shoppingListFilter.value
+    : "active";
+  renderShoppingList();
+});
+elements.shoppingListItems.addEventListener("click", event => {
+  const button = event.target.closest("button[data-shopping-action][data-shopping-id]");
+  if (!button) return;
+  if (button.dataset.shoppingAction === "delete") {
+    void deleteShoppingItem(button.dataset.shoppingId);
+    return;
+  }
+  void updateShoppingItemState(button.dataset.shoppingId, button.dataset.shoppingAction);
 });
 elements.mealPrepForm.addEventListener("submit", saveMealPrepTask);
 elements.mealPrepCancel.addEventListener("click", () => {
