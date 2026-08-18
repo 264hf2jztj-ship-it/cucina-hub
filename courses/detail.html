@@ -129,8 +129,8 @@ function preferredRow(rows=[]){
 }
 
 function materialBadge(material){
-  if(material.accessKind==="direct")return "Link diretto";
-  if(material.accessKind==="internal")return "Supabase";
+  if(material.accessKind==="direct")return material.archiveUrl?"Link diretto + iCloud":"Link diretto";
+  if(material.accessKind==="internal")return material.archiveUrl?"Supabase + iCloud":"Supabase";
   if(material.accessKind==="folder")return "iCloud";
   return material.content_type?.toUpperCase()||"Materiale";
 }
@@ -146,7 +146,8 @@ function renderMaterials(){
       .includes(query);
   });
 
-  materialsSummary.textContent=`${state.materials.length} materiali catalogati${query?` · ${filtered.length} visibili`:""}.`;
+  const mappedCount=state.materials.filter(item=>item.archiveUrl).length;
+  materialsSummary.textContent=`${state.materials.length} materiali catalogati · ${mappedCount} mappati su iCloud${query?` · ${filtered.length} visibili`:""}.`;
 
   if(!filtered.length){
     materials.innerHTML='<div class="empty">Nessun materiale corrisponde alla ricerca.</div>';
@@ -169,9 +170,10 @@ function renderMaterials(){
             <span class="badge">${esc(materialBadge(item))}</span>
             <h3>${esc(item.title||item.source_filename||"Materiale senza titolo")}</h3>
             <p class="material-meta">${esc(item.source_filename||item.source_path||item.content_type||"")}</p>
-            ${item.fileHint&&item.accessKind==="folder"?`<p class="material-hint"><strong>File da aprire:</strong> ${esc(item.fileHint)}</p>`:""}
+            ${item.fileHint&&item.archiveUrl?`<p class="material-hint"><strong>File su iCloud:</strong> ${esc(item.fileHint)}</p>`:""}
             <div class="material-actions">
               ${item.accessUrl?`<a class="open-link" href="${esc(item.accessUrl)}" target="_blank" rel="noopener">${esc(item.actionLabel)}</a>`:""}
+              ${item.archiveUrl&&item.archiveUrl!==item.accessUrl?`<a class="open-link secondary" href="${esc(item.archiveUrl)}" target="_blank" rel="noopener">Verifica su iCloud</a>`:""}
             </div>
             ${!item.accessUrl?'<p class="material-hint">Il materiale è catalogato, ma non ha ancora una sorgente apribile.</p>':""}
           </article>`).join("")}
@@ -238,7 +240,22 @@ async function buildMaterials(user,courseId,contentRows,categoryRows){
     const folderSource=explicitSource||sourceByCategory.get(content.category_id)||globalSource;
     const categoryName=categoryById.get(content.category_id)?.name||"Altri materiali";
 
-    const item={...content,categoryName,accessKind:null,accessUrl:null,actionLabel:null,fileHint:null};
+    const item={
+      ...content,
+      categoryName,
+      accessKind:null,
+      accessUrl:null,
+      actionLabel:null,
+      archiveUrl:null,
+      archiveLabel:null,
+      fileHint:null
+    };
+
+    if(externalRef&&folderSource?.folder_url){
+      item.archiveUrl=folderSource.folder_url;
+      item.archiveLabel=folderSource.provider==="icloud"?"iCloud":"Archivio esterno";
+      item.fileHint=externalRef.relative_path||content.source_filename||basename(content.source_path)||content.source_path;
+    }
 
     if(direct?.external_url){
       item.accessKind="direct";
@@ -261,7 +278,8 @@ async function buildMaterials(user,courseId,contentRows,categoryRows){
       item.accessKind="folder";
       item.accessUrl=folderSource.folder_url;
       item.actionLabel=folderSource.provider==="icloud"?"Apri cartella iCloud":"Apri archivio";
-      item.fileHint=externalRef?.relative_path||content.source_filename||basename(content.source_path)||content.source_path;
+      item.fileHint=item.fileHint||content.source_filename||basename(content.source_path)||content.source_path;
+      item.archiveUrl=item.archiveUrl||folderSource.folder_url;
     }
 
     built.push(item);
@@ -317,6 +335,7 @@ async function loadCourse(courseId){
       direct_links:state.materials.filter(item=>item.accessKind==="direct").length,
       internal_files:state.materials.filter(item=>item.accessKind==="internal").length,
       folder_links:state.materials.filter(item=>item.accessKind==="folder").length,
+      icloud_mapped:state.materials.filter(item=>item.archiveUrl).length,
       unavailable:state.materials.filter(item=>!item.accessUrl).length,
       external_sources:state.sources.length
     },null,2)}`;
