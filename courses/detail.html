@@ -31,6 +31,8 @@
     .archive-card h3{margin:8px 0 5px}
     .archive-card p{margin:0;color:#6d655c;font-size:.92rem}
     .material-tools{margin:14px 0 4px}
+    .material-tools-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,260px);gap:12px;align-items:end}
+    .material-tools label{display:block;margin-bottom:6px}
     .material-group{margin-top:22px}
     .material-group:first-child{margin-top:14px}
     .material-group-title{display:flex;align-items:center;gap:9px;margin:0 0 10px}
@@ -46,7 +48,7 @@
     .source-pill{padding:6px 9px;border-radius:999px;background:#f0ece5;color:#514a43;font-size:.86rem;font-weight:650}
     .empty{padding:18px;border:1px dashed #cfc6ba;border-radius:12px;color:#6d655c;text-align:center}
     [hidden]{display:none!important}
-    @media (max-width:640px){main{padding:16px}.hero{padding:19px}.panel{padding:15px}.open-link{width:100%}}
+    @media (max-width:640px){main{padding:16px}.hero{padding:19px}.panel{padding:15px}.open-link{width:100%}.material-tools-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -92,8 +94,21 @@
         </div>
       </div>
       <div class="material-tools">
-        <label for="materialSearch"><strong>Cerca nei materiali</strong></label>
-        <input id="materialSearch" type="search" placeholder="Es. pasta fresca, tartufo, risotto…" autocomplete="off">
+        <div class="material-tools-grid">
+          <div>
+            <label for="materialSearch"><strong>Cerca nei materiali</strong></label>
+            <input id="materialSearch" type="search" placeholder="Es. pasta fresca, tartufo, risotto…" autocomplete="off">
+          </div>
+          <div>
+            <label for="materialFilter"><strong>Mostra</strong></label>
+            <select id="materialFilter">
+              <option value="">Tutti i materiali</option>
+              <option value="dispense">Dispense</option>
+              <option value="video-lezioni">Video lezioni</option>
+              <option value="video-pillole">Video pillole</option>
+            </select>
+          </div>
+        </div>
       </div>
       <div id="materials"></div>
     </section>
@@ -114,7 +129,7 @@ const $=selector=>document.querySelector(selector);
 const courseSelect=$("#course"),loadButton=$("#load"),status=$("#status"),card=$("#card");
 const title=$("#title"),description=$("#description"),sourceSummary=$("#sourceSummary");
 const lessonsPanel=$("#lessonsPanel"),lessons=$("#lessons"),archivesPanel=$("#archivesPanel"),archives=$("#archives");
-const materialsSummary=$("#materialsSummary"),materialSearch=$("#materialSearch"),materials=$("#materials"),log=$("#log");
+const materialsSummary=$("#materialsSummary"),materialSearch=$("#materialSearch"),materialFilter=$("#materialFilter"),materials=$("#materials"),log=$("#log");
 const state={materials:[],categories:new Map(),sources:[]};
 const esc=value=>String(value??"").replace(/[&<>\"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[char]));
 const check=(error,context)=>{if(error)throw new Error(`${context}: ${error.message}`)};
@@ -136,10 +151,16 @@ function renderArchives(categoryRows){
 }
 function renderMaterials(){
   const query=materialSearch.value.trim().toLocaleLowerCase("it-IT");
-  const filtered=state.materials.filter(item=>!query||[item.title,item.source_filename,item.source_path,item.categoryName,item.fileHint].filter(Boolean).join(" ").toLocaleLowerCase("it-IT").includes(query));
+  const categoryFilter=materialFilter.value;
+  const filtered=state.materials.filter(item=>{
+    if(categoryFilter&&item.categorySlug!==categoryFilter)return false;
+    if(!query)return true;
+    return [item.title,item.source_filename,item.source_path,item.categoryName,item.fileHint].filter(Boolean).join(" ").toLocaleLowerCase("it-IT").includes(query);
+  });
   const mappedCount=state.materials.filter(item=>item.archiveUrl).length;
-  materialsSummary.textContent=`${state.materials.length} materiali catalogati · ${mappedCount} mappati su iCloud${query?` · ${filtered.length} visibili`:""}.`;
-  if(!filtered.length){materials.innerHTML='<div class="empty">Nessun materiale corrisponde alla ricerca.</div>';return}
+  const hasActiveFilter=Boolean(query||categoryFilter);
+  materialsSummary.textContent=`${state.materials.length} materiali catalogati · ${mappedCount} mappati su iCloud${hasActiveFilter?` · ${filtered.length} visibili`:""}.`;
+  if(!filtered.length){materials.innerHTML='<div class="empty">Nessun materiale corrisponde ai filtri selezionati.</div>';return}
   const grouped=new Map();
   for(const item of filtered){const group=item.categoryName||"Altri materiali";if(!grouped.has(group))grouped.set(group,[]);grouped.get(group).push(item)}
   materials.innerHTML=[...grouped.entries()].map(([group,items])=>`<section class="material-group"><h3 class="material-group-title">${esc(group)} <span class="badge">${items.length}</span></h3><div class="material-list">${items.map(item=>`<article class="material"><span class="badge">${esc(materialBadge(item))}</span><h3>${esc(item.title||item.source_filename||"Materiale senza titolo")}</h3><p class="material-meta">${esc(item.source_filename||item.source_path||item.content_type||"")}</p>${item.fileHint&&item.archiveUrl?`<p class="material-hint"><strong>File su iCloud:</strong> ${esc(item.fileHint)}</p>`:""}<div class="material-actions">${item.accessUrl?`<a class="open-link" href="${esc(item.accessUrl)}" target="_blank" rel="noopener">${esc(item.actionLabel)}</a>`:""}${item.archiveUrl&&item.archiveUrl!==item.accessUrl?`<a class="open-link secondary" href="${esc(item.archiveUrl)}" target="_blank" rel="noopener">Archivio iCloud</a>`:""}</div>${!item.accessUrl?'<p class="material-hint">Il materiale è catalogato, ma non ha ancora una sorgente apribile.</p>':""}</article>`).join("")}</div></section>`).join("");
@@ -167,8 +188,8 @@ async function buildMaterials(user,courseId,contentRows,categoryRows){
   const built=[];
   for(const content of contentRows){
     const direct=preferredRow(linksByContent.get(content.id)),internalLink=preferredRow(filesByContent.get(content.id)),externalRef=preferredRow(refsByContent.get(content.id));
-    const explicitSource=externalRef?sourceById.get(externalRef.source_id):null,folderSource=explicitSource||sourceByCategory.get(content.category_id)||globalSource,categoryName=categoryById.get(content.category_id)?.name||"Altri materiali";
-    const item={...content,categoryName,accessKind:null,accessUrl:null,actionLabel:null,archiveUrl:null,fileHint:null};
+    const explicitSource=externalRef?sourceById.get(externalRef.source_id):null,folderSource=explicitSource||sourceByCategory.get(content.category_id)||globalSource,category=categoryById.get(content.category_id),categoryName=category?.name||"Altri materiali",categorySlug=category?.slug||"";
+    const item={...content,categoryName,categorySlug,accessKind:null,accessUrl:null,actionLabel:null,archiveUrl:null,fileHint:null};
     if(externalRef&&folderSource?.folder_url){item.archiveUrl=folderSource.folder_url;item.fileHint=externalRef.relative_path||content.source_filename||basename(content.source_path)||content.source_path}
     if(direct?.external_url){item.accessKind="direct";item.accessUrl=direct.external_url;item.actionLabel=direct.display_name?`Apri ${direct.display_name}`:"Apri file"}
     else if(internalLink?.storage_file_id){const storageFile=storageById.get(internalLink.storage_file_id);if(storageFile){const{data,error}=await client.storage.from(storageFile.bucket_name).createSignedUrl(storageFile.object_path,900,{download:storageFile.original_filename||undefined});check(error,`URL firmato ${content.title}`);if(data?.signedUrl){item.accessKind="internal";item.accessUrl=data.signedUrl;item.actionLabel="Apri PDF"}}}
@@ -191,7 +212,7 @@ async function loadCourse(courseId){
     const course=courseResult.data,lessonRows=lessonsResult.data||[],categoryRows=categoriesResult.data||[],contentRows=contentsResult.data||[];
     title.textContent=course.title;description.textContent=course.description||"Nessuna descrizione disponibile.";
     lessonsPanel.hidden=!lessonRows.length;lessons.innerHTML=lessonRows.map((lesson,index)=>`<article class="lesson"><span class="badge">Lezione ${index+1}</span><h3>${esc(lesson.title)}</h3></article>`).join("");
-    state.categories=new Map(categoryRows.map(row=>[row.id,row]));state.materials=await buildMaterials(user,course.id,contentRows,categoryRows);materialSearch.value="";renderMaterials();
+    state.categories=new Map(categoryRows.map(row=>[row.id,row]));state.materials=await buildMaterials(user,course.id,contentRows,categoryRows);materialSearch.value="";materialFilter.value="";renderMaterials();
     card.hidden=false;status.className="ok";status.textContent="Corso caricato correttamente.";
     log.textContent=`REPORT FINALE\n${JSON.stringify({pass:true,course_id:course.id,course_title:course.title,lesson_count:lessonRows.length,material_count:state.materials.length,icloud_mapped:state.materials.filter(item=>item.archiveUrl).length,external_sources:state.sources.length,video_sources:state.sources.filter(source=>["video-lezioni","video-pillole"].includes(state.categories.get(source.category_id)?.slug)).length},null,2)}`;
   }catch(error){status.className="error";status.textContent=error.message;log.textContent=`ERRORE COMPLETO\n${error.stack||error.message}`}
@@ -204,7 +225,7 @@ async function init(){
     const requestedCourse=new URLSearchParams(window.location.search).get("course");if(requestedCourse&&(data||[]).some(course=>course.id===requestedCourse)){courseSelect.value=requestedCourse;await loadCourse(requestedCourse)}
   }catch(error){status.className="error";status.textContent=error.message;log.textContent=`ERRORE COMPLETO\n${error.stack||error.message}`}
 }
-loadButton.addEventListener("click",()=>loadCourse(courseSelect.value));courseSelect.addEventListener("change",()=>{if(courseSelect.value)void loadCourse(courseSelect.value)});materialSearch.addEventListener("input",renderMaterials);void init();
+loadButton.addEventListener("click",()=>loadCourse(courseSelect.value));courseSelect.addEventListener("change",()=>{if(courseSelect.value)void loadCourse(courseSelect.value)});materialSearch.addEventListener("input",renderMaterials);materialFilter.addEventListener("change",renderMaterials);void init();
 </script>
 </body>
 </html>
