@@ -26,6 +26,10 @@
     a.back{display:inline-block;margin-bottom:16px;color:#365d44;font-weight:700;text-decoration:none}
     .panel-heading{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
     .panel-heading h2{margin:0}
+    .archive-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px}
+    .archive-card{border:1px solid #e3ddd4;border-radius:14px;padding:15px;background:#fffdfa}
+    .archive-card h3{margin:8px 0 5px}
+    .archive-card p{margin:0;color:#6d655c;font-size:.92rem}
     .material-tools{margin:14px 0 4px}
     .material-group{margin-top:22px}
     .material-group:first-child{margin-top:14px}
@@ -70,6 +74,16 @@
       <div id="lessons"></div>
     </section>
 
+    <section id="archivesPanel" class="panel" hidden>
+      <div class="panel-heading">
+        <div>
+          <h2>Archivi iCloud</h2>
+          <p class="meta">Cartelle esterne del corso. I video restano su iCloud e non occupano spazio Supabase.</p>
+        </div>
+      </div>
+      <div id="archives" class="archive-grid"></div>
+    </section>
+
     <section class="panel">
       <div class="panel-heading">
         <div>
@@ -97,90 +111,39 @@
 <script type="module">
 const client=window.cucinaHubSupabase;
 const $=selector=>document.querySelector(selector);
-const courseSelect=$("#course");
-const loadButton=$("#load");
-const status=$("#status");
-const card=$("#card");
-const title=$("#title");
-const description=$("#description");
-const sourceSummary=$("#sourceSummary");
-const lessonsPanel=$("#lessonsPanel");
-const lessons=$("#lessons");
-const materialsSummary=$("#materialsSummary");
-const materialSearch=$("#materialSearch");
-const materials=$("#materials");
-const log=$("#log");
-
+const courseSelect=$("#course"),loadButton=$("#load"),status=$("#status"),card=$("#card");
+const title=$("#title"),description=$("#description"),sourceSummary=$("#sourceSummary");
+const lessonsPanel=$("#lessonsPanel"),lessons=$("#lessons"),archivesPanel=$("#archivesPanel"),archives=$("#archives");
+const materialsSummary=$("#materialsSummary"),materialSearch=$("#materialSearch"),materials=$("#materials"),log=$("#log");
 const state={materials:[],categories:new Map(),sources:[]};
-
 const esc=value=>String(value??"").replace(/[&<>\"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[char]));
 const check=(error,context)=>{if(error)throw new Error(`${context}: ${error.message}`)};
 const basename=value=>String(value??"").split(/[\\/]/).filter(Boolean).pop()||"";
-
-async function currentUser(){
-  const{data,error}=await client.auth.getSession();
-  check(error,"Sessione");
-  if(!data.session?.user)throw new Error("Accedi prima di aprire i corsi.");
-  return data.session.user;
+async function currentUser(){const{data,error}=await client.auth.getSession();check(error,"Sessione");if(!data.session?.user)throw new Error("Accedi prima di aprire i corsi.");return data.session.user}
+function preferredRow(rows=[]){return rows.find(row=>row.file_role==="primary")||rows[0]||null}
+function materialBadge(material){if(material.accessKind==="direct")return material.archiveUrl?"Link diretto + iCloud":"Link diretto";if(material.accessKind==="internal")return material.archiveUrl?"Supabase + iCloud":"Supabase";if(material.accessKind==="folder")return "iCloud";return material.content_type?.toUpperCase()||"Materiale"}
+function renderArchives(categoryRows){
+  const categoryById=new Map(categoryRows.map(row=>[row.id,row]));
+  const rows=state.sources.filter(source=>source.folder_url).sort((a,b)=>(categoryById.get(a.category_id)?.sort_order??999)-(categoryById.get(b.category_id)?.sort_order??999));
+  archivesPanel.hidden=!rows.length;
+  archives.innerHTML=rows.map(source=>{
+    const category=categoryById.get(source.category_id);
+    const label=category?.name||source.display_name||"Archivio esterno";
+    const isVideo=category?.slug==="video-lezioni"||category?.slug==="video-pillole";
+    const button=isVideo?"Apri cartella video":"Apri archivio iCloud";
+    return `<article class="archive-card"><span class="badge">☁️ iCloud</span><h3>${esc(label)}</h3><p>${isVideo?"Contenuti video conservati su iCloud.":"Archivio esterno del corso."}</p><div class="material-actions"><a class="open-link" href="${esc(source.folder_url)}" target="_blank" rel="noopener">${esc(button)}</a></div></article>`;
+  }).join("");
 }
-
-function preferredRow(rows=[]){
-  return rows.find(row=>row.file_role==="primary")||rows[0]||null;
-}
-
-function materialBadge(material){
-  if(material.accessKind==="direct")return material.archiveUrl?"Link diretto + iCloud":"Link diretto";
-  if(material.accessKind==="internal")return material.archiveUrl?"Supabase + iCloud":"Supabase";
-  if(material.accessKind==="folder")return "iCloud";
-  return material.content_type?.toUpperCase()||"Materiale";
-}
-
 function renderMaterials(){
   const query=materialSearch.value.trim().toLocaleLowerCase("it-IT");
-  const filtered=state.materials.filter(item=>{
-    if(!query)return true;
-    return [item.title,item.source_filename,item.source_path,item.categoryName,item.fileHint]
-      .filter(Boolean)
-      .join(" ")
-      .toLocaleLowerCase("it-IT")
-      .includes(query);
-  });
-
+  const filtered=state.materials.filter(item=>!query||[item.title,item.source_filename,item.source_path,item.categoryName,item.fileHint].filter(Boolean).join(" ").toLocaleLowerCase("it-IT").includes(query));
   const mappedCount=state.materials.filter(item=>item.archiveUrl).length;
   materialsSummary.textContent=`${state.materials.length} materiali catalogati · ${mappedCount} mappati su iCloud${query?` · ${filtered.length} visibili`:""}.`;
-
-  if(!filtered.length){
-    materials.innerHTML='<div class="empty">Nessun materiale corrisponde alla ricerca.</div>';
-    return;
-  }
-
+  if(!filtered.length){materials.innerHTML='<div class="empty">Nessun materiale corrisponde alla ricerca.</div>';return}
   const grouped=new Map();
-  for(const item of filtered){
-    const group=item.categoryName||"Altri materiali";
-    if(!grouped.has(group))grouped.set(group,[]);
-    grouped.get(group).push(item);
-  }
-
-  materials.innerHTML=[...grouped.entries()].map(([group,items])=>`
-    <section class="material-group">
-      <h3 class="material-group-title">${esc(group)} <span class="badge">${items.length}</span></h3>
-      <div class="material-list">
-        ${items.map(item=>`
-          <article class="material">
-            <span class="badge">${esc(materialBadge(item))}</span>
-            <h3>${esc(item.title||item.source_filename||"Materiale senza titolo")}</h3>
-            <p class="material-meta">${esc(item.source_filename||item.source_path||item.content_type||"")}</p>
-            ${item.fileHint&&item.archiveUrl?`<p class="material-hint"><strong>File su iCloud:</strong> ${esc(item.fileHint)}</p>`:""}
-            <div class="material-actions">
-              ${item.accessUrl?`<a class="open-link" href="${esc(item.accessUrl)}" target="_blank" rel="noopener">${esc(item.actionLabel)}</a>`:""}
-              ${item.archiveUrl&&item.archiveUrl!==item.accessUrl?`<a class="open-link secondary" href="${esc(item.archiveUrl)}" target="_blank" rel="noopener">Verifica su iCloud</a>`:""}
-            </div>
-            ${!item.accessUrl?'<p class="material-hint">Il materiale è catalogato, ma non ha ancora una sorgente apribile.</p>':""}
-          </article>`).join("")}
-      </div>
-    </section>`).join("");
+  for(const item of filtered){const group=item.categoryName||"Altri materiali";if(!grouped.has(group))grouped.set(group,[]);grouped.get(group).push(item)}
+  materials.innerHTML=[...grouped.entries()].map(([group,items])=>`<section class="material-group"><h3 class="material-group-title">${esc(group)} <span class="badge">${items.length}</span></h3><div class="material-list">${items.map(item=>`<article class="material"><span class="badge">${esc(materialBadge(item))}</span><h3>${esc(item.title||item.source_filename||"Materiale senza titolo")}</h3><p class="material-meta">${esc(item.source_filename||item.source_path||item.content_type||"")}</p>${item.fileHint&&item.archiveUrl?`<p class="material-hint"><strong>File su iCloud:</strong> ${esc(item.fileHint)}</p>`:""}<div class="material-actions">${item.accessUrl?`<a class="open-link" href="${esc(item.accessUrl)}" target="_blank" rel="noopener">${esc(item.actionLabel)}</a>`:""}${item.archiveUrl&&item.archiveUrl!==item.accessUrl?`<a class="open-link secondary" href="${esc(item.archiveUrl)}" target="_blank" rel="noopener">Archivio iCloud</a>`:""}</div>${!item.accessUrl?'<p class="material-hint">Il materiale è catalogato, ma non ha ancora una sorgente apribile.</p>':""}</article>`).join("")}</div></section>`).join("");
 }
-
 async function buildMaterials(user,courseId,contentRows,categoryRows){
   const contentIds=contentRows.map(row=>row.id);
   const [sourcesResult,linksResult,refsResult,filesResult]=await Promise.all([
@@ -189,212 +152,59 @@ async function buildMaterials(user,courseId,contentRows,categoryRows){
     contentIds.length?client.from("course_content_external_refs").select("id,content_id,source_id,relative_path,file_role,notes").eq("owner_user_id",user.id).in("content_id",contentIds):Promise.resolve({data:[],error:null}),
     contentIds.length?client.from("course_content_files").select("id,content_id,storage_file_id,file_role").eq("owner_user_id",user.id).in("content_id",contentIds):Promise.resolve({data:[],error:null})
   ]);
-  check(sourcesResult.error,"Lettura course_external_sources");
-  check(linksResult.error,"Lettura course_content_external_links");
-  check(refsResult.error,"Lettura course_content_external_refs");
-  check(filesResult.error,"Lettura course_content_files");
-
-  const sources=sourcesResult.data||[];
-  state.sources=sources;
-  sourceSummary.innerHTML=sources.length
-    ? sources.map(source=>`<span class="source-pill">${esc(source.provider==="icloud"?"☁️ iCloud":source.provider)} · ${esc(source.display_name)}</span>`).join("")
-    : '<span class="source-pill">Nessun archivio esterno collegato</span>';
-
-  const linksByContent=new Map();
-  for(const row of linksResult.data||[]){
-    if(!linksByContent.has(row.content_id))linksByContent.set(row.content_id,[]);
-    linksByContent.get(row.content_id).push(row);
-  }
-  const refsByContent=new Map();
-  for(const row of refsResult.data||[]){
-    if(!refsByContent.has(row.content_id))refsByContent.set(row.content_id,[]);
-    refsByContent.get(row.content_id).push(row);
-  }
-  const filesByContent=new Map();
-  for(const row of filesResult.data||[]){
-    if(!filesByContent.has(row.content_id))filesByContent.set(row.content_id,[]);
-    filesByContent.get(row.content_id).push(row);
-  }
-
+  check(sourcesResult.error,"Lettura course_external_sources");check(linksResult.error,"Lettura course_content_external_links");check(refsResult.error,"Lettura course_content_external_refs");check(filesResult.error,"Lettura course_content_files");
+  const sources=sourcesResult.data||[];state.sources=sources;renderArchives(categoryRows);
+  sourceSummary.innerHTML=sources.length?sources.map(source=>`<span class="source-pill">${esc(source.provider==="icloud"?"☁️ iCloud":source.provider)} · ${esc(source.display_name)}</span>`).join(""):'<span class="source-pill">Nessun archivio esterno collegato</span>';
+  const linksByContent=new Map(),refsByContent=new Map(),filesByContent=new Map();
+  for(const row of linksResult.data||[]){if(!linksByContent.has(row.content_id))linksByContent.set(row.content_id,[]);linksByContent.get(row.content_id).push(row)}
+  for(const row of refsResult.data||[]){if(!refsByContent.has(row.content_id))refsByContent.set(row.content_id,[]);refsByContent.get(row.content_id).push(row)}
+  for(const row of filesResult.data||[]){if(!filesByContent.has(row.content_id))filesByContent.set(row.content_id,[]);filesByContent.get(row.content_id).push(row)}
   const storageIds=[...new Set((filesResult.data||[]).map(row=>row.storage_file_id).filter(Boolean))];
-  const storageResult=storageIds.length
-    ? await client.from("storage_files").select("id,bucket_name,object_path,original_filename").eq("owner_user_id",user.id).in("id",storageIds)
-    : {data:[],error:null};
+  const storageResult=storageIds.length?await client.from("storage_files").select("id,bucket_name,object_path,original_filename").eq("owner_user_id",user.id).in("id",storageIds):{data:[],error:null};
   check(storageResult.error,"Lettura storage_files");
-  const storageById=new Map((storageResult.data||[]).map(row=>[row.id,row]));
-  const sourceById=new Map(sources.map(row=>[row.id,row]));
-  const sourceByCategory=new Map();
-  let globalSource=null;
-  for(const source of sources){
-    if(source.category_id&&!sourceByCategory.has(source.category_id))sourceByCategory.set(source.category_id,source);
-    if(!source.category_id&&!globalSource)globalSource=source;
-  }
-  const categoryById=new Map(categoryRows.map(row=>[row.id,row]));
-
+  const storageById=new Map((storageResult.data||[]).map(row=>[row.id,row])),sourceById=new Map(sources.map(row=>[row.id,row])),sourceByCategory=new Map(),categoryById=new Map(categoryRows.map(row=>[row.id,row]));
+  let globalSource=null;for(const source of sources){if(source.category_id&&!sourceByCategory.has(source.category_id))sourceByCategory.set(source.category_id,source);if(!source.category_id&&!globalSource)globalSource=source}
   const built=[];
   for(const content of contentRows){
-    const direct=preferredRow(linksByContent.get(content.id));
-    const internalLink=preferredRow(filesByContent.get(content.id));
-    const externalRef=preferredRow(refsByContent.get(content.id));
-    const explicitSource=externalRef?sourceById.get(externalRef.source_id):null;
-    const folderSource=explicitSource||sourceByCategory.get(content.category_id)||globalSource;
-    const categoryName=categoryById.get(content.category_id)?.name||"Altri materiali";
-
-    const item={
-      ...content,
-      categoryName,
-      accessKind:null,
-      accessUrl:null,
-      actionLabel:null,
-      archiveUrl:null,
-      archiveLabel:null,
-      fileHint:null
-    };
-
-    if(externalRef&&folderSource?.folder_url){
-      item.archiveUrl=folderSource.folder_url;
-      item.archiveLabel=folderSource.provider==="icloud"?"iCloud":"Archivio esterno";
-      item.fileHint=externalRef.relative_path||content.source_filename||basename(content.source_path)||content.source_path;
-    }
-
-    if(direct?.external_url){
-      item.accessKind="direct";
-      item.accessUrl=direct.external_url;
-      item.actionLabel=direct.display_name?`Apri ${direct.display_name}`:"Apri file";
-    }else if(internalLink?.storage_file_id){
-      const storageFile=storageById.get(internalLink.storage_file_id);
-      if(storageFile){
-        const{data,error}=await client.storage.from(storageFile.bucket_name).createSignedUrl(storageFile.object_path,900,{download:storageFile.original_filename||undefined});
-        check(error,`URL firmato ${content.title}`);
-        if(data?.signedUrl){
-          item.accessKind="internal";
-          item.accessUrl=data.signedUrl;
-          item.actionLabel="Apri PDF";
-        }
-      }
-    }
-
-    if(!item.accessUrl&&folderSource?.folder_url){
-      item.accessKind="folder";
-      item.accessUrl=folderSource.folder_url;
-      item.actionLabel=folderSource.provider==="icloud"?"Apri cartella iCloud":"Apri archivio";
-      item.fileHint=item.fileHint||content.source_filename||basename(content.source_path)||content.source_path;
-      item.archiveUrl=item.archiveUrl||folderSource.folder_url;
-    }
-
+    const direct=preferredRow(linksByContent.get(content.id)),internalLink=preferredRow(filesByContent.get(content.id)),externalRef=preferredRow(refsByContent.get(content.id));
+    const explicitSource=externalRef?sourceById.get(externalRef.source_id):null,folderSource=explicitSource||sourceByCategory.get(content.category_id)||globalSource,categoryName=categoryById.get(content.category_id)?.name||"Altri materiali";
+    const item={...content,categoryName,accessKind:null,accessUrl:null,actionLabel:null,archiveUrl:null,fileHint:null};
+    if(externalRef&&folderSource?.folder_url){item.archiveUrl=folderSource.folder_url;item.fileHint=externalRef.relative_path||content.source_filename||basename(content.source_path)||content.source_path}
+    if(direct?.external_url){item.accessKind="direct";item.accessUrl=direct.external_url;item.actionLabel=direct.display_name?`Apri ${direct.display_name}`:"Apri file"}
+    else if(internalLink?.storage_file_id){const storageFile=storageById.get(internalLink.storage_file_id);if(storageFile){const{data,error}=await client.storage.from(storageFile.bucket_name).createSignedUrl(storageFile.object_path,900,{download:storageFile.original_filename||undefined});check(error,`URL firmato ${content.title}`);if(data?.signedUrl){item.accessKind="internal";item.accessUrl=data.signedUrl;item.actionLabel="Apri PDF"}}}
+    if(!item.accessUrl&&folderSource?.folder_url){item.accessKind="folder";item.accessUrl=folderSource.folder_url;item.actionLabel=folderSource.provider==="icloud"?"Apri cartella iCloud":"Apri archivio";item.fileHint=item.fileHint||content.source_filename||basename(content.source_path)||content.source_path;item.archiveUrl=item.archiveUrl||folderSource.folder_url}
     built.push(item);
   }
-
   return built;
 }
-
 async function loadCourse(courseId){
-  status.className="";
-  status.textContent="Caricamento…";
-  card.hidden=true;
+  status.className="";status.textContent="Caricamento…";card.hidden=true;
   try{
-    const user=await currentUser();
-    if(!courseId)throw new Error("Seleziona un corso.");
-
+    const user=await currentUser();if(!courseId)throw new Error("Seleziona un corso.");
     const [courseResult,lessonsResult,categoriesResult,contentsResult]=await Promise.all([
       client.from("courses").select("id,title,description,created_at").eq("id",courseId).eq("owner_user_id",user.id).single(),
       client.from("course_lessons").select("id,course_id,title,sort_order").eq("course_id",courseId).order("sort_order"),
       client.from("course_categories").select("id,course_id,name,slug,sort_order").eq("owner_user_id",user.id).eq("course_id",courseId).order("sort_order"),
       client.from("course_contents").select("id,course_id,category_id,title,content_type,source_filename,source_path,sort_order,metadata,content_code").eq("owner_user_id",user.id).eq("course_id",courseId).order("sort_order")
     ]);
-    check(courseResult.error,"Lettura corso");
-    check(lessonsResult.error,"Lettura lezioni");
-    check(categoriesResult.error,"Lettura categorie");
-    check(contentsResult.error,"Lettura contenuti");
-
-    const course=courseResult.data;
-    const lessonRows=lessonsResult.data||[];
-    const categoryRows=categoriesResult.data||[];
-    const contentRows=contentsResult.data||[];
-
-    title.textContent=course.title;
-    description.textContent=course.description||"Nessuna descrizione disponibile.";
-
-    lessonsPanel.hidden=!lessonRows.length;
-    lessons.innerHTML=lessonRows.map((lesson,index)=>`<article class="lesson"><span class="badge">Lezione ${index+1}</span><h3>${esc(lesson.title)}</h3></article>`).join("");
-
-    state.categories=new Map(categoryRows.map(row=>[row.id,row]));
-    state.materials=await buildMaterials(user,course.id,contentRows,categoryRows);
-    materialSearch.value="";
-    renderMaterials();
-
-    card.hidden=false;
-    status.className="ok";
-    status.textContent="Corso caricato correttamente.";
-    log.textContent=`REPORT FINALE\n${JSON.stringify({
-      pass:true,
-      course_id:course.id,
-      course_title:course.title,
-      lesson_count:lessonRows.length,
-      material_count:state.materials.length,
-      direct_links:state.materials.filter(item=>item.accessKind==="direct").length,
-      internal_files:state.materials.filter(item=>item.accessKind==="internal").length,
-      folder_links:state.materials.filter(item=>item.accessKind==="folder").length,
-      icloud_mapped:state.materials.filter(item=>item.archiveUrl).length,
-      unavailable:state.materials.filter(item=>!item.accessUrl).length,
-      external_sources:state.sources.length
-    },null,2)}`;
-  }catch(error){
-    status.className="error";
-    status.textContent=error.message;
-    log.textContent=`ERRORE COMPLETO\n${error.stack||error.message}`;
-  }
+    check(courseResult.error,"Lettura corso");check(lessonsResult.error,"Lettura lezioni");check(categoriesResult.error,"Lettura categorie");check(contentsResult.error,"Lettura contenuti");
+    const course=courseResult.data,lessonRows=lessonsResult.data||[],categoryRows=categoriesResult.data||[],contentRows=contentsResult.data||[];
+    title.textContent=course.title;description.textContent=course.description||"Nessuna descrizione disponibile.";
+    lessonsPanel.hidden=!lessonRows.length;lessons.innerHTML=lessonRows.map((lesson,index)=>`<article class="lesson"><span class="badge">Lezione ${index+1}</span><h3>${esc(lesson.title)}</h3></article>`).join("");
+    state.categories=new Map(categoryRows.map(row=>[row.id,row]));state.materials=await buildMaterials(user,course.id,contentRows,categoryRows);materialSearch.value="";renderMaterials();
+    card.hidden=false;status.className="ok";status.textContent="Corso caricato correttamente.";
+    log.textContent=`REPORT FINALE\n${JSON.stringify({pass:true,course_id:course.id,course_title:course.title,lesson_count:lessonRows.length,material_count:state.materials.length,icloud_mapped:state.materials.filter(item=>item.archiveUrl).length,external_sources:state.sources.length,video_sources:state.sources.filter(source=>["video-lezioni","video-pillole"].includes(state.categories.get(source.category_id)?.slug)).length},null,2)}`;
+  }catch(error){status.className="error";status.textContent=error.message;log.textContent=`ERRORE COMPLETO\n${error.stack||error.message}`}
 }
-
 async function init(){
   try{
-    const user=await currentUser();
-    const{data,error}=await client.from("courses").select("id,title,description,created_at").eq("owner_user_id",user.id).order("created_at",{ascending:false});
-    check(error,"Lettura courses");
-    courseSelect.innerHTML="";
-
-    if(!(data||[]).length){
-      const option=document.createElement("option");
-      option.textContent="Nessun corso presente";
-      option.value="";
-      courseSelect.appendChild(option);
-      status.className="meta";
-      status.textContent="La struttura è pronta, ma la tabella courses è ancora vuota.";
-      log.textContent=`REPORT FINALE\n${JSON.stringify({pass:true,course_count:0,empty_state:true},null,2)}`;
-      return;
-    }
-
-    const placeholder=document.createElement("option");
-    placeholder.value="";
-    placeholder.textContent="Seleziona…";
-    courseSelect.appendChild(placeholder);
-    for(const course of data){
-      const option=document.createElement("option");
-      option.value=course.id;
-      option.textContent=course.title;
-      courseSelect.appendChild(option);
-    }
-    loadButton.disabled=false;
-    status.className="ok";
-    status.textContent=`${data.length} corsi disponibili.`;
-
-    const requestedCourse=new URLSearchParams(window.location.search).get("course");
-    if(requestedCourse&&(data||[]).some(course=>course.id===requestedCourse)){
-      courseSelect.value=requestedCourse;
-      await loadCourse(requestedCourse);
-    }
-  }catch(error){
-    status.className="error";
-    status.textContent=error.message;
-    log.textContent=`ERRORE COMPLETO\n${error.stack||error.message}`;
-  }
+    const user=await currentUser();const{data,error}=await client.from("courses").select("id,title,description,created_at").eq("owner_user_id",user.id).order("created_at",{ascending:false});check(error,"Lettura courses");courseSelect.innerHTML="";
+    if(!(data||[]).length){courseSelect.innerHTML='<option value="">Nessun corso presente</option>';status.className="meta";status.textContent="La struttura è pronta, ma la tabella courses è ancora vuota.";return}
+    courseSelect.innerHTML='<option value="">Seleziona…</option>'+(data||[]).map(course=>`<option value="${esc(course.id)}">${esc(course.title)}</option>`).join("");loadButton.disabled=false;status.className="ok";status.textContent=`${data.length} corsi disponibili.`;
+    const requestedCourse=new URLSearchParams(window.location.search).get("course");if(requestedCourse&&(data||[]).some(course=>course.id===requestedCourse)){courseSelect.value=requestedCourse;await loadCourse(requestedCourse)}
+  }catch(error){status.className="error";status.textContent=error.message;log.textContent=`ERRORE COMPLETO\n${error.stack||error.message}`}
 }
-
-loadButton.addEventListener("click",()=>loadCourse(courseSelect.value));
-courseSelect.addEventListener("change",()=>{if(courseSelect.value)void loadCourse(courseSelect.value)});
-materialSearch.addEventListener("input",renderMaterials);
-
-void init();
+loadButton.addEventListener("click",()=>loadCourse(courseSelect.value));courseSelect.addEventListener("change",()=>{if(courseSelect.value)void loadCourse(courseSelect.value)});materialSearch.addEventListener("input",renderMaterials);void init();
 </script>
 </body>
 </html>
