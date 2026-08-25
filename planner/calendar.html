@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6b4f">
+  <meta name="description" content="Calendario mensile di pasti e Meal Prep di Cucina Hub.">
+  <title>Calendario Planner — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../style.css?v=13">
+  <link rel="stylesheet" href="calendar.css?v=1">
+</head>
+<body>
+  <header class="calendar-topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">📅</div>
+      <div><p class="eyebrow">Milestone E · Planner</p><h1>Calendario</h1></div>
+    </div>
+    <nav class="calendar-actions" aria-label="Navigazione calendario">
+      <a class="button secondary" href="index.html?v=12">← Planner</a>
+      <a class="button secondary" href="../index.html?v=15">Cucina Hub</a>
+    </nav>
+  </header>
+
+  <main class="calendar-main">
+    <section class="calendar-intro">
+      <p class="eyebrow">Vista mensile</p>
+      <h2>Pasti e preparazioni, nello stesso calendario.</h2>
+      <p>Il calendario legge i pasti già presenti nel Planner e le attività Meal Prep. Non duplica dati e non crea nuovi record.</p>
+    </section>
+
+    <p id="calendarStatus" class="calendar-status" role="status" aria-live="polite">Caricamento calendario…</p>
+
+    <section id="authGate" class="calendar-panel calendar-gate" hidden>
+      <span class="gate-icon" aria-hidden="true">🔐</span>
+      <div><h2>Accedi prima di continuare</h2><p>Il calendario usa gli stessi dati privati del Planner.</p></div>
+      <a class="button" href="../index.html?v=15">Vai all’accesso</a>
+    </section>
+
+    <section id="errorPanel" class="calendar-panel calendar-gate" hidden>
+      <span class="gate-icon" aria-hidden="true">⚠️</span>
+      <div><h2>Calendario non disponibile</h2><p id="errorMessage">Non è stato possibile caricare i dati.</p></div>
+      <button id="retryLoad" class="button secondary" type="button">RIPROVA</button>
+    </section>
+
+    <section id="calendarWorkspace" class="calendar-panel" hidden>
+      <div class="calendar-toolbar">
+        <div class="calendar-month-copy">
+          <span>Periodo visibile</span>
+          <strong id="monthTitle">Mese</strong>
+          <span id="monthRange"></span>
+        </div>
+        <div class="calendar-controls" aria-label="Navigazione mesi">
+          <button id="previousMonth" class="button secondary" type="button">← PRECEDENTE</button>
+          <button id="currentMonth" class="button secondary" type="button">OGGI</button>
+          <button id="nextMonth" class="button secondary" type="button">SUCCESSIVO →</button>
+        </div>
+        <label class="calendar-filter" for="calendarFilter">
+          <span>Mostra</span>
+          <select id="calendarFilter">
+            <option value="all">Tutto</option>
+            <option value="meals">Solo pasti</option>
+            <option value="prep">Solo Meal Prep</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="calendar-stats" aria-label="Riepilogo periodo">
+        <div class="calendar-stat"><span>Pasti nel periodo</span><strong id="calendarMealCount">0</strong></div>
+        <div class="calendar-stat"><span>Attività Meal Prep</span><strong id="calendarPrepCount">0</strong></div>
+      </div>
+
+      <div class="calendar-scroll" tabindex="0" aria-label="Calendario mensile scorrevole">
+        <div class="calendar-weekdays" aria-hidden="true">
+          <span>Lun</span><span>Mar</span><span>Mer</span><span>Gio</span><span>Ven</span><span>Sab</span><span>Dom</span>
+        </div>
+        <div id="calendarGrid" class="calendar-grid" aria-live="polite"></div>
+      </div>
+
+      <div class="calendar-legend">
+        <span>🍽️ Pasto del Planner</span>
+        <span>🧰 Attività Meal Prep</span>
+        <span>Il bordo evidenzia la giornata di oggi.</span>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js?v=12"></script>
+  <script src="../supabase-client.js?v=12"></script>
+  <script src="calendar-core.js?v=1"></script>
+  <script src="calendar.js?v=1"></script>
+</body>
+</html>
