@@ -390,11 +390,14 @@ function queryFor(table) {
 global.document = {
   querySelector(selector) {
     return elements.get(selector) ?? null;
+  },
+  querySelectorAll() {
+    return [];
   }
 };
 
 global.window = {
-  location: { href: "https://example.test/planner/index.html?v=13", search: "?v=13" },
+  location: { href: "https://example.test/planner/workspace.html?v=14&section=meal-plan", search: "?v=14&section=meal-plan" },
   history: { replaceState() {} },
   CucinaHubPlannerCore: core,
   CucinaHubMealPrepCore: require("./meal-prep-core.js"),

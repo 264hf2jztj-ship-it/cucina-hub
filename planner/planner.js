@@ -35,6 +35,32 @@ const state = {
   busy: false
 };
 
+const WORKSPACE_SECTIONS = Object.freeze({
+  "meal-plan": Object.freeze({
+    title: "Pianifica pasto",
+    heading: "Pianifica e gestisci i pasti della settimana.",
+    description: "Scegli una ricetta della Biblioteca, aggiungi il pasto e mantieni il collegamento senza duplicare i contenuti."
+  }),
+  "shopping-list": Object.freeze({
+    title: "Lista spesa",
+    heading: "La spesa della settimana, in una schermata dedicata.",
+    description: "Aggiorna dagli ingredienti del Planner, conserva le voci manuali e spunta ciò che hai già acquistato."
+  }),
+  "meal-prep": Object.freeze({
+    title: "Meal Prep",
+    heading: "Organizza le preparazioni collegate ai pasti.",
+    description: "Crea attività, imposta data e conservazione e segui lo stato da fare, in corso o completata."
+  }),
+  "menu-package": Object.freeze({
+    title: "Menu Package",
+    heading: "Importa e controlla i menu preparati nella chat.",
+    description: "Apri le anteprime ricevute oppure carica un pacchetto: nessun pasto viene salvato senza conferma finale."
+  })
+});
+
+const requestedSection = new URLSearchParams(window.location.search).get("section");
+const activeWorkspaceSection = WORKSPACE_SECTIONS[requestedSection] ? requestedSection : "meal-plan";
+
 const elements = {
   status: document.querySelector("#pageStatus"),
   authGate: document.querySelector("#authGate"),
@@ -121,6 +147,27 @@ const elements = {
   count: document.querySelector("#mealCount"),
   list: document.querySelector("#mealList")
 };
+
+function applyWorkspaceSection() {
+  const section = WORKSPACE_SECTIONS[activeWorkspaceSection];
+  document.querySelectorAll("[data-planner-module]").forEach(panel => {
+    panel.hidden = panel.dataset.plannerModule !== activeWorkspaceSection;
+  });
+  const title = document.querySelector("#workspaceTitle");
+  const heading = document.querySelector("#workspaceHeading");
+  const description = document.querySelector("#workspaceDescription");
+  if (title) title.textContent = section.title;
+  if (heading) heading.textContent = section.heading;
+  if (description) description.textContent = section.description;
+  document.title = `${section.title} — Cucina Hub`;
+}
+
+function updateWorkspaceLinks() {
+  const back = document.querySelector("#backPlannerHub");
+  if (back && core.isRealDate(state.weekAnchor)) {
+    back.href = `index.html?v=14&week=${encodeURIComponent(state.weekAnchor)}`;
+  }
+}
 
 function escapeHtml(value = "") {
   return String(value)
@@ -2033,7 +2080,7 @@ function setBusy(busy) {
 function populateRecipes() {
   if (!state.recipes.length) {
     elements.recipe.innerHTML = '<option value="">Nessuna ricetta disponibile</option>';
-    elements.recipeHelp.innerHTML = 'Aggiungi prima una ricetta nella <a href="../index.html?v=16&amp;view=recipes">Biblioteca</a>.';
+    elements.recipeHelp.innerHTML = 'Aggiungi prima una ricetta nella <a href="../index.html?v=17&amp;view=recipes">Biblioteca</a>.';
     elements.recipeHelp.classList.add("warning");
     updateFormAvailability();
     return;
@@ -2367,6 +2414,7 @@ async function selectWeek(anchorDate) {
     const url = new URL(window.location.href);
     url.searchParams.set("week", anchorDate);
     window.history.replaceState(null, "", url);
+    updateWorkspaceLinks();
     state.meals = meals;
     state.shoppingListFilter = "active";
     await Promise.all([
@@ -2808,16 +2856,18 @@ async function initialize() {
 
     state.ownerUserId = user.id;
     const requestedWeek = new URLSearchParams(window.location.search).get("week");
+    const requestedDate = new URLSearchParams(window.location.search).get("date");
     state.weekAnchor = state.weekAnchor ?? (core.isRealDate(requestedWeek) ? requestedWeek : core.localDateValue());
     await loadData();
     populateRecipes();
     renderPlanner();
-    resetForm(state.weekAnchor);
+    resetForm(core.isRealDate(requestedDate) ? requestedDate : state.weekAnchor);
     resetShoppingListForm();
     resetMealPrepForm(state.meals[0]?.id ?? "");
     resetMenuImport();
     if (!menuPlanEngine) renderMenuPlanUnavailable();
     elements.workspace.hidden = false;
+    updateWorkspaceLinks();
     const previewAvailable = await loadMenuPreviewRequests();
     const baseStatus = state.recipes.length
       ? "Planner pronto. I pasti sono collegati alle ricette della tua Biblioteca."
@@ -2939,4 +2989,5 @@ elements.menuClear.addEventListener("click", () => {
 elements.menuFile.addEventListener("change", () => void loadMenuPlanFile());
 elements.retry.addEventListener("click", () => void initialize());
 
+applyWorkspaceSection();
 void initialize();

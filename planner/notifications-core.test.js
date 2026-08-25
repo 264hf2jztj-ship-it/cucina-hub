@@ -39,8 +39,10 @@ test("buildNotifications derives meal and Meal Prep reminders", () => {
   assert.equal(notifications.length, 2);
   assert.equal(notifications[0].source_type, "meal_prep_task");
   assert.equal(notifications[0].due, true);
+  assert.equal(notifications[0].href, "workspace.html?v=14&section=meal-prep&week=2026-08-25");
   assert.equal(notifications[1].title, "R-1 — Pollo al forno");
   assert.equal(notifications[1].due, false);
+  assert.equal(notifications[1].href, "workspace.html?v=14&section=meal-plan&week=2026-08-25&date=2026-08-25");
 });
 
 test("items without a time and completed prep tasks do not create reminders", () => {

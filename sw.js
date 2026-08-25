@@ -1,4 +1,4 @@
-const CACHE_NAME = "cucina-hub-v16";
+const CACHE_NAME = "cucina-hub-v17";
 
 const APP_SHELL = [
   "./",
@@ -86,7 +86,7 @@ self.addEventListener("fetch", event => {
 
 self.addEventListener("notificationclick", event => {
   event.notification.close();
-  const destination = event.notification.data?.url || new URL("./planner/notifications.html?v=1", self.location.href).href;
+  const destination = event.notification.data?.url || new URL("./planner/notifications.html?v=2", self.location.href).href;
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then(openClients => {
       const matchingClient = openClients.find(client => client.url === destination);
