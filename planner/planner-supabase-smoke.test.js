@@ -394,6 +394,8 @@ global.document = {
 };
 
 global.window = {
+  location: { href: "https://example.test/planner/index.html?v=13", search: "?v=13" },
+  history: { replaceState() {} },
   CucinaHubPlannerCore: core,
   CucinaHubMealPrepCore: require("./meal-prep-core.js"),
   CucinaHubShoppingListCore: shoppingListCore,
@@ -517,7 +519,7 @@ global.window = {
 (async () => {
   require("./planner.js");
   const settle = async () => {
-    for (let turn = 0; turn < 8; turn += 1) {
+    for (let turn = 0; turn < 20; turn += 1) {
       await new Promise(resolve => setTimeout(resolve, 0));
     }
   };

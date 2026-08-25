@@ -2033,7 +2033,7 @@ function setBusy(busy) {
 function populateRecipes() {
   if (!state.recipes.length) {
     elements.recipe.innerHTML = '<option value="">Nessuna ricetta disponibile</option>';
-    elements.recipeHelp.innerHTML = 'Aggiungi prima una ricetta nella <a href="../index.html?v=15&amp;view=recipes">Biblioteca</a>.';
+    elements.recipeHelp.innerHTML = 'Aggiungi prima una ricetta nella <a href="../index.html?v=16&amp;view=recipes">Biblioteca</a>.';
     elements.recipeHelp.classList.add("warning");
     updateFormAvailability();
     return;
@@ -2364,6 +2364,9 @@ async function selectWeek(anchorDate) {
   try {
     const meals = await fetchMealsForWeek(anchorDate);
     state.weekAnchor = anchorDate;
+    const url = new URL(window.location.href);
+    url.searchParams.set("week", anchorDate);
+    window.history.replaceState(null, "", url);
     state.meals = meals;
     state.shoppingListFilter = "active";
     await Promise.all([
@@ -2804,7 +2807,8 @@ async function initialize() {
     }
 
     state.ownerUserId = user.id;
-    state.weekAnchor = state.weekAnchor ?? core.localDateValue();
+    const requestedWeek = new URLSearchParams(window.location.search).get("week");
+    state.weekAnchor = state.weekAnchor ?? (core.isRealDate(requestedWeek) ? requestedWeek : core.localDateValue());
     await loadData();
     populateRecipes();
     renderPlanner();
