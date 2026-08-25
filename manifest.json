@@ -1,6 +1,7 @@
 {
   "name": "Cucina Hub",
   "short_name": "Cucina Hub",
+  "id": "./",
   "description": "Ricette, elettrodomestici, manuali e appunti pratici del progetto Cucina.",
   "start_url": "./",
   "scope": "./",

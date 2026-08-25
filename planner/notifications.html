@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6b4f">
+  <meta name="description" content="Centro notifiche personale del Planner di Cucina Hub.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Notifiche Planner — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="../manifest.json">
+  <link rel="stylesheet" href="../style.css?v=16">
+  <link rel="stylesheet" href="notifications.css?v=1">
+</head>
+<body>
+  <header class="notifications-topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">🔔</div>
+      <div><p class="eyebrow">Milestone E · Planner</p><h1>Notifiche</h1></div>
+    </div>
+    <nav class="notifications-actions" aria-label="Navigazione notifiche">
+      <a class="button secondary" href="index.html?v=13">← Planner</a>
+      <a class="button secondary" href="calendar.html?v=2">Calendario</a>
+    </nav>
+  </header>
+
+  <main class="notifications-main">
+    <section class="notifications-intro">
+      <p class="eyebrow">Promemoria personali</p>
+      <h2>Pasti e preparazioni, al momento giusto.</h2>
+      <p>Gli avvisi derivano dagli orari già impostati nel Planner e nel Meal Prep. Gli elementi senza orario restano nel Planner ma non generano promemoria.</p>
+    </section>
+
+    <p id="notificationsStatus" class="notifications-status" role="status" aria-live="polite">Caricamento notifiche…</p>
+
+    <section id="authGate" class="notifications-panel notifications-gate" hidden>
+      <span class="gate-icon" aria-hidden="true">🔐</span>
+      <div><h2>Accedi prima di continuare</h2><p>Preferenze e stati delle notifiche sono personali.</p></div>
+      <a class="button" href="../index.html?v=16">Vai all’accesso</a>
+    </section>
+
+    <section id="missingMigration" class="notifications-panel notifications-gate" hidden>
+      <span class="gate-icon" aria-hidden="true">🧱</span>
+      <div><h2>Notifiche non ancora attivate</h2><p>La migration 049 non risulta disponibile nel database.</p></div>
+      <button id="retryLoad" class="button secondary" type="button">RIPROVA</button>
+    </section>
+
+    <section id="errorPanel" class="notifications-panel notifications-gate" hidden>
+      <span class="gate-icon" aria-hidden="true">⚠️</span>
+      <div><h2>Notifiche non disponibili</h2><p id="errorMessage">Non è stato possibile caricare i dati.</p></div>
+      <button id="retryError" class="button secondary" type="button">RIPROVA</button>
+    </section>
+
+    <div id="notificationsWorkspace" class="notifications-workspace" hidden>
+      <section class="notifications-panel settings-panel">
+        <div class="panel-heading">
+          <div><p class="eyebrow">Impostazioni</p><h2>Quando avvisarmi</h2></div>
+          <button id="savePreferences" class="button" type="button">SALVA</button>
+        </div>
+
+        <div class="preference-grid">
+          <label class="preference-card">
+            <span class="preference-toggle"><input id="mealsEnabled" type="checkbox"><strong>Pasti</strong></span>
+            <span>Anticipo</span>
+            <select id="mealLeadMinutes">
+              <option value="0">All’orario previsto</option>
+              <option value="15">15 minuti prima</option>
+              <option value="30">30 minuti prima</option>
+              <option value="60">1 ora prima</option>
+              <option value="120">2 ore prima</option>
+              <option value="1440">1 giorno prima</option>
+            </select>
+          </label>
+
+          <label class="preference-card">
+            <span class="preference-toggle"><input id="mealPrepEnabled" type="checkbox"><strong>Meal Prep</strong></span>
+            <span>Anticipo</span>
+            <select id="mealPrepLeadMinutes">
+              <option value="0">All’orario previsto</option>
+              <option value="15">15 minuti prima</option>
+              <option value="30">30 minuti prima</option>
+              <option value="60">1 ora prima</option>
+              <option value="120">2 ore prima</option>
+              <option value="1440">1 giorno prima</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="system-notifications">
+          <div>
+            <strong>Avvisi di sistema</strong>
+            <p id="systemHelp">Puoi ricevere un avviso mentre Cucina Hub è aperta.</p>
+          </div>
+          <button id="enableSystemNotifications" class="button secondary" type="button">ATTIVA</button>
+        </div>
+      </section>
+
+      <section class="notification-summary" aria-label="Riepilogo notifiche">
+        <div><span>Da leggere</span><strong id="unreadCount">0</strong></div>
+        <div><span>In arrivo</span><strong id="upcomingCount">0</strong></div>
+        <div><span>Senza orario</span><strong id="missingTimeCount">0</strong></div>
+      </section>
+
+      <section class="notifications-panel center-panel">
+        <div class="panel-heading">
+          <div><p class="eyebrow">Centro notifiche</p><h2>Promemoria</h2></div>
+          <button id="markAllRead" class="button secondary" type="button">SEGNA TUTTE LETTE</button>
+        </div>
+
+        <div class="notification-filter" role="group" aria-label="Filtro notifiche">
+          <button class="filter-button is-active" type="button" data-filter="active">Attive</button>
+          <button class="filter-button" type="button" data-filter="due">Da leggere</button>
+          <button class="filter-button" type="button" data-filter="upcoming">In arrivo</button>
+          <button class="filter-button" type="button" data-filter="dismissed">Ignorate</button>
+        </div>
+
+        <div id="notificationList" class="notification-list" aria-live="polite"></div>
+      </section>
+
+      <aside class="notifications-note">
+        <strong>Su iPhone</strong>
+        <span>Per gli avvisi di sistema aggiungi Cucina Hub alla schermata Home e aprila dalla sua icona. Il Centro notifiche interno funziona anche in Safari.</span>
+      </aside>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js?v=13"></script>
+  <script src="../supabase-client.js?v=13"></script>
+  <script src="notifications-core.js?v=1"></script>
+  <script src="notifications.js?v=1"></script>
+</body>
+</html>

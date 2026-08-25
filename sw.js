@@ -1,4 +1,4 @@
-const CACHE_NAME = "cucina-hub-v15";
+const CACHE_NAME = "cucina-hub-v16";
 
 const APP_SHELL = [
   "./",
@@ -81,5 +81,17 @@ self.addEventListener("fetch", event => {
           Response.error()
         );
       })
+  );
+});
+
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  const destination = event.notification.data?.url || new URL("./planner/notifications.html?v=1", self.location.href).href;
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(openClients => {
+      const matchingClient = openClients.find(client => client.url === destination);
+      if (matchingClient) return matchingClient.focus();
+      return clients.openWindow(destination);
+    })
   );
 });
