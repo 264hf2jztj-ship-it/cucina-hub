@@ -1,4 +1,4 @@
-const CACHE_NAME = "cucina-hub-v24";
+const CACHE_NAME = "cucina-hub-v25";
 
 const APP_SHELL = [
   "./",
@@ -30,6 +30,9 @@ const APP_SHELL = [
   "./fermentation/fermentation-assistant.html",
   "./fermentation/assistant-response-ui.js",
   "./fermentation/assistant-provider-ui.js",
+  "./knowledge/rag.html",
+  "./knowledge/rag.css",
+  "./knowledge/rag.js",
   "./workflow-engine/fermentation-learning-engine.js",
   "./workflow-engine/fermentation-assistant-context-engine.js",
   "./workflow-engine/fermentation-assistant-response-engine.js",

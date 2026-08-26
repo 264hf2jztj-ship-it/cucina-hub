@@ -92,6 +92,27 @@ function learningSnapshot(learning){
     source:'personal_learning'
   });
 }
+function librarySnapshot(results,query){
+  const items=(Array.isArray(results)?results:[]).slice(0,8).map(item=>cleanObject({
+    source_id:`library.${item.chunk_id}`,
+    chunk_id:item.chunk_id,
+    source_index_id:item.source_index_id,
+    source_kind:item.source_kind,
+    source_entity_id:item.source_entity_id,
+    title:text(item.display_name)||'Fonte Biblioteca',
+    heading:text(item.heading)||null,
+    locator:text(item.locator)||null,
+    excerpt:text(item.content).slice(0,4000),
+    relevance:numberOrNull(item.rank)
+  }));
+  return cleanObject({
+    available:items.length>0,
+    query:text(query)||null,
+    result_count:items.length,
+    results:items,
+    privacy:'private_user_sources_only'
+  });
+}
 function buildWarnings(input,environment,flours,learning){
   const warnings=[];
   if(!text(input.product_style))warnings.push('Seleziona il tipo di preparazione.');
@@ -102,8 +123,8 @@ function buildWarnings(input,environment,flours,learning){
   if(Number(learning.sample_count||0)<2)warnings.push('Learning personale insufficiente: non usare la singola prova come regola.');
   return warnings;
 }
-function buildSources(environment,flours,learning){
-  return [
+function buildSources(environment,flours,learning,library){
+  const sources=[
     {
       id:'laboratory.environment',
       label:'Profilo ambiente personale',
@@ -124,21 +145,30 @@ function buildSources(environment,flours,learning){
       type:'personal_learning',
       status:Number(learning.sample_count||0)>=2?'available':'insufficient',
       usage:'Pattern personali con affidabilità dichiarata'
-    },
-    {
-      id:'library.sources',
-      label:'Fonti della Biblioteca',
-      type:'library_knowledge',
-      status:'not_connected_in_this_step',
-      usage:'Tecniche e ricette documentate; collegamento previsto nel sottostep RAG'
     }
   ];
+  if(!library.results.length)sources.push({
+    id:'library.sources',
+    label:'Fonti della Biblioteca',
+    type:'library_knowledge',
+    status:'missing',
+    usage:'Nessun frammento indicizzato pertinente trovato per questa richiesta'
+  });
+  else library.results.forEach(item=>sources.push({
+    id:item.source_id,
+    label:item.title,
+    type:'library_knowledge',
+    status:'available',
+    usage:[item.heading,item.locator].filter(Boolean).join(' · ')||'Frammento indicizzato pertinente'
+  }));
+  return sources;
 }
 function buildRequest(options={}){
   const input=options.input||{};
   const environment=environmentSnapshot(options.environment||null);
   const flours=(Array.isArray(options.flours)?options.flours:[]).map(flourSnapshot);
   const learning=learningSnapshot(options.learning||null);
+  const library=librarySnapshot(options.libraryResults||[],options.libraryQuery||'');
   const warnings=buildWarnings(input,environment,flours,learning);
   const requiredReady=Boolean(text(input.product_style)&&text(input.result_goal)&&environment&&flours.length);
   const packet=cleanObject({
@@ -176,7 +206,8 @@ function buildRequest(options={}){
       available_flours:flours,
       learning
     },
-    sources:buildSources(environment,flours,learning),
+    retrieval_context:{library},
+    sources:buildSources(environment,flours,learning,library),
     output_contract:{
       sections:['ingredients','dough_sizing','timeline','process','explanations','sources','uncertainties'],
       ingredient_units:'grams',
@@ -210,6 +241,7 @@ function buildPrompt(packet){
     'Prepara una proposta tecnica in anteprima usando prima i dati personali disponibili.',
     'Non creare, aggiornare o salvare ricette e sessioni. Qualsiasi applicazione richiede conferma esplicita dell’utente.',
     'Distingui sempre dati osservati, informazioni delle fonti e inferenze. Non presentare correlazioni del Learning come causalità.',
+    'Per la Biblioteca usa esclusivamente i frammenti presenti in retrieval_context.library.results e cita il relativo source_id. Un link o un metadato senza frammento non equivale a contenuto consultato.',
     '',
     `Preparazione: ${packet.goal.product_label}.`,
     `Obiettivo: ${packet.goal.result_goal_label}.`,
@@ -234,6 +266,7 @@ function validate(packet){
   if(packet?.guardrails?.automatic_writes!==false)errors.push('Le scritture automatiche devono essere disattivate.');
   if(packet?.guardrails?.requires_user_confirmation!==true)errors.push('La conferma utente è obbligatoria.');
   if(!Array.isArray(packet?.sources))errors.push('Manifesto fonti mancante.');
+  if(!Array.isArray(packet?.retrieval_context?.library?.results))errors.push('Contesto RAG Biblioteca mancante.');
   if(!Array.isArray(packet?.readiness?.warnings))errors.push('Avvisi di completezza mancanti.');
   return{valid:errors.length===0,errors};
 }
