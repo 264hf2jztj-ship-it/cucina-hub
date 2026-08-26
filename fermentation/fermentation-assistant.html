@@ -8,7 +8,7 @@
 </style>
 </head>
 <body><main>
-<div class="head"><div><h1>AI Fermentation Assistant</h1><p class="muted">Prepara il contesto personale che l’AI dovrà usare e mostra in anticipo fonti, dati mancanti e regole di sicurezza.</p></div><div class="head-actions"><a class="button secondary" href="./baking-wizard.html?v=22">WIZARD</a><a class="button secondary" href="./fermentation-learning.html?v=2">LEARNING</a><a class="button secondary" href="./baking-sessions.html?v=9">SESSIONI</a></div></div>
+<div class="head"><div><h1>AI Fermentation Assistant</h1><p class="muted">Prepara il contesto personale che l’AI dovrà usare e mostra in anticipo fonti, dati mancanti e regole di sicurezza.</p></div><div class="head-actions"><a class="button secondary" href="./index.html?v=2">← LABORATORIO</a><a class="button secondary" href="./baking-wizard.html?v=22">WIZARD</a><a class="button secondary" href="./fermentation-learning.html?v=2">LEARNING</a><a class="button secondary" href="./baking-sessions.html?v=9">SESSIONI</a></div></div>
 
 <section class="panel">
 <h2>1. Obiettivo della proposta</h2>
@@ -72,4 +72,7 @@ async function build(){try{setStatus('Preparazione della richiesta…');const st
 async function copyText(value,label){try{if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(value);else{const area=document.createElement('textarea');area.value=value;document.body.appendChild(area);area.select();document.execCommand('copy');area.remove()}setStatus(`${label} copiato negli appunti.`,'ok')}catch(error){setStatus('Impossibile copiare: '+error.message,'error')}}
 async function load(){try{defaultDate();renderFormat();const auth=await c.auth.getSession();if(auth.error)throw auth.error;if(!auth.data.session?.user)throw new Error('Accedi prima di continuare.');owner=auth.data.session.user.id;const [environmentResult,flourResult,sessionResult]=await Promise.all([c.from('fermentation_environment_profiles').select('*').eq('owner_user_id',owner).order('is_default',{ascending:false}).order('name'),c.from('flour_profiles').select('*').eq('owner_user_id',owner).order('is_default',{ascending:false}).order('brand').order('name'),c.from('baking_sessions').select('*').eq('status','completed').order('completed_at',{ascending:false,nullsFirst:false})]);if(environmentResult.error)throw environmentResult.error;if(flourResult.error)throw flourResult.error;if(sessionResult.error)throw sessionResult.error;environments=environmentResult.data||[];flourProfiles=flourResult.data||[];sessions=sessionResult.data||[];if(sessions.length){const evaluationResult=await c.from('baking_session_evaluations').select('*').in('session_id',sessions.map(item=>item.id));if(evaluationResult.error)throw evaluationResult.error;(evaluationResult.data||[]).forEach(item=>evaluations[item.session_id]=item)}renderEnvironment();renderFlours();setStatus('Dati personali caricati. Prepara la richiesta quando sei pronto.','ok')}catch(error){setStatus(error.message,'error')}}
 $('#style').addEventListener('change',renderFormat);$('#build').addEventListener('click',build);$('#copyPrompt').addEventListener('click',()=>copyText($('#prompt').value,'Prompt'));$('#copyPacket').addEventListener('click',()=>copyText($('#packet').value,'JSON'));load();
-</script></body></html>
+</script>
+<script src="./assistant-response-ui.js?v=2"></script>
+<script src="./assistant-provider-ui.js?v=2"></script>
+</body></html>
