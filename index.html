@@ -8,7 +8,8 @@
   <title>Cucina Hub</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=14">
+  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="dashboard.css?v=1">
   <style>
     [hidden] {
       display: none !important;
@@ -135,7 +136,8 @@
   </template>
 
   <!-- Avvia subito la dashboard statica senza attendere librerie esterne. -->
-  <script src="app.js?v=15"></script>
+  <script src="dashboard-core.js?v=1"></script>
+  <script src="app.js?v=16"></script>
   <script src="appliance-detail-links.js?v=22"></script>
   <script>
     document.querySelector("#loginForm").addEventListener(
@@ -157,5 +159,7 @@
   <script src="supabase-config.js?v=12" defer></script>
   <script src="supabase-client.js?v=12" defer></script>
   <script src="auth.js?v=12" defer></script>
+  <script src="planner/notifications-core.js?v=2" defer></script>
+  <script src="dashboard.js?v=1" defer></script>
 </body>
 </html>
