@@ -1,4 +1,4 @@
-const CACHE_NAME = "cucina-hub-v22";
+const CACHE_NAME = "cucina-hub-v23";
 
 const APP_SHELL = [
   "./",
@@ -20,6 +20,10 @@ const APP_SHELL = [
   "./experiments/experiments-core.js",
   "./experiments/experiments.js",
   "./experiments/experiments.css",
+  "./versions/index.html",
+  "./versions/versions-core.js",
+  "./versions/versions.js",
+  "./versions/versions.css",
   "./supabase-config.js",
   "./supabase-client.js",
   "./recipe-library-supabase.js",
