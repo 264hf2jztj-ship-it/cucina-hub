@@ -1,14 +1,161 @@
-(function(){
-'use strict';
-const c=window.cucinaHubSupabase,$=selector=>document.querySelector(selector);let sources=[];
-const labels={indexed:'Indicizzata per l’AI',metadata_only:'Solo metadati',unavailable:'Non disponibile all’AI'};
-const kinds={manual:'Manuale',course:'Corso',knowledge_object:'Knowledge Object'};
-function esc(value){return String(value??'').replace(/[&<>\'\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
-function status(text,kind=''){$('#pageStatus').textContent=text;$('#pageStatus').className=`knowledge-status ${kind}`}
-function sourceKind(item){return item.manual_id?'manual':item.course_id?'course':'knowledge_object'}
-function renderStats(){$('#indexedCount').textContent=sources.filter(item=>item.access_status==='indexed').length;$('#metadataCount').textContent=sources.filter(item=>item.access_status==='metadata_only').length;$('#unavailableCount').textContent=sources.filter(item=>item.access_status==='unavailable').length;$('#chunkCount').textContent=sources.reduce((total,item)=>total+Number(item.chunk_count||0),0)}
-function renderSources(){const filter=$('#statusFilter').value,items=filter==='all'?sources:sources.filter(item=>item.access_status===filter);$('#sourceList').innerHTML=items.length?items.map(item=>{const kind=sourceKind(item);return `<article class="rag-card"><div class="rag-card-head"><div><h3>${esc(item.display_name)}</h3><small>${esc(kinds[kind])} · originale ${esc(item.original_provider)}</small></div><span class="rag-badge ${esc(item.access_status)}">${esc(labels[item.access_status])}</span></div><div class="rag-meta">${Number(item.chunk_count||0)} frammenti${item.source_locator?` · riferimento esterno conservato`:''}</div></article>`}).join(''):'<p class="muted">Nessuna fonte in questo stato.</p>'}
-async function search(event){event.preventDefault();const query=$('#searchQuery').value.trim();if(!query)return;$('#searchResults').innerHTML='<p class="muted">Ricerca…</p>';const result=await c.rpc('search_rag_sources',{p_query:query,p_limit:8});if(result.error){$('#searchResults').innerHTML=`<p class="knowledge-status error">${esc(result.error.message)}</p>`;return}const items=result.data||[];$('#searchResults').innerHTML=items.length?items.map(item=>`<article class="rag-result"><h3>${esc(item.display_name)}</h3><span class="rag-score">${esc(kinds[item.source_kind]||item.source_kind)}${item.locator?` · ${esc(item.locator)}`:''}</span><p>${esc(item.content)}</p></article>`).join(''):'<p class="muted">Nessun frammento indicizzato corrisponde alla ricerca.</p>'}
-async function load(){try{const auth=await c.auth.getSession();if(auth.error)throw auth.error;if(!auth.data.session?.user){$('#authGate').hidden=false;status('Sessione non disponibile.','error');return}const result=await c.from('rag_source_indexes').select('*').order('display_name');if(result.error)throw result.error;sources=result.data||[];$('#workspace').hidden=false;renderStats();renderSources();status(`${sources.length} fonti private caricate.`,'ok')}catch(error){status(error.message,'error')}}
-$('#statusFilter').addEventListener('change',renderSources);$('#searchForm').addEventListener('submit',search);load();
+(function () {
+  "use strict";
+
+  const $ = selector => document.querySelector(selector);
+  const labels = {
+    indexed: "Indicizzata per l’AI",
+    metadata_only: "Solo metadati",
+    unavailable: "Non disponibile all’AI"
+  };
+  const kinds = {
+    manual: "Manuale",
+    course: "Corso",
+    knowledge_object: "Knowledge Object"
+  };
+  let sources = [];
+  let loading = false;
+
+  function client() {
+    return window.cucinaHubSupabase;
+  }
+
+  function esc(value) {
+    return String(value ?? "").replace(/[&<>\'\"]/g, character => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "'": "&#39;",
+      "\"": "&quot;"
+    })[character]);
+  }
+
+  function status(text, kind = "") {
+    $("#pageStatus").textContent = text;
+    $("#pageStatus").className = `knowledge-status ${kind}`;
+  }
+
+  function showRetry(visible) {
+    $("#retryLoad").hidden = !visible;
+  }
+
+  function sourceKind(item) {
+    return item.manual_id ? "manual" : item.course_id ? "course" : "knowledge_object";
+  }
+
+  function renderStats() {
+    $("#indexedCount").textContent = sources.filter(item => item.access_status === "indexed").length;
+    $("#metadataCount").textContent = sources.filter(item => item.access_status === "metadata_only").length;
+    $("#unavailableCount").textContent = sources.filter(item => item.access_status === "unavailable").length;
+    $("#chunkCount").textContent = sources.reduce((total, item) => total + Number(item.chunk_count || 0), 0);
+  }
+
+  function renderSources() {
+    const filter = $("#statusFilter").value;
+    const items = filter === "all" ? sources : sources.filter(item => item.access_status === filter);
+    $("#sourceList").innerHTML = items.length
+      ? items.map(item => {
+        const kind = sourceKind(item);
+        return `<article class="rag-card"><div class="rag-card-head"><div><h3>${esc(item.display_name)}</h3><small>${esc(kinds[kind])} · originale ${esc(item.original_provider)}</small></div><span class="rag-badge ${esc(item.access_status)}">${esc(labels[item.access_status])}</span></div><div class="rag-meta">${Number(item.chunk_count || 0)} frammenti${item.source_locator ? " · riferimento esterno conservato" : ""}</div></article>`;
+      }).join("")
+      : '<p class="muted">Nessuna fonte in questo stato.</p>';
+  }
+
+  function delay(milliseconds) {
+    return new Promise(resolve => window.setTimeout(resolve, milliseconds));
+  }
+
+  async function retryNetwork(operation) {
+    let lastError;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const result = await operation();
+        if (result?.error) throw result.error;
+        return result;
+      } catch (error) {
+        lastError = error;
+        if (attempt === 0) await delay(450);
+      }
+    }
+    throw lastError;
+  }
+
+  function friendlyLoadError(error) {
+    const message = String(error?.message || error || "");
+    if (/load failed|failed to fetch|network|fetch/i.test(message)) {
+      return "Connessione a Supabase non riuscita. Controlla la rete e premi Riprova.";
+    }
+    return message || "Impossibile caricare le fonti AI. Premi Riprova.";
+  }
+
+  async function search(event) {
+    event.preventDefault();
+    const query = $("#searchQuery").value.trim();
+    if (!query) return;
+    const supabase = client();
+    if (!supabase) {
+      $("#searchResults").innerHTML = '<p class="knowledge-status error">Client Supabase non disponibile. Ricarica la pagina.</p>';
+      return;
+    }
+    $("#searchResults").innerHTML = '<p class="muted">Ricerca…</p>';
+    try {
+      const result = await retryNetwork(() => supabase.rpc("search_rag_sources", { p_query: query, p_limit: 8 }));
+      const items = result.data || [];
+      $("#searchResults").innerHTML = items.length
+        ? items.map(item => `<article class="rag-result"><h3>${esc(item.display_name)}</h3><span class="rag-score">${esc(kinds[item.source_kind] || item.source_kind)}${item.locator ? ` · ${esc(item.locator)}` : ""}</span><p>${esc(item.content)}</p></article>`).join("")
+        : '<p class="muted">Nessun frammento indicizzato corrisponde alla ricerca.</p>';
+    } catch (error) {
+      $("#searchResults").innerHTML = `<p class="knowledge-status error">${esc(friendlyLoadError(error))}</p>`;
+    }
+  }
+
+  async function load() {
+    if (loading) return;
+    loading = true;
+    showRetry(false);
+    status("Caricamento…");
+    $("#authGate").hidden = true;
+
+    try {
+      const supabase = client();
+      if (!supabase) {
+        throw window.cucinaHubSupabaseError || new Error("Client Supabase non disponibile. Ricarica la pagina.");
+      }
+      const auth = await retryNetwork(() => supabase.auth.getSession());
+      const session = auth.data.session;
+      if (!session?.user) {
+        $("#workspace").hidden = true;
+        $("#authGate").hidden = false;
+        status("Sessione non disponibile. Accedi di nuovo.", "error");
+        return;
+      }
+      const result = await retryNetwork(() => supabase
+        .from("rag_source_indexes")
+        .select("*")
+        .eq("owner_user_id", session.user.id)
+        .order("display_name"));
+      sources = result.data || [];
+      $("#workspace").hidden = false;
+      renderStats();
+      renderSources();
+      status(`${sources.length} fonti private caricate.`, "ok");
+    } catch (error) {
+      $("#workspace").hidden = true;
+      status(friendlyLoadError(error), "error");
+      showRetry(true);
+    } finally {
+      loading = false;
+    }
+  }
+
+  $("#statusFilter").addEventListener("change", renderSources);
+  $("#searchForm").addEventListener("submit", search);
+  $("#retryLoad").addEventListener("click", () => {
+    if (!client()) {
+      window.location.reload();
+      return;
+    }
+    load();
+  });
+  window.addEventListener("online", load);
+  load();
 })();

@@ -30,8 +30,12 @@ test("Fonti AI exposes explicit access states and authenticated retrieval",()=>{
   assert.match(html,/Solo metadati/);
   assert.match(html,/Non disponibili/);
   assert.match(js,/auth\.getSession\(\)/);
-  assert.match(js,/\.from\('rag_source_indexes'\)/);
-  assert.match(js,/rpc\('search_rag_sources'/);
+  assert.match(js,/\.from\("rag_source_indexes"\)/);
+  assert.match(js,/\.eq\("owner_user_id", session\.user\.id\)/);
+  assert.match(js,/rpc\("search_rag_sources"/);
+  assert.match(js,/retryNetwork/);
+  assert.match(html,/id="retryLoad"/);
+  assert.match(html,/rag\.js\?v=2/);
 });
 
 test("Fermentation Assistant retrieves and cites bounded library chunks",()=>{

@@ -17,7 +17,10 @@
   </header>
   <main class="knowledge-main">
     <section class="knowledge-intro"><div><p class="eyebrow">RAG Core</p><h2>Controlla ciò che l’AI può davvero consultare.</h2><p>Gli originali possono restare su iCloud. Qui sono visibili soltanto stato, riferimento e quantità di testo privato indicizzato in Supabase.</p></div><div class="knowledge-principle"><strong>Nessun contenuto su GitHub</strong><span>I frammenti appartengono al tuo utente e sono protetti da RLS.</span></div></section>
-    <p id="pageStatus" class="knowledge-status" role="status" aria-live="polite">Caricamento…</p>
+    <div class="rag-load-status">
+      <p id="pageStatus" class="knowledge-status" role="status" aria-live="polite">Caricamento…</p>
+      <button id="retryLoad" class="button secondary" type="button" hidden>RIPROVA</button>
+    </div>
     <section id="authGate" class="knowledge-panel" hidden><h2>Accedi prima di continuare</h2><a class="button" href="../index.html?v=14">Vai all’accesso</a></section>
     <div id="workspace" hidden>
       <section class="rag-stats" aria-label="Riepilogo"><div><span>Indicizzate</span><strong id="indexedCount">0</strong></div><div><span>Solo metadati</span><strong id="metadataCount">0</strong></div><div><span>Non disponibili</span><strong id="unavailableCount">0</strong></div><div><span>Frammenti</span><strong id="chunkCount">0</strong></div></section>
@@ -28,6 +31,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js?v=12"></script>
   <script src="../supabase-client.js?v=16"></script>
-  <script src="rag.js?v=1"></script>
+  <script src="rag.js?v=2"></script>
 </body>
 </html>
