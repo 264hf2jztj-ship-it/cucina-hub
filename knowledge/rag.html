@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="../style.css?v=13">
   <link rel="stylesheet" href="knowledge.css?v=3">
   <link rel="stylesheet" href="rag.css?v=1">
+  <link rel="stylesheet" href="rag-ingestion.css?v=1">
 </head>
 <body>
   <header class="knowledge-topbar">
@@ -25,12 +26,33 @@
     <div id="workspace" hidden>
       <section class="rag-stats" aria-label="Riepilogo"><div><span>Indicizzate</span><strong id="indexedCount">0</strong></div><div><span>Solo metadati</span><strong id="metadataCount">0</strong></div><div><span>Non disponibili</span><strong id="unavailableCount">0</strong></div><div><span>Frammenti</span><strong id="chunkCount">0</strong></div></section>
       <section class="knowledge-panel"><div class="panel-heading"><div><p class="eyebrow">Catalogo</p><h2>Stato delle fonti</h2></div><select id="statusFilter" aria-label="Filtra stato"><option value="all">Tutte</option><option value="indexed">Indicizzate per l’AI</option><option value="metadata_only">Solo metadati</option><option value="unavailable">Non disponibili</option></select></div><div id="sourceList" class="rag-list"></div></section>
+      <section id="ingestionPanel" class="knowledge-panel rag-ingestion-panel" hidden>
+        <div class="panel-heading"><div><p class="eyebrow">Importazione controllata</p><h2>Indicizza una fonte testuale</h2></div><button id="closeIngestion" class="button secondary" type="button">CHIUDI</button></div>
+        <p class="muted">Accetta file <strong>.txt</strong> e <strong>.md</strong>. L’anteprima viene preparata sul dispositivo; nulla viene inviato finché non confermi.</p>
+        <div class="rag-ingestion-form">
+          <label for="ingestionSource">Fonte</label>
+          <select id="ingestionSource"></select>
+          <label for="ingestionFile">File testuale</label>
+          <input id="ingestionFile" type="file" accept=".txt,.md,text/plain,text/markdown">
+          <label for="ingestionText">Testo estratto</label>
+          <textarea id="ingestionText" maxlength="500000" placeholder="Puoi anche incollare qui il testo già estratto."></textarea>
+          <button id="previewIngestion" class="button" type="button">PREPARA ANTEPRIMA</button>
+        </div>
+        <div id="ingestionPreview" class="rag-ingestion-preview" hidden>
+          <div><span>Frammenti</span><strong id="previewChunkCount">0</strong></div>
+          <div><span>Caratteri</span><strong id="previewCharacterCount">0</strong></div>
+          <div><span>Token stimati</span><strong id="previewTokenCount">0</strong></div>
+        </div>
+        <p id="ingestionStatus" class="knowledge-status" role="status" aria-live="polite"></p>
+        <button id="confirmIngestion" class="button rag-confirm" type="button" disabled>CONFERMA INDICIZZAZIONE</button>
+      </section>
       <section class="knowledge-panel"><div class="panel-heading"><div><p class="eyebrow">Verifica recupero</p><h2>Cerca nei testi indicizzati</h2></div></div><form id="searchForm" class="rag-search"><input id="searchQuery" maxlength="300" placeholder="Es. pizza in teglia, idratazione, barbecue" required><button class="button" type="submit">CERCA</button></form><div id="searchResults" class="rag-results"><p class="muted">Inserisci una tecnica o una preparazione per controllare quali frammenti riceverà l’AI.</p></div></section>
     </div>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js?v=12"></script>
   <script src="../supabase-client.js?v=16"></script>
-  <script src="rag.js?v=2"></script>
+  <script src="rag-ingestion-core.js?v=1"></script>
+  <script src="rag.js?v=3"></script>
 </body>
 </html>

@@ -32,6 +32,8 @@ const APP_SHELL = [
   "./fermentation/assistant-provider-ui.js",
   "./knowledge/rag.html",
   "./knowledge/rag.css",
+  "./knowledge/rag-ingestion.css",
+  "./knowledge/rag-ingestion-core.js",
   "./knowledge/rag.js",
   "./workflow-engine/fermentation-learning-engine.js",
   "./workflow-engine/fermentation-assistant-context-engine.js",
