@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#315e45">
+  <title>Analytics — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="analytics.css?v=1">
+  <style>[hidden] { display:none !important; }</style>
+</head>
+<body>
+  <main class="analytics-shell">
+    <header class="analytics-topbar">
+      <div><p class="eyebrow">Cucina Hub · Release 0.9</p><h1>Analytics personali</h1><p class="muted">Misura ciò che hai registrato, senza interpretazioni automatiche.</p></div>
+      <nav class="analytics-actions" aria-label="Collegamenti principali"><a class="button secondary" href="../index.html?v=20">← DASHBOARD</a><a class="button secondary" href="../learning/index.html?v=1">LEARNING</a></nav>
+    </header>
+
+    <p id="pageStatus" class="analytics-page-status" role="status" aria-live="polite">Caricamento delle statistiche personali…</p>
+    <section id="authGate" class="analytics-panel analytics-gate" hidden><h2>Accesso richiesto</h2><p>Gli Analytics mostrano esclusivamente i tuoi dati.</p><a class="button" href="../index.html?v=20">ACCEDI DALLA DASHBOARD</a></section>
+
+    <div id="analyticsWorkspace" hidden>
+      <section class="analytics-panel analytics-filter">
+        <div><label for="analyticsPeriod">Periodo analizzato</label><strong id="analyticsPeriodLabel">—</strong></div>
+        <select id="analyticsPeriod"><option value="30">Ultimi 30 giorni</option><option value="90" selected>Ultimi 90 giorni</option><option value="365">Ultimi 365 giorni</option></select>
+      </section>
+
+      <section class="analytics-panel" aria-label="Metriche principali">
+        <div class="analytics-metrics">
+          <article class="analytics-metric"><span>Pasti pianificati</span><strong id="analyticsMeals">—</strong><small>nel periodo</small><div id="analyticsMealsTrend" class="analytics-trend"></div></article>
+          <article class="analytics-metric"><span>Meal Prep completati</span><strong id="analyticsPrep">—</strong><small id="analyticsPrepRate">—</small><div id="analyticsPrepTrend" class="analytics-trend"></div></article>
+          <article class="analytics-metric"><span>Sessioni concluse</span><strong id="analyticsSessions">—</strong><small>nel Laboratorio</small><div id="analyticsSessionsTrend" class="analytics-trend"></div></article>
+          <article class="analytics-metric"><span>Nuove ricette</span><strong id="analyticsRecipes">—</strong><small>aggiunte nel periodo</small><div id="analyticsRecipesTrend" class="analytics-trend"></div></article>
+        </div>
+      </section>
+
+      <section class="analytics-panel">
+        <div class="analytics-heading"><div><h2>Attività settimanale</h2><p class="muted">Conteggi reali per settimana.</p></div><div class="analytics-legend"><span>Pasti</span><span class="prep">Meal Prep</span><span class="sessions">Sessioni</span></div></div>
+        <div class="analytics-weekly-scroll"><div id="analyticsWeekly" class="analytics-weekly" aria-label="Grafico attività settimanale"></div></div>
+      </section>
+
+      <div class="analytics-split">
+        <section class="analytics-panel"><div class="analytics-heading"><div><h2>Momenti dei pasti</h2><p class="muted">Distribuzione del Planner.</p></div></div><div id="analyticsMealSlots" class="analytics-distribution"></div></section>
+        <section class="analytics-panel"><div class="analytics-heading"><div><h2>Stato Meal Prep</h2><p class="muted">Attività del periodo selezionato.</p></div></div><div id="analyticsPrepStatuses" class="analytics-distribution"></div></section>
+      </div>
+
+      <section class="analytics-panel"><div class="analytics-heading"><div><h2>Biblioteca e continuità</h2><p class="muted">Stato complessivo e frequenza di utilizzo.</p></div></div><div id="analyticsLibrary" class="analytics-library"></div></section>
+      <section class="analytics-panel"><div class="analytics-heading"><div><h2>Fonti lette</h2><p class="muted">Righe disponibili nella finestra interrogata.</p></div></div><div id="analyticsSources" class="analytics-sources"></div></section>
+      <section class="analytics-panel"><div class="analytics-method"><strong>Analytics ≠ Learning</strong><p>Questa pagina riporta conteggi e distribuzioni. Non valuta la qualità delle ricette e non produce relazioni di causa-effetto.</p></div></section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js?v=12"></script>
+  <script src="../supabase-client.js?v=12"></script>
+  <script src="analytics-core.js?v=1"></script>
+  <script src="analytics.js?v=1"></script>
+</body>
+</html>
