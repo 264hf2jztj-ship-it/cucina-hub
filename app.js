@@ -219,6 +219,7 @@ function renderDashboard() {
         ${dashboardAction("🔔", "Notifiche", "Promemoria e avvisi personali", "planner/notifications.html?v=2")}
         ${dashboardAction("🧠", "Learning", "Pattern e suggerimenti dal tuo storico", "learning/index.html?v=1")}
         ${dashboardAction("📊", "Analytics", "Numeri e andamento della tua attività", "analytics/index.html?v=1")}
+        ${dashboardAction("🧪", "Esperimenti", "Prove controllate collegate alle ricette", "experiments/index.html?v=1")}
         ${dashboardAction("🍕", "Laboratorio", "Impasti, sessioni e risultati", "fermentation/index.html?v=1")}
         ${dashboardAction("🔎", "Ricerca", "Trova contenuti e conoscenza", "knowledge/search.html?v=1")}
       </div>

@@ -76,5 +76,5 @@ test("la Dashboard collega il nuovo hub con navigazione e layout touch", () => {
   assert.match(css, /\.hurom-topic-card\s*\{/);
   assert.match(css, /\.hurom-back-row \.button\s*\{[^}]*min-height:\s*48px/s);
   assert.match(css, /@media \(max-width:\s*820px\)/);
-  assert.match(home, /app\.js\?v=18/);
+  assert.match(home, /app\.js\?v=19/);
 });
