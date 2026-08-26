@@ -8,8 +8,7 @@
   <title>Cucina Hub</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=15">
-  <link rel="stylesheet" href="dashboard.css?v=1">
+  <link rel="stylesheet" href="style.css?v=14">
   <style>
     [hidden] {
       display: none !important;
@@ -98,9 +97,7 @@
         <button class="nav-item" data-view="hurom" type="button"><span>🥤</span> Hurom</button>
         <button class="nav-item" data-view="ninja" type="button"><span>🥣</span> Ninja</button>
         <a class="nav-item" href="fermentation/index.html?v=1"><span>🍕</span> Pizza e impasti</a>
-        <a class="nav-item" href="planner/index.html?v=14"><span>🗓️</span> Planner</a>
-        <a class="nav-item" href="learning/index.html?v=1"><span>🧠</span> Learning</a>
-        <a class="nav-item" href="analytics/index.html?v=1"><span>📊</span> Analytics</a>
+        <a class="nav-item" href="planner/index.html?v=9"><span>🗓️</span> Planner</a>
         <a class="nav-item" href="knowledge/search.html?v=1"><span>🔎</span> Cerca</a>
         <a class="nav-item" href="knowledge/index.html?v=3"><span>🧠</span> Knowledge</a>
         <button class="nav-item" data-view="appliances" type="button"><span>🔌</span> Elettrodomestici</button>
@@ -138,8 +135,7 @@
   </template>
 
   <!-- Avvia subito la dashboard statica senza attendere librerie esterne. -->
-  <script src="dashboard-core.js?v=1"></script>
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=15"></script>
   <script src="appliance-detail-links.js?v=22"></script>
   <script>
     document.querySelector("#loginForm").addEventListener(
@@ -161,7 +157,5 @@
   <script src="supabase-config.js?v=12" defer></script>
   <script src="supabase-client.js?v=12" defer></script>
   <script src="auth.js?v=12" defer></script>
-  <script src="planner/notifications-core.js?v=2" defer></script>
-  <script src="dashboard.js?v=1" defer></script>
 </body>
 </html>
