@@ -84,13 +84,13 @@
     section.className = "response-contract";
     section.innerHTML = `
       <h2>8. Controllo della risposta AI</h2>
-      <p class="muted">Incolla qui il JSON restituito dal futuro provider. Il sistema verifica formato, ingredienti, bilanci, fermentazione, forno, fonti, confidenza e conferma obbligatoria.</p>
-      <textarea id="assistantResponseJson" placeholder="La risposta JSON del provider comparirà qui nel prossimo sottostep."></textarea>
+      <p class="muted">La risposta del provider compare qui. Il sistema verifica formato, ingredienti, bilanci, fermentazione, forno, fonti, confidenza e conferma obbligatoria.</p>
+      <textarea id="assistantResponseJson" placeholder="La risposta JSON del provider comparirà qui dopo la generazione."></textarea>
       <div class="response-actions">
         <button id="loadTechnicalExample" class="example-button" type="button">CARICA ESEMPIO TECNICO</button>
         <button id="validateAssistantResponse" type="button">VALIDA RISPOSTA</button>
       </div>
-      <div class="response-boundary"><strong>Nessuna applicazione automatica</strong><br>Una risposta valida è soltanto un’anteprima. Questo step non crea ricette, profili o sessioni e non contiene ancora un provider AI.</div>
+      <div class="response-boundary"><strong>Nessuna applicazione automatica</strong><br>Una risposta valida è soltanto un’anteprima. Questo step non crea ricette, profili o sessioni.</div>
       <div id="assistantResponseValidation" class="response-validation muted">Prepara prima la richiesta AI, poi carica l’esempio tecnico o incolla una risposta JSON.</div>
     `;
     resultRoot.appendChild(section);

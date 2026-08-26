@@ -1,4 +1,4 @@
-const CACHE_NAME = "cucina-hub-v23";
+const CACHE_NAME = "cucina-hub-v24";
 
 const APP_SHELL = [
   "./",
@@ -24,6 +24,15 @@ const APP_SHELL = [
   "./versions/versions-core.js",
   "./versions/versions.js",
   "./versions/versions.css",
+  "./fermentation/index.html",
+  "./fermentation/lab.css",
+  "./fermentation/lab.js",
+  "./fermentation/fermentation-assistant.html",
+  "./fermentation/assistant-response-ui.js",
+  "./fermentation/assistant-provider-ui.js",
+  "./workflow-engine/fermentation-learning-engine.js",
+  "./workflow-engine/fermentation-assistant-context-engine.js",
+  "./workflow-engine/fermentation-assistant-response-engine.js",
   "./supabase-config.js",
   "./supabase-client.js",
   "./recipe-library-supabase.js",

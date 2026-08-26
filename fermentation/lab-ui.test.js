@@ -19,7 +19,7 @@ assert.equal(doughCategory.href, "fermentation/index.html?v=1");
 assert.equal(doughCategory.etichetta_stato, "Operativa");
 
 assert.match(home, /href="fermentation\/index\.html\?v=1"[^>]*><span>🍕<\/span> Pizza e impasti<\/a>/i);
-assert.match(home, /app\.js\?v=20/i);
+assert.match(home, /app\.js\?v=21/i);
 assert.match(app, /category\.href/);
 assert.match(app, /category\.etichetta_stato/);
 
@@ -40,8 +40,9 @@ for (const destination of [
 }
 
 assert.match(html, /OPERATIVO/);
-assert.match(html, /AI Fermentation Assistant resta separata/);
-assert.doesNotMatch(html, /href="fermentation-assistant\.html/i);
+assert.match(html, /AI separata dalle funzioni operative/);
+assert.match(html, /href="fermentation-assistant\.html\?v=5/i);
+assert.match(app, /"Assistente AI"[\s\S]*fermentation\/fermentation-assistant\.html\?v=5/);
 assert.match(js, /client\.auth\.getSession\(\)/);
 assert.match(js, /workspace\.hidden = false/);
 assert.match(css, /min-height:\s*48px/i);
