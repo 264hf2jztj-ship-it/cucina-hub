@@ -82,7 +82,7 @@ Usa prima i dati personali presenti nel pacchetto. Usa soltanto source_id dichia
 Mantieni preparazione, forma, numero di teglie o panetti e forno richiesti.
 Calcola quantità coerenti in grammi: la somma degli ingredienti deve coincidere con dough_total_weight_g entro gli arrotondamenti, e portion_weight_g moltiplicato per portion_count deve coincidere con il totale.
 Distingui dati osservati, fonti, ipotesi e inferenze. Non presentare il Learning come causalità, soprattutto con campione insufficiente.
-Non inventare fonti Biblioteca se risultano non collegate. Dichiaralo nelle incertezze.
+Per la Biblioteca usa esclusivamente gli estratti presenti in retrieval_context.library.results e cita il loro source_id esatto. Non trattare link o metadati come contenuti consultati e non inventare fonti mancanti.
 Non creare ricette o sessioni, non proporre scritture automatiche e non cambiare i guardrail.
 requires_user_confirmation deve essere true e automatic_writes deve essere false.
 Adatta la proposta al risultato desiderato, al profilo ambiente, alle farine disponibili e ai limiti dell'elettrodomestico.

@@ -15,6 +15,8 @@ test("assistant page exposes provider and local response validation", () => {
   assert.match(page, /assistant-response-ui\.js\?v=2/);
   assert.match(page, /assistant-provider-ui\.js\?v=2/);
   assert.match(page, /href="\.\/index\.html\?v=2"/);
+  assert.match(page, /knowledge\/rag\.html\?v=1/);
+  assert.match(page, /rpc\('search_rag_sources'/);
   assert.match(provider, /functions\.invoke\(FUNCTION_NAME/);
   assert.match(provider, /automatic_writes !== false/);
   assert.match(provider, /requires_user_confirmation !== true/);
@@ -33,7 +35,7 @@ test("edge function keeps the API key server-side and responses in preview", () 
 });
 
 test("assistant static shell is available offline", () => {
-  assert.match(sw, /cucina-hub-v24/);
+  assert.match(sw, /cucina-hub-v25/);
   for (const asset of [
     "fermentation/fermentation-assistant.html",
     "fermentation/assistant-response-ui.js",
