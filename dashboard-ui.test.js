@@ -15,7 +15,7 @@ test("home loads the Dashboard Core assets after the authenticated Supabase clie
   assert.match(index, /dashboard-core\.js\?v=1/i);
   assert.match(index, /dashboard\.css\?v=1/i);
   assert.match(index, /planner\/notifications-core\.js\?v=2[\s\S]*dashboard\.js\?v=1/i);
-  assert.match(serviceWorker, /cucina-hub-v18/i);
+  assert.match(serviceWorker, /cucina-hub-v19/i);
   assert.match(serviceWorker, /dashboard-core\.js/);
 });
 
@@ -30,7 +30,7 @@ test("dashboard renders the operational metrics, agenda and quick actions", () =
     "dashboardAgenda"
   ]) assert.match(app, new RegExp(`\\"${id}\\"`));
 
-  for (const label of ["Planner Hub", "Lista spesa", "Meal Prep", "Notifiche", "Laboratorio", "Ricerca"]) {
+  for (const label of ["Planner Hub", "Lista spesa", "Meal Prep", "Notifiche", "Learning", "Laboratorio", "Ricerca"]) {
     assert.match(app, new RegExp(`\\"${label}\\"`, "i"));
   }
 });
