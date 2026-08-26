@@ -78,6 +78,10 @@ async function initializeAuthentication() {
       viewRoot.hidden = false;
       renderView("dashboard");
     }
+
+    window.dispatchEvent(new CustomEvent("cucina-hub:authenticated", {
+      detail: { userId: validatedUserId }
+    }));
   }
 
   async function verifyAdministrator(session) {

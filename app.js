@@ -164,6 +164,7 @@ function renderView(view) {
 
   elements.root.innerHTML = "";
   (renderers[view] ?? renderDashboard)();
+  window.dispatchEvent(new CustomEvent("cucina-hub:view-rendered", { detail: { view } }));
   document.querySelector("#main-content").focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -171,60 +172,71 @@ function renderView(view) {
 function renderDashboard() {
   const certified = state.recipes.filter(r => r.stato === "certificata");
   const testing = state.recipes.filter(r => r.stato === "da-testare");
-  const manualCount = state.appliances.filter(a => a.manuale?.disponibile).length;
-  const latestRecipe = [...state.recipes].sort((a, b) => String(b.data_prova ?? "").localeCompare(String(a.data_prova ?? "")))[0];
 
   elements.root.innerHTML = `
     <section class="hero">
       <div class="hero-panel">
-        <p class="eyebrow" style="color:rgba(255,255,255,.72)">Web Edition ${escapeHtml(APP_VERSION)}</p>
-        <h2>Ricette, strumenti e appunti di cucina in un unico posto.</h2>
-        <p>Cucina Hub raccoglie le preparazioni provate, gli esperimenti da affinare e le guide pratiche dei tuoi elettrodomestici.</p>
+        <p class="eyebrow" style="color:rgba(255,255,255,.72)">Dashboard personale</p>
+        <h2>La tua cucina, oggi.</h2>
+        <p>Controlla pasti, preparazioni, spesa e notifiche senza aprire ogni singola sezione.</p>
         <div class="hero-actions">
-          <button class="button light" data-go-view="recipes" type="button">Sfoglia le ricette</button>
-          <button class="button ghost" data-go-view="appliances" type="button">I miei elettrodomestici</button>
+          <a class="button light" href="planner/index.html?v=14">APRI IL PLANNER</a>
+          <a class="button ghost" href="knowledge/search.html?v=1">CERCA IN CUCINA HUB</a>
         </div>
       </div>
-      <aside class="today-panel">
-        <div>
-          <div class="big-icon" aria-hidden="true">${escapeHtml(latestRecipe?.icona ?? "🍽️")}</div>
-          <p class="eyebrow">Ultima ricetta inserita</p>
-          <h3>${escapeHtml(latestRecipe?.titolo ?? "Nessuna ricetta")}</h3>
-          <p>${escapeHtml(latestRecipe?.nota_degustatore ?? "Il ricettario è pronto per il primo contenuto.")}</p>
-        </div>
-        ${latestRecipe ? `<button class="button secondary" data-recipe-id="${escapeHtml(latestRecipe.id)}" type="button">Apri la scheda</button>` : ""}
+      <aside id="dashboardNextMeal" class="today-panel" aria-live="polite">
+        <div><div class="big-icon" aria-hidden="true">⏳</div><p class="eyebrow">Prossimo pasto</p><h3>Caricamento…</h3><p>Sto leggendo il Planner personale.</p></div>
       </aside>
     </section>
 
-    <section class="metric-grid" aria-label="Riepilogo">
-      ${metricCard("Ricette certificate", certified.length, "Provate e approvate")}
-      ${metricCard("Ricette in prova", testing.length, "Da testare o perfezionare")}
-      ${metricCard("Elettrodomestici", state.appliances.length, `${manualCount} manuali disponibili nel progetto`)}
-      ${metricCard("Aree attive", state.categories.filter(c => c.stato === "attiva").length, "Sezioni già consultabili")}
+    <p id="dashboardDataStatus" class="dashboard-data-status" role="status" aria-live="polite">Caricamento del riepilogo personale…</p>
+
+    <section class="metric-grid dashboard-metrics" aria-label="Riepilogo operativo">
+      ${metricCard("Pasti di oggi", "—", "lettura del Planner…", "dashboardMealMetric")}
+      ${metricCard("Meal Prep", "—", "lettura delle attività…", "dashboardPrepMetric")}
+      ${metricCard("Lista spesa", "—", "lettura della settimana…", "dashboardShoppingMetric")}
+      ${metricCard("Notifiche", "—", "lettura degli avvisi…", "dashboardNotificationMetric")}
+    </section>
+
+    <section class="section dashboard-agenda-section" aria-labelledby="dashboardAgendaTitle">
+      <div class="section-heading">
+        <div><h3 id="dashboardAgendaTitle">Oggi e prossimi impegni</h3><p>Pasti e preparazioni ordinati per data e orario.</p></div>
+        <a class="card-link" href="planner/calendar.html?v=3">Calendario →</a>
+      </div>
+      <div id="dashboardAgenda" class="dashboard-agenda" aria-live="polite">
+        <div class="dashboard-agenda-empty"><span aria-hidden="true">⏳</span><strong>Caricamento agenda…</strong></div>
+      </div>
     </section>
 
     <section class="section">
       <div class="section-heading">
-        <div><h3>Sezioni principali</h3><p>Entra direttamente nell’area che ti serve.</p></div>
+        <div><h3>Azioni rapide</h3><p>Vai direttamente alla funzione che ti serve.</p></div>
       </div>
-      <div class="card-grid">
-        ${state.categories.map(categoryCard).join("")}
+      <div class="dashboard-action-grid">
+        ${dashboardAction("🗓️", "Planner Hub", "Riepilogo settimanale e pianificazione", "planner/index.html?v=14")}
+        ${dashboardAction("🛒", "Lista spesa", "Controlla e spunta gli acquisti", "planner/workspace.html?v=14&section=shopping-list")}
+        ${dashboardAction("🧰", "Meal Prep", "Preparazioni da fare e completare", "planner/workspace.html?v=14&section=meal-prep")}
+        ${dashboardAction("🔔", "Notifiche", "Promemoria e avvisi personali", "planner/notifications.html?v=2")}
+        ${dashboardAction("🍕", "Laboratorio", "Impasti, sessioni e risultati", "fermentation/index.html?v=1")}
+        ${dashboardAction("🔎", "Ricerca", "Trova contenuti e conoscenza", "knowledge/search.html?v=1")}
       </div>
     </section>
 
-    <section class="section">
+    <section class="section dashboard-library-section">
       <div class="section-heading">
-        <div><h3>Ricette certificate recenti</h3><p>Le preparazioni già promosse nel ricettario personale.</p></div>
-        <button class="card-link" data-go-view="recipes" type="button">Vedi tutte →</button>
+        <div><h3>Biblioteca in breve</h3><p>${certified.length} ricette certificate e ${testing.length} ancora da provare.</p></div>
+        <button class="card-link" data-go-view="recipes" type="button">Apri ricette →</button>
       </div>
-      <div class="card-grid">
-        ${certified.slice(0, 3).map(recipeCard).join("")}
-      </div>
+      <div class="card-grid">${certified.slice(0, 3).map(recipeCard).join("")}</div>
     </section>`;
 }
 
-function metricCard(label, value, detail) {
-  return `<article class="metric-card"><span class="metric-label">${escapeHtml(label)}</span><strong class="metric-value">${escapeHtml(value)}</strong><div class="metric-detail">${escapeHtml(detail)}</div></article>`;
+function metricCard(label, value, detail, id = "") {
+  return `<article${id ? ` id="${escapeHtml(id)}"` : ""} class="metric-card"><span class="metric-label">${escapeHtml(label)}</span><strong class="metric-value">${escapeHtml(value)}</strong><div class="metric-detail">${escapeHtml(detail)}</div></article>`;
+}
+
+function dashboardAction(icon, title, description, href) {
+  return `<a class="dashboard-action" href="${escapeHtml(href)}"><span aria-hidden="true">${icon}</span><div><strong>${escapeHtml(title)}</strong><small>${escapeHtml(description)}</small></div><b aria-hidden="true">→</b></a>`;
 }
 
 function categoryCard(category) {
