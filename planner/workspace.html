@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6b4f">
+  <meta name="description" content="Planner personale dei pasti di Cucina Hub.">
+  <title>Gestione Planner — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../style.css?v=17">
+  <link rel="stylesheet" href="planner.css?v=10">
+</head>
+<body>
+  <a class="skip-link" href="#plannerMain">Vai al contenuto</a>
+
+  <header class="planner-topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">🗓️</div>
+      <div>
+        <p class="eyebrow">Milestone E</p>
+        <h1 id="workspaceTitle">Gestione Planner</h1>
+      </div>
+    </div>
+    <a id="backPlannerHub" class="button secondary" href="index.html?v=14">← Planner Hub</a>
+  </header>
+
+  <main id="plannerMain" class="planner-main" tabindex="-1">
+    <section id="workspaceIntro" class="planner-intro">
+      <div>
+        <p class="eyebrow">Planner settimanale</p>
+        <h2 id="workspaceHeading">Organizza la settimana partendo dalle tue ricette.</h2>
+        <p id="workspaceDescription">
+          Scegli una ricetta della Biblioteca e indica quando vuoi prepararla.
+          Il Planner conserva il collegamento, senza copiare o modificare la ricetta originale.
+        </p>
+      </div>
+      <div class="planner-principle" role="note" aria-label="Principio architetturale">
+        <strong>Collega, non duplica</strong>
+        <span>Ogni pasto rimanda sempre alla ricetta salvata in Biblioteca.</span>
+        <a class="button light" href="index.html?v=14">🏠 PLANNER HUB</a>
+        <a class="button light" href="calendar.html?v=3">📅 CALENDARIO</a>
+      </div>
+    </section>
+
+    <p id="pageStatus" class="planner-status" role="status" aria-live="polite">
+      Caricamento del Planner…
+    </p>
+
+    <section id="authGate" class="planner-panel planner-gate" hidden>
+      <span class="gate-icon" aria-hidden="true">🔐</span>
+      <div>
+        <h2>Accedi prima di continuare</h2>
+        <p>La sessione privata non è disponibile. Torna a Cucina Hub ed effettua l’accesso.</p>
+      </div>
+      <a class="button" href="../index.html?v=17">Vai all’accesso</a>
+    </section>
+
+    <section id="errorPanel" class="planner-panel planner-gate planner-error" hidden>
+      <span class="gate-icon" aria-hidden="true">⚠️</span>
+      <div>
+        <h2>Il Planner non è disponibile</h2>
+        <p id="errorMessage">Non è stato possibile caricare i dati.</p>
+      </div>
+      <button id="retryLoad" class="button secondary" type="button">RIPROVA</button>
+    </section>
+
+    <div id="plannerWorkspace" class="planner-workspace" hidden>
+      <section class="planner-panel planner-week-panel" data-planner-module="meal-plan" aria-labelledby="weekTitle">
+        <div class="panel-heading week-panel-heading">
+          <div>
+            <p class="eyebrow">Settimana</p>
+            <h2 id="weekTitle">Programma settimanale</h2>
+          </div>
+          <span id="weekMealCount" class="badge">0</span>
+        </div>
+
+        <div class="week-toolbar">
+          <div class="week-range-copy">
+            <span>Intervallo selezionato</span>
+            <strong id="weekRange" aria-live="polite">Caricamento settimana…</strong>
+          </div>
+          <div class="week-controls" aria-label="Navigazione tra settimane">
+            <button id="previousWeek" class="button secondary" type="button" aria-label="Vai alla settimana precedente">← PRECEDENTE</button>
+            <button id="currentWeek" class="button secondary" type="button">OGGI</button>
+            <button id="nextWeek" class="button secondary" type="button" aria-label="Vai alla settimana successiva">SUCCESSIVA →</button>
+          </div>
+        </div>
+
+        <p id="weekEmptySummary" class="week-empty-summary" hidden>
+          Nessun pasto in questa settimana. Usa “Aggiungi” nel giorno che preferisci.
+        </p>
+        <div id="weekGrid" class="week-grid" role="list" aria-live="polite" aria-busy="true"></div>
+      </section>
+
+      <section id="shoppingListPanel" class="planner-panel shopping-list-panel" data-planner-module="shopping-list" aria-labelledby="shoppingListTitle">
+        <div class="panel-heading shopping-list-heading">
+          <div>
+            <p class="eyebrow">Lista spesa</p>
+            <h2 id="shoppingListTitle">Porta con te ciò che serve per la settimana</h2>
+          </div>
+          <span id="shoppingListCount" class="badge">0</span>
+        </div>
+
+        <p class="shopping-list-description">
+          Genera le voci dai pasti pianificati, aggiungi ciò che manca e spunta gli acquisti direttamente dal telefono.
+          La lista segue la settimana selezionata nel Planner.
+        </p>
+
+        <p id="shoppingListStatus" class="shopping-list-status" role="status" aria-live="polite"></p>
+
+        <div id="shoppingListUnavailable" class="shopping-list-unavailable" hidden>
+          <span aria-hidden="true">🛒</span>
+          <div>
+            <strong>Lista spesa non ancora attivata</strong>
+            <p>Applica la migration <code>046_shopping_list_core.sql</code> in Supabase e ricarica questa pagina.</p>
+          </div>
+        </div>
+
+        <div id="shoppingListBody">
+          <div class="shopping-list-toolbar">
+            <div class="shopping-list-week-copy">
+              <span>Settimana della lista</span>
+              <strong id="shoppingListWeekRange">Caricamento settimana…</strong>
+            </div>
+            <button id="refreshShoppingList" class="button" type="button">AGGIORNA DAL PLANNER</button>
+          </div>
+
+          <div class="shopping-list-stats" aria-label="Riepilogo lista spesa">
+            <div class="shopping-list-stat">
+              <span>Da comprare</span>
+              <strong id="shoppingListActiveCount">0</strong>
+            </div>
+            <div class="shopping-list-stat completed">
+              <span>Acquistati</span>
+              <strong id="shoppingListCheckedCount">0</strong>
+            </div>
+            <div class="shopping-list-stat excluded">
+              <span>Esclusi</span>
+              <strong id="shoppingListExcludedCount">0</strong>
+            </div>
+          </div>
+
+          <div class="shopping-list-layout">
+            <section class="shopping-list-editor" aria-labelledby="shoppingListFormTitle">
+              <div class="shopping-list-subheading">
+                <div>
+                  <p class="eyebrow">Voce manuale</p>
+                  <h3 id="shoppingListFormTitle">Aggiungi alla lista</h3>
+                </div>
+              </div>
+
+              <form id="shoppingListForm" class="planner-form">
+                <div class="form-grid shopping-list-form-grid">
+                  <div class="planner-field form-wide">
+                    <label for="shoppingItemName">Cosa devi comprare</label>
+                    <input
+                      id="shoppingItemName"
+                      name="name"
+                      type="text"
+                      maxlength="200"
+                      autocomplete="off"
+                      placeholder="Es. limoni"
+                      required
+                    >
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="shoppingItemQuantity">Quantità <span>facoltativa</span></label>
+                    <input id="shoppingItemQuantity" name="quantity" type="number" min="0.001" step="any" inputmode="decimal" placeholder="Es. 4">
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="shoppingItemUnit">Unità <span>con quantità</span></label>
+                    <input id="shoppingItemUnit" name="unit" type="text" maxlength="40" autocomplete="off" placeholder="pz, g, ml…">
+                  </div>
+
+                  <div class="planner-field form-wide">
+                    <label for="shoppingItemCategory">Categoria</label>
+                    <select id="shoppingItemCategory" name="category" required>
+                      <option value="produce">🥬 Frutta e verdura</option>
+                      <option value="protein">🥩 Carne, pesce e proteine</option>
+                      <option value="dairy">🥛 Freschi e latticini</option>
+                      <option value="bakery">🥖 Pane e forno</option>
+                      <option value="pantry">🥫 Dispensa</option>
+                      <option value="frozen">❄️ Surgelati</option>
+                      <option value="beverages">🧃 Bevande</option>
+                      <option value="household">🧻 Casa</option>
+                      <option value="other" selected>🛒 Altro</option>
+                    </select>
+                  </div>
+
+                  <div class="planner-field form-wide">
+                    <label for="shoppingItemNote">Nota <span>facoltativa</span></label>
+                    <textarea id="shoppingItemNote" name="note" rows="3" maxlength="1000" placeholder="Marca, formato o altra indicazione"></textarea>
+                  </div>
+                </div>
+
+                <div class="form-actions shopping-list-form-actions">
+                  <button id="addShoppingItem" class="button" type="submit">AGGIUNGI ALLA LISTA</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="shopping-list-list-section" aria-labelledby="shoppingListItemsTitle">
+              <div class="shopping-list-subheading shopping-list-list-heading">
+                <div>
+                  <p class="eyebrow">Corsie</p>
+                  <h3 id="shoppingListItemsTitle">Voci della settimana</h3>
+                </div>
+                <div class="shopping-list-filter-wrap">
+                  <label for="shoppingListFilter">Mostra</label>
+                  <select id="shoppingListFilter">
+                    <option value="active">Da comprare</option>
+                    <option value="checked">Acquistati</option>
+                    <option value="excluded">Esclusi</option>
+                    <option value="all">Tutti</option>
+                  </select>
+                </div>
+              </div>
+              <div id="shoppingListItems" class="shopping-list-items" aria-live="polite" aria-busy="true"></div>
+            </section>
+          </div>
+
+          <div class="shopping-list-protection" role="note">
+            <strong>Controllo esplicito.</strong>
+            <span>“Aggiorna dal Planner” rigenera soltanto le voci automatiche; conserva aggiunte manuali, acquisti già spuntati ed esclusioni.</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="mealPrepPanel" class="planner-panel meal-prep-panel" data-planner-module="meal-prep" aria-labelledby="mealPrepTitle">
+        <div class="panel-heading meal-prep-heading">
+          <div>
+            <p class="eyebrow">Meal Prep</p>
+            <h2 id="mealPrepTitle">Prepara in anticipo i pasti della settimana</h2>
+          </div>
+          <span id="mealPrepCount" class="badge">0</span>
+        </div>
+
+        <p class="meal-prep-description">
+          Collega ogni attività a un pasto già pianificato, scegli quando eseguirla e annota quantità e conservazione.
+          Le ricette restano nella Biblioteca: qui organizzi soltanto il lavoro pratico.
+        </p>
+
+        <p id="mealPrepStatus" class="meal-prep-status" role="status" aria-live="polite"></p>
+
+        <div id="mealPrepUnavailable" class="meal-prep-unavailable" hidden>
+          <span aria-hidden="true">🧰</span>
+          <div>
+            <strong>Meal Prep non ancora attivato</strong>
+            <p>Applica la migration <code>045_meal_prep_core.sql</code> in Supabase e ricarica questa pagina.</p>
+          </div>
+        </div>
+
+        <div id="mealPrepBody">
+          <div class="meal-prep-stats" aria-label="Riepilogo attività Meal Prep">
+            <div class="meal-prep-stat">
+              <span>Da fare</span>
+              <strong id="mealPrepTodoCount">0</strong>
+            </div>
+            <div class="meal-prep-stat">
+              <span>In corso</span>
+              <strong id="mealPrepProgressCount">0</strong>
+            </div>
+            <div class="meal-prep-stat completed">
+              <span>Completate</span>
+              <strong id="mealPrepDoneCount">0</strong>
+            </div>
+          </div>
+
+          <div class="meal-prep-layout">
+            <section id="mealPrepEditor" class="meal-prep-editor" aria-labelledby="mealPrepFormTitle">
+              <div class="meal-prep-subheading">
+                <div>
+                  <p class="eyebrow">Attività</p>
+                  <h3 id="mealPrepFormTitle">Aggiungi una preparazione</h3>
+                </div>
+              </div>
+
+              <form id="mealPrepForm" class="planner-form">
+                <input id="mealPrepTaskId" type="hidden">
+
+                <div class="form-grid meal-prep-form-grid">
+                  <div class="planner-field form-wide">
+                    <label for="mealPrepMealId">Pasto collegato</label>
+                    <select id="mealPrepMealId" name="planned_meal_id" required>
+                      <option value="">Caricamento pasti…</option>
+                    </select>
+                  </div>
+
+                  <div class="planner-field form-wide">
+                    <label for="mealPrepItemId">Elemento del pasto <span>facoltativo</span></label>
+                    <select id="mealPrepItemId" name="planned_meal_item_id">
+                      <option value="">Intero pasto</option>
+                    </select>
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="mealPrepType">Tipo di attività</label>
+                    <select id="mealPrepType" name="task_type" required>
+                      <option value="prepare">🔪 Preparare</option>
+                      <option value="cook">🔥 Cuocere</option>
+                      <option value="portion">⚖️ Porzionare</option>
+                      <option value="store">🫙 Conservare</option>
+                      <option value="defrost">❄️ Scongelare</option>
+                      <option value="other">📌 Altro</option>
+                    </select>
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="mealPrepDate">Data di preparazione</label>
+                    <input id="mealPrepDate" name="scheduled_date" type="date" required>
+                  </div>
+
+                  <div class="planner-field form-wide">
+                    <label for="mealPrepTaskTitle">Cosa devi fare</label>
+                    <input
+                      id="mealPrepTaskTitle"
+                      name="title"
+                      type="text"
+                      maxlength="200"
+                      autocomplete="off"
+                      placeholder="Es. lava e taglia le verdure"
+                      required
+                    >
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="mealPrepTime">Orario <span>facoltativo</span></label>
+                    <input id="mealPrepTime" name="scheduled_time" type="time">
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="mealPrepServings">Porzioni <span>facoltative</span></label>
+                    <input id="mealPrepServings" name="servings" type="number" min="1" max="50" step="1" inputmode="numeric">
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="mealPrepQuantity">Quantità <span>facoltativa</span></label>
+                    <input id="mealPrepQuantity" name="quantity" type="number" min="0.001" step="any" inputmode="decimal" placeholder="Es. 500">
+                  </div>
+
+                  <div class="planner-field">
+                    <label for="mealPrepUnit">Unità <span>con quantità</span></label>
+                    <input id="mealPrepUnit" name="unit" type="text" maxlength="40" autocomplete="off" placeholder="g, ml, porzioni…">
+                  </div>
+
+                  <div class="planner-field form-wide">
+                    <label for="mealPrepStorage">Conservazione</label>
+                    <select id="mealPrepStorage" name="storage_method">
+                      <option value="none">Nessuna conservazione</option>
+                      <option value="refrigerator">🧊 Frigorifero</option>
+                      <option value="freezer">❄️ Freezer</option>
+                      <option value="room_temperature">🏠 Temperatura ambiente</option>
+                      <option value="other">📦 Altro</option>
+                    </select>
+                  </div>
+
+                  <div class="planner-field form-wide">
+                    <label for="mealPrepStorageNote">Indicazioni di conservazione <span>facoltative</span></label>
+                    <input
+                      id="mealPrepStorageNote"
+                      name="storage_note"
+                      type="text"
+                      maxlength="500"
+                      autocomplete="off"
+                      placeholder="Es. contenitore ermetico, massimo 2 giorni"
+                    >
+                  </div>
+
+                  <div class="planner-field form-wide">
+                    <label for="mealPrepNote">Nota operativa <span>facoltativa</span></label>
+                    <textarea
+                      id="mealPrepNote"
+                      name="note"
+                      rows="4"
+                      maxlength="2000"
+                      placeholder="Passaggi, promemoria o dettagli utili"
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div class="form-actions meal-prep-form-actions">
+                  <button id="saveMealPrepTask" class="button" type="submit">AGGIUNGI ATTIVITÀ</button>
+                  <button id="cancelMealPrepEdit" class="button secondary" type="button" hidden>ANNULLA MODIFICA</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="meal-prep-list-section" aria-labelledby="mealPrepListTitle">
+              <div class="meal-prep-subheading">
+                <div>
+                  <p class="eyebrow">Agenda operativa</p>
+                  <h3 id="mealPrepListTitle">Attività della settimana</h3>
+                </div>
+              </div>
+              <div id="mealPrepList" class="meal-prep-list" aria-live="polite" aria-busy="true"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="planner-panel menu-import-panel" data-planner-module="menu-package" aria-labelledby="menuImportTitle">
+        <div class="panel-heading menu-import-heading">
+          <div>
+            <p class="eyebrow">Menu Package</p>
+            <h2 id="menuImportTitle">Analizza un menu dalla chat</h2>
+          </div>
+          <span class="badge pending">IMPORTA</span>
+        </div>
+
+        <p class="menu-import-description">
+          Incolla il pacchetto <code>cucina-hub.menu-plan</code> oppure seleziona un file.
+          Il Planner controlla struttura, Biblioteca, hash, retry e conflitti. Dopo l’anteprima e le scelte esplicite, salva solo con la tua conferma finale.
+        </p>
+
+        <section class="menu-preview-inbox" aria-labelledby="menuPreviewInboxTitle">
+          <div class="menu-preview-inbox-heading">
+            <div>
+              <p class="eyebrow">Endpoint autenticato</p>
+              <h3 id="menuPreviewInboxTitle">Anteprime ricevute</h3>
+            </div>
+            <div class="menu-preview-inbox-tools">
+              <span id="menuPreviewCount" class="badge pending">0</span>
+              <button id="refreshMenuPreviews" class="button secondary compact" type="button">AGGIORNA</button>
+            </div>
+          </div>
+          <p class="menu-preview-inbox-copy">
+            Le richieste inviate dalla chat restano qui in staging. Aprirle avvia soltanto l’analisi: nessun menu diventa attivo senza la conferma finale nell’app.
+          </p>
+          <div id="menuPreviewInbox" class="menu-preview-inbox-list" aria-live="polite" aria-busy="false">
+            <div class="menu-preview-inbox-empty">
+              <strong>Caricamento richieste…</strong>
+              <span>Nessun dato viene scritto nel Planner durante questo controllo.</span>
+            </div>
+          </div>
+        </section>
+
+        <div class="planner-field">
+          <label for="menuPlanInput">Pacchetto JSON</label>
+          <textarea
+            id="menuPlanInput"
+            rows="11"
+            spellcheck="false"
+            autocapitalize="off"
+            autocomplete="off"
+            placeholder="Incolla JSON puro oppure un singolo blocco Markdown ```json … ```"
+          ></textarea>
+        </div>
+
+        <div class="menu-import-actions">
+          <input
+            id="menuPlanFile"
+            class="menu-file-input"
+            type="file"
+            accept=".json,.md,.txt,application/json,text/plain,text/markdown"
+            aria-label="Scegli un file menu JSON, Markdown o testo"
+          >
+          <button id="stageMenuPlan" class="button secondary" type="button">TESTA INVIO DIRETTO</button>
+          <button id="analyzeMenuPlan" class="button" type="button">ANALIZZA MENU</button>
+          <button id="clearMenuPlan" class="button secondary" type="button">AZZERA</button>
+        </div>
+        <p id="menuPlanFileStatus" class="field-help">
+          Puoi scegliere un file fino a 2 MB. “Testa invio diretto” usa l’endpoint autenticato e crea soltanto una richiesta di anteprima.
+        </p>
+
+        <div
+          id="menuPlanResult"
+          class="menu-import-result"
+          role="region"
+          aria-label="Esito analisi menu"
+          aria-live="polite"
+        >
+          <div class="menu-import-idle">
+            <strong>Nessun pacchetto analizzato.</strong>
+            <span>Analisi e anteprima non salvano dati. Il commit avviene soltanto dopo la tua conferma esplicita.</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="plannerEditor" class="planner-panel planner-editor" data-planner-module="meal-plan" aria-labelledby="formTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Pasto</p>
+            <h2 id="formTitle">Pianifica un pasto</h2>
+          </div>
+        </div>
+
+        <form id="mealForm" class="planner-form">
+          <input id="mealId" type="hidden">
+
+          <div class="form-grid">
+            <div class="planner-field">
+              <label for="plannedDate">Data</label>
+              <input id="plannedDate" name="planned_date" type="date" required>
+            </div>
+
+            <div class="planner-field">
+              <label for="mealSlot">Fascia</label>
+              <select id="mealSlot" name="meal_slot" required>
+                <option value="breakfast">Colazione</option>
+                <option value="morning_snack">Spuntino mattina</option>
+                <option value="lunch">Pranzo</option>
+                <option value="afternoon_snack">Spuntino pomeriggio</option>
+                <option value="dinner">Cena</option>
+                <option value="other">Altro</option>
+              </select>
+            </div>
+
+            <div class="planner-field">
+              <label for="plannedTime">Orario <span>facoltativo</span></label>
+              <input id="plannedTime" name="planned_time" type="time">
+            </div>
+
+            <div class="planner-field">
+              <label for="servings">Porzioni <span>facoltative</span></label>
+              <input id="servings" name="servings" type="number" min="1" max="50" step="1" inputmode="numeric">
+            </div>
+
+            <div class="planner-field form-wide">
+              <label for="recipeId">Ricetta della Biblioteca</label>
+              <select id="recipeId" name="recipe_id" required>
+                <option value="">Caricamento ricette…</option>
+              </select>
+              <p id="recipeHelp" class="field-help">Il Planner salverà soltanto il collegamento alla ricetta.</p>
+            </div>
+
+            <div class="planner-field form-wide">
+              <label for="mealNote">Nota <span>facoltativa</span></label>
+              <textarea
+                id="mealNote"
+                name="note"
+                rows="4"
+                maxlength="1000"
+                placeholder="Es. scongelare la porzione al mattino"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button id="saveMeal" class="button" type="submit">AGGIUNGI AL PLANNER</button>
+            <button id="cancelEdit" class="button secondary" type="button" hidden>ANNULLA MODIFICA</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="planner-panel planner-list-panel" data-planner-module="meal-plan" aria-labelledby="mealListTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Dettaglio</p>
+            <h2 id="mealListTitle">Pasti della settimana</h2>
+          </div>
+          <span id="mealCount" class="badge">0</span>
+        </div>
+        <div id="mealList" class="meal-list" aria-live="polite"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js?v=12"></script>
+  <script src="../supabase-client.js?v=12"></script>
+  <script src="planner-core.js?v=2"></script>
+  <script src="meal-prep-core.js?v=1"></script>
+  <script src="shopping-list-core.js?v=1"></script>
+  <script src="menu-plan-import-engine.js?v=5"></script>
+  <script src="planner.js?v=13"></script>
+</body>
+</html>

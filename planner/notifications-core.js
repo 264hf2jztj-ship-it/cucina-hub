@@ -86,7 +86,7 @@
           event_at: eventAt,
           remind_at: new Date(eventAt.getTime() - prefs.meal_lead_minutes * 60000),
           lead_minutes: prefs.meal_lead_minutes,
-          href: `index.html?v=13&week=${meal.planned_date}`
+          href: `workspace.html?v=14&section=meal-plan&week=${meal.planned_date}&date=${meal.planned_date}`
         });
       });
     }
@@ -105,7 +105,7 @@
           event_at: eventAt,
           remind_at: new Date(eventAt.getTime() - prefs.meal_prep_lead_minutes * 60000),
           lead_minutes: prefs.meal_prep_lead_minutes,
-          href: `index.html?v=13&week=${task.scheduled_date}`
+          href: `workspace.html?v=14&section=meal-prep&week=${task.scheduled_date}`
         });
       });
     }
