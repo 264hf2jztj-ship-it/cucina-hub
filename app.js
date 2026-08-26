@@ -217,6 +217,7 @@ function renderDashboard() {
         ${dashboardAction("🛒", "Lista spesa", "Controlla e spunta gli acquisti", "planner/workspace.html?v=14&section=shopping-list")}
         ${dashboardAction("🧰", "Meal Prep", "Preparazioni da fare e completare", "planner/workspace.html?v=14&section=meal-prep")}
         ${dashboardAction("🔔", "Notifiche", "Promemoria e avvisi personali", "planner/notifications.html?v=2")}
+        ${dashboardAction("🧠", "Learning", "Pattern e suggerimenti dal tuo storico", "learning/index.html?v=1")}
         ${dashboardAction("🍕", "Laboratorio", "Impasti, sessioni e risultati", "fermentation/index.html?v=1")}
         ${dashboardAction("🔎", "Ricerca", "Trova contenuti e conoscenza", "knowledge/search.html?v=1")}
       </div>

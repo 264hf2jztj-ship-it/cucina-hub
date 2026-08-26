@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#315e45">
+  <title>Learning — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="learning.css?v=1">
+  <style>[hidden] { display: none !important; }</style>
+</head>
+<body>
+  <main class="learning-shell">
+    <header class="learning-topbar">
+      <div><p class="eyebrow">Cucina Hub · Release 0.9</p><h1>Learning personale</h1><p class="muted">Trasforma lo storico reale in confronti e suggerimenti controllabili.</p></div>
+      <nav class="learning-actions" aria-label="Collegamenti principali">
+        <a class="button secondary" href="../index.html?v=19">← DASHBOARD</a>
+        <a class="button secondary" href="../fermentation/index.html?v=1">LABORATORIO</a>
+      </nav>
+    </header>
+
+    <p id="pageStatus" class="learning-page-status" role="status" aria-live="polite">Caricamento del Learning personale…</p>
+
+    <section id="authGate" class="learning-panel learning-gate" hidden>
+      <h2>Accesso richiesto</h2>
+      <p>Il Learning usa esclusivamente il tuo storico personale.</p>
+      <a class="button" href="../index.html?v=19">ACCEDI DALLA DASHBOARD</a>
+    </section>
+
+    <div id="learningWorkspace" hidden>
+      <section class="learning-panel learning-hero">
+        <div id="learningState" class="learning-state" aria-live="polite"></div>
+        <div id="learningAction" class="learning-primary-action"></div>
+      </section>
+
+      <section class="learning-panel learning-controls">
+        <label class="learning-toggle"><input id="learningEnabled" type="checkbox" checked> Learning attivo</label>
+        <span class="muted">Disattivarlo non cancella sessioni o valutazioni.</span>
+      </section>
+
+      <section class="learning-panel" aria-label="Riepilogo Learning">
+        <div class="learning-metrics">
+          <article class="learning-metric"><span>Sessioni concluse</span><strong id="learningSessions">—</strong><small>storico disponibile</small></article>
+          <article class="learning-metric"><span>Prove analizzate</span><strong id="learningEvaluated">—</strong><small>valutate e incluse</small></article>
+          <article class="learning-metric"><span>Completezza</span><strong id="learningQuality">—</strong><small>qualità dei dati</small></article>
+          <article class="learning-metric"><span>Affidabilità</span><strong id="learningConfidence">—</strong><small>del confronto</small></article>
+          <article class="learning-metric"><span>Voto medio</span><strong id="learningAverage">—</strong><small>su 5</small></article>
+        </div>
+      </section>
+
+      <section class="learning-panel">
+        <div class="learning-heading"><div><h2>Cosa emerge dal tuo storico</h2><p class="muted">Ogni insight indica quante prove lo sostengono.</p></div><a href="../fermentation/fermentation-learning.html?v=2">Analisi completa →</a></div>
+        <div id="learningInsights" class="learning-insights"></div>
+      </section>
+
+      <section class="learning-panel">
+        <div class="learning-heading"><div><h2>Fonti analizzate</h2><p class="muted">Prima area operativa: Pizza e impasti.</p></div></div>
+        <div id="learningSources" class="learning-sources"></div>
+      </section>
+
+      <section class="learning-panel">
+        <div class="learning-heading"><div><h2>Metodo e controllo</h2><p class="muted">Il Learning suggerisce: non applica modifiche.</p></div></div>
+        <div class="learning-method"><strong>Limite dichiarato</strong><p id="learningMethodology"></p></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js?v=12"></script>
+  <script src="../supabase-client.js?v=12"></script>
+  <script src="../workflow-engine/fermentation-learning-engine.js?v=1"></script>
+  <script src="learning-core.js?v=1"></script>
+  <script src="learning.js?v=1"></script>
+</body>
+</html>
