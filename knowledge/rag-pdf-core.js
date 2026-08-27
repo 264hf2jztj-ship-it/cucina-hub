@@ -6,7 +6,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  const MAX_PDF_BYTES = 25 * 1024 * 1024;
+  const MAX_PDF_BYTES = 32 * 1024 * 1024;
   const MAX_PDF_PAGES = 250;
   const MIN_PAGE_CHARS = 20;
 
@@ -69,7 +69,7 @@
       throw new Error("Il file selezionato non è un PDF.");
     }
     if (!Number.isFinite(file.size) || file.size < 1) throw new Error("Il PDF è vuoto.");
-    if (file.size > MAX_PDF_BYTES) throw new Error("Il PDF supera il limite di 25 MB.");
+    if (file.size > MAX_PDF_BYTES) throw new Error("Il PDF supera il limite di 32 MB.");
     return true;
   }
 

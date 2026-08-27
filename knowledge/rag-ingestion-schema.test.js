@@ -29,7 +29,7 @@ test("ingestion UI requires preview and explicit confirmation", () => {
   assert.match(html, /PREPARA ANTEPRIMA/);
   assert.match(html, /CONFERMA INDICIZZAZIONE/);
   assert.match(html, /rag-ingestion-core\.js\?v=1/);
-  assert.match(html, /rag-pdf-core\.js\?v=2/);
+  assert.match(html, /rag-pdf-core\.js\?v=3/);
   assert.match(html, /rag\.js\?v=5/);
   assert.match(fs.readFileSync("knowledge/rag-pdf-core.js", "utf8"), /streamTextContent/);
   assert.match(fs.readFileSync("knowledge/rag-pdf-core.js", "utf8"), /getReader/);

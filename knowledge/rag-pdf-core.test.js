@@ -12,7 +12,8 @@ function fakeFile(name = "manuale.pdf", size = 1000, type = "application/pdf") {
 test("accepts bounded PDFs and rejects invalid files", () => {
   assert.equal(pdfCore.validatePdfFile(fakeFile()), true);
   assert.throws(() => pdfCore.validatePdfFile(fakeFile("manuale.txt", 1000, "text/plain")), /non è un PDF/);
-  assert.throws(() => pdfCore.validatePdfFile(fakeFile("manuale.pdf", pdfCore.MAX_PDF_BYTES + 1)), /25 MB/);
+  assert.equal(pdfCore.MAX_PDF_BYTES, 32 * 1024 * 1024);
+  assert.throws(() => pdfCore.validatePdfFile(fakeFile("manuale.pdf", pdfCore.MAX_PDF_BYTES + 1)), /32 MB/);
 });
 
 test("reconstructs readable lines from PDF.js text items", () => {
