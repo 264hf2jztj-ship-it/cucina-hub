@@ -12,10 +12,16 @@
     course: "Corso",
     knowledge_object: "Knowledge Object"
   };
+  const PDFJS_VERSION = "6.2.108";
+  const PDFJS_BASE_URL = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/`;
+  const PDFJS_URL = `${PDFJS_BASE_URL}legacy/build/pdf.min.mjs`;
+  const PDFJS_WORKER_URL = `${PDFJS_BASE_URL}legacy/build/pdf.worker.min.mjs`;
   let sources = [];
   let loading = false;
   let ingestionChunks = [];
   let ingestionHash = "";
+  let ingestionFile = null;
+  let pdfJsPromise = null;
 
   function client() {
     return window.cucinaHubSupabase;
@@ -84,6 +90,9 @@
 
   function friendlyLoadError(error) {
     const message = String(error?.message || error || "");
+    if (/dynamically imported module|module script|pdf\.min\.mjs/i.test(message)) {
+      return "Il lettore PDF non è stato caricato. Controlla la rete e riprova.";
+    }
     if (/load failed|failed to fetch|network|fetch/i.test(message)) {
       return "Connessione a Supabase non riuscita. Controlla la rete e premi Riprova.";
     }
@@ -99,8 +108,37 @@
     ingestionChunks = [];
     ingestionHash = "";
     $("#ingestionPreview").hidden = true;
+    $("#previewPagesMetric").hidden = true;
+    $("#pdfPreviewNote").hidden = true;
+    $("#pdfProgressPanel").hidden = true;
     $("#confirmIngestion").disabled = true;
     ingestionStatus("");
+  }
+
+  function isPdfFile(file) {
+    return Boolean(file && (/\.pdf$/i.test(file.name || "") || file.type === "application/pdf"));
+  }
+
+  async function loadPdfJs() {
+    if (!pdfJsPromise) {
+      pdfJsPromise = import(PDFJS_URL)
+        .then(pdfjs => {
+          pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+          return pdfjs;
+        })
+        .catch(error => {
+          pdfJsPromise = null;
+          throw error;
+        });
+    }
+    return pdfJsPromise;
+  }
+
+  function updatePdfProgress(current, total) {
+    $("#pdfProgressPanel").hidden = false;
+    $("#pdfProgress").max = Math.max(1, total);
+    $("#pdfProgress").value = current;
+    $("#pdfProgressCount").textContent = `${current} / ${total}`;
   }
 
   function renderIngestionSources() {
@@ -113,6 +151,10 @@
   function openIngestion(sourceId) {
     renderIngestionSources();
     if (sourceId) $("#ingestionSource").value = sourceId;
+    $("#ingestionFile").value = "";
+    $("#ingestionText").value = "";
+    $("#ingestionText").disabled = false;
+    ingestionFile = null;
     invalidateIngestionPreview();
     $("#ingestionPanel").hidden = false;
     $("#ingestionPanel").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -122,6 +164,8 @@
     $("#ingestionPanel").hidden = true;
     $("#ingestionFile").value = "";
     $("#ingestionText").value = "";
+    $("#ingestionText").disabled = false;
+    ingestionFile = null;
     invalidateIngestionPreview();
   }
 
@@ -134,14 +178,36 @@
   async function readIngestionFile(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    const allowed = /\.(txt|md)$/i.test(file.name) || ["text/plain", "text/markdown"].includes(file.type);
+    invalidateIngestionPreview();
+    ingestionFile = file;
+    const pdf = isPdfFile(file);
+    const allowed = pdf || /\.(txt|md)$/i.test(file.name) || ["text/plain", "text/markdown"].includes(file.type);
     if (!allowed) {
       event.target.value = "";
-      ingestionStatus("In questa versione puoi scegliere soltanto file .txt o .md.", "error");
+      ingestionFile = null;
+      ingestionStatus("Puoi scegliere soltanto file PDF, .txt o .md.", "error");
       return;
     }
+    if (pdf) {
+      try {
+        const pdfCore = window.CucinaHubRagPdfCore;
+        if (!pdfCore) throw new Error("Motore PDF non disponibile. Ricarica la pagina.");
+        pdfCore.validatePdfFile(file);
+        $("#ingestionText").value = "";
+        $("#ingestionText").disabled = true;
+        ingestionStatus(`PDF ${file.name} pronto sul dispositivo. Premi Prepara anteprima per estrarre il testo.`);
+      } catch (error) {
+        event.target.value = "";
+        ingestionFile = null;
+        $("#ingestionText").disabled = false;
+        ingestionStatus(error.message, "error");
+      }
+      return;
+    }
+    $("#ingestionText").disabled = false;
     if (file.size > 1500000) {
       event.target.value = "";
+      ingestionFile = null;
       ingestionStatus("Il file supera il limite di 1,5 MB.", "error");
       return;
     }
@@ -155,23 +221,61 @@
   }
 
   async function previewIngestion() {
+    const button = $("#previewIngestion");
+    button.disabled = true;
     try {
       const source = sources.find(item => item.id === $("#ingestionSource").value);
       if (!source) throw new Error("Seleziona una fonte valida.");
       const core = window.CucinaHubRagIngestionCore;
       if (!core) throw new Error("Motore di indicizzazione non disponibile. Ricarica la pagina.");
-      ingestionChunks = core.chunkText($("#ingestionText").value, { heading: source.display_name });
-      ingestionHash = await sha256(core.normalizeText($("#ingestionText").value));
+      let pageResult = null;
+      if (isPdfFile(ingestionFile)) {
+        const pdfCore = window.CucinaHubRagPdfCore;
+        if (!pdfCore) throw new Error("Motore PDF non disponibile. Ricarica la pagina.");
+        ingestionStatus("Caricamento del lettore PDF…");
+        $("#pdfProgressLabel").textContent = "Estrazione PDF…";
+        updatePdfProgress(0, 1);
+        const pdfjs = await loadPdfJs();
+        ingestionStatus("Estrazione del testo sul dispositivo…");
+        const pages = await pdfCore.extractPdf(ingestionFile, {
+          pdfjs,
+          documentOptions: {
+            cMapUrl: `${PDFJS_BASE_URL}cmaps/`,
+            cMapPacked: true,
+            standardFontDataUrl: `${PDFJS_BASE_URL}standard_fonts/`,
+            wasmUrl: `${PDFJS_BASE_URL}wasm/`
+          },
+          onProgress: progress => updatePdfProgress(progress.current, progress.total)
+        });
+        pageResult = pdfCore.pagesToChunks(pages, { ingestionCore: core, heading: source.display_name });
+        ingestionChunks = pageResult.chunks;
+        ingestionHash = await sha256(pageResult.canonical_text);
+      } else {
+        const text = $("#ingestionText").value;
+        ingestionChunks = core.chunkText(text, { heading: source.display_name });
+        ingestionHash = await sha256(core.normalizeText(text));
+      }
       const summary = core.summarize(ingestionChunks);
       $("#previewChunkCount").textContent = summary.chunk_count.toLocaleString("it-IT");
       $("#previewCharacterCount").textContent = summary.character_count.toLocaleString("it-IT");
       $("#previewTokenCount").textContent = summary.token_estimate.toLocaleString("it-IT");
+      if (pageResult) {
+        $("#previewPagesMetric").hidden = false;
+        $("#previewPageCount").textContent = `${pageResult.indexed_page_count} / ${pageResult.page_count}`;
+        $("#pdfPreviewNote").hidden = false;
+        $("#pdfPreviewNote").textContent = pageResult.skipped_page_count
+          ? `${pageResult.skipped_page_count} pagine senza testo selezionabile saranno escluse.`
+          : "Tutte le pagine contengono testo selezionabile. Il PDF originale resta sul dispositivo.";
+        $("#pdfProgressLabel").textContent = "Estrazione completata";
+      }
       $("#ingestionPreview").hidden = false;
       $("#confirmIngestion").disabled = false;
       ingestionStatus("Anteprima pronta. Controlla i valori e conferma per sostituire l’indice della fonte.", "ok");
     } catch (error) {
       invalidateIngestionPreview();
-      ingestionStatus(error.message, "error");
+      ingestionStatus(friendlyLoadError(error), "error");
+    } finally {
+      button.disabled = false;
     }
   }
 
@@ -271,7 +375,13 @@
     if (button) openIngestion(button.dataset.indexSource);
   });
   $("#ingestionFile").addEventListener("change", readIngestionFile);
-  $("#ingestionText").addEventListener("input", invalidateIngestionPreview);
+  $("#ingestionText").addEventListener("input", () => {
+    if (!$("#ingestionText").disabled) {
+      ingestionFile = null;
+      $("#ingestionFile").value = "";
+    }
+    invalidateIngestionPreview();
+  });
   $("#ingestionSource").addEventListener("change", invalidateIngestionPreview);
   $("#previewIngestion").addEventListener("click", previewIngestion);
   $("#confirmIngestion").addEventListener("click", confirmIngestion);

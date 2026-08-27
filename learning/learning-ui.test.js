@@ -29,7 +29,7 @@ test("Learning Hub is authenticated and scopes every data source to the owner", 
 test("navigation, Dashboard and offline shell expose Learning", () => {
   assert.match(home, /href="learning\/index\.html\?v=1"[^>]*>.*Learning/s);
   assert.match(app, /"Learning"[\s\S]*"learning\/index\.html\?v=1"/);
-  assert.match(sw, /cucina-hub-v25/);
+  assert.match(sw, /cucina-hub-v26/);
   assert.match(sw, /learning\/index\.html/);
   assert.match(sw, /learning\/learning-core\.js/);
 });
