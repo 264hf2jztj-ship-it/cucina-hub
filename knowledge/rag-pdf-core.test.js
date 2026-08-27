@@ -56,6 +56,38 @@ test("extracts pages locally and reports progress", async () => {
   assert.equal(destroyed, true);
 });
 
+test("uses the reader API for Safari streams without async iteration", async () => {
+  let getTextContentCalled = false;
+  const chunks = [
+    { items: [{ str: "Guida", hasEOL: false }], styles: {}, lang: "it" },
+    { items: [{ str: "Hurom", hasEOL: true }], styles: {} }
+  ];
+  const page = {
+    getTextContent() {
+      getTextContentCalled = true;
+      throw new TypeError("undefined is not a function (near '...t of e...')");
+    },
+    streamTextContent() {
+      let index = 0;
+      return {
+        getReader() {
+          return {
+            async read() {
+              if (index >= chunks.length) return { done: true };
+              return { done: false, value: chunks[index++] };
+            },
+            releaseLock() {}
+          };
+        }
+      };
+    }
+  };
+  const content = await pdfCore.readTextContent(page, { disableNormalization: false });
+  assert.equal(pdfCore.textContentToText(content), "Guida Hurom");
+  assert.equal(content.lang, "it");
+  assert.equal(getTextContentCalled, false);
+});
+
 test("passes local extraction resource options to PDF.js", async () => {
   let received;
   const pdfjs = {
