@@ -39,6 +39,28 @@
       .trim();
   }
 
+  async function readTextContent(page, options = {}) {
+    if (!page?.streamTextContent) return page.getTextContent(options);
+    const stream = page.streamTextContent(options);
+    const reader = stream?.getReader?.();
+    if (!reader) return page.getTextContent(options);
+    const merged = { items: [], styles: Object.create(null), lang: null };
+    try {
+      while (true) {
+        const result = await reader.read();
+        if (result.done) break;
+        const chunk = result.value || {};
+        if (merged.lang == null && chunk.lang != null) merged.lang = chunk.lang;
+        Object.assign(merged.styles, chunk.styles || {});
+        const items = Array.isArray(chunk.items) ? chunk.items : [];
+        items.forEach(item => merged.items.push(item));
+      }
+    } finally {
+      reader.releaseLock?.();
+    }
+    return merged;
+  }
+
   function validatePdfFile(file) {
     if (!file) throw new Error("Seleziona un file PDF.");
     const name = String(file.name || "");
@@ -141,7 +163,9 @@
     try {
       for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
         const page = await document.getPage(pageNumber);
-        const textContent = await page.getTextContent({ disableNormalization: false });
+        // Safari 26 exposes ReadableStream.getReader(), but not the async iterator
+        // used internally by PDF.js getTextContent(). Read the stream explicitly.
+        const textContent = await readTextContent(page, { disableNormalization: false });
         pages.push({ page_number: pageNumber, text: textContentToText(textContent) });
         options.onProgress?.({ current: pageNumber, total: document.numPages });
         page.cleanup?.();
@@ -156,6 +180,7 @@
   return Object.freeze({
     normalizeLine,
     textContentToText,
+    readTextContent,
     validatePdfFile,
     cleanPages,
     pagesToChunks,

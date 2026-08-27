@@ -35,7 +35,7 @@ test("edge function keeps the API key server-side and responses in preview", () 
 });
 
 test("assistant static shell is available offline", () => {
-  assert.match(sw, /cucina-hub-v26/);
+  assert.match(sw, /cucina-hub-v27/);
   for (const asset of [
     "fermentation/fermentation-assistant.html",
     "fermentation/assistant-response-ui.js",
