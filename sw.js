@@ -1,4 +1,4 @@
-const CACHE_NAME = "cucina-hub-v33";
+const CACHE_NAME = "cucina-hub-v34";
 
 const APP_SHELL = [
   "./",
@@ -32,6 +32,10 @@ const APP_SHELL = [
   "./library/epub-reader-core.js",
   "./library/reader.js",
   "./library/reader-lifecycle.js",
+  "./planner/ai.html",
+  "./planner/planner-ai.css",
+  "./planner/planner-ai-core.js",
+  "./planner/planner-ai.js",
   "./fermentation/index.html",
   "./fermentation/lab.css",
   "./fermentation/lab.js",
