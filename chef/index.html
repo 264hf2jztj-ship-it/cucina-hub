@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#2f6b4f">
+  <title>Chef AI — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../style.css?v=13">
+  <link rel="stylesheet" href="chef.css?v=1">
+</head>
+<body>
+  <header class="chef-topbar">
+    <div class="brand"><div class="brand-mark" aria-hidden="true">👨‍🍳</div><div><p class="eyebrow">Assistente contestuale</p><h1>Chef AI</h1></div></div>
+    <div class="chef-topbar-actions"><a class="button secondary" href="../knowledge/rag.html?v=5">FONTI AI</a><a class="button secondary" href="../index.html?v=15">← CUCINA HUB</a></div>
+  </header>
+  <main class="chef-main">
+    <section class="chef-intro">
+      <div><p class="eyebrow">Chef AI Core</p><h2>Chiedi, verifica le fonti, poi decidi tu.</h2><p>L’assistente cerca prima nei testi privati indicizzati. Se non trova prove pertinenti, distingue chiaramente la conoscenza generale dalle informazioni tratte dalla tua Biblioteca.</p></div>
+      <div class="chef-boundary"><strong>Nessuna scrittura automatica</strong><span>Le risposte non creano e non modificano ricette, Planner o sessioni.</span></div>
+    </section>
+    <p id="pageStatus" class="chef-status" role="status" aria-live="polite">Verifica dell’accesso…</p>
+    <section id="authGate" class="chef-panel" hidden><h2>Accedi prima di continuare</h2><p>Chef AI usa soltanto le fonti appartenenti al tuo account.</p><a class="button" href="../index.html?v=15">VAI ALL’ACCESSO</a></section>
+    <div id="workspace" hidden>
+      <section class="chef-panel">
+        <div class="panel-heading"><div><p class="eyebrow">Domanda</p><h2>Cosa vuoi sapere?</h2></div><span class="chef-limit">Massimo 600 caratteri</span></div>
+        <form id="chefForm" class="chef-form">
+          <label for="chefQuestion">Domanda culinaria</label>
+          <textarea id="chefQuestion" minlength="3" maxlength="600" required placeholder="Es. Come posso ottenere una pizza in teglia più alveolata con il mio forno?"></textarea>
+          <button id="askChef" class="button" type="submit">CERCA NELLE FONTI E RISPONDI</button>
+        </form>
+        <p class="chef-note">Ogni invio è indipendente: la pagina non conserva una conversazione e non amplia automaticamente il contesto.</p>
+      </section>
+      <section id="answerPanel" class="chef-panel" hidden aria-live="polite">
+        <div class="panel-heading"><div><p class="eyebrow">Risposta controllata</p><h2>Risposta di Chef AI</h2></div><span id="evidenceBadge" class="evidence-badge">—</span></div>
+        <div id="answerText" class="chef-answer"></div>
+        <div id="cautionsBlock" class="chef-block" hidden><h3>Cautele</h3><ul id="cautionsList"></ul></div>
+        <div id="assumptionsBlock" class="chef-block" hidden><h3>Ipotesi dichiarate</h3><ul id="assumptionsList"></ul></div>
+        <div class="chef-sources"><h3>Fonti personali utilizzate</h3><div id="sourceList" class="source-list"></div></div>
+        <div class="chef-meta"><div><span>Modello</span><strong id="modelName">—</strong></div><div><span>Token API</span><strong id="usageCount">—</strong></div><div><span>Memorizzazione provider</span><strong>No</strong></div></div>
+      </section>
+    </div>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js?v=12"></script>
+  <script src="../supabase-client.js?v=16"></script>
+  <script src="chef.js?v=1"></script>
+</body>
+</html>

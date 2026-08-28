@@ -1,4 +1,4 @@
-const CACHE_NAME = "cucina-hub-v28";
+const CACHE_NAME = "cucina-hub-v29";
 
 const APP_SHELL = [
   "./",
@@ -24,6 +24,9 @@ const APP_SHELL = [
   "./versions/versions-core.js",
   "./versions/versions.js",
   "./versions/versions.css",
+  "./chef/index.html",
+  "./chef/chef.js",
+  "./chef/chef.css",
   "./fermentation/index.html",
   "./fermentation/lab.css",
   "./fermentation/lab.js",

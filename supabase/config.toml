@@ -3,5 +3,8 @@ project_id = "cucina-hub"
 [functions.fermentation-assistant]
 verify_jwt = true
 
+[functions.chef-assistant]
+verify_jwt = true
+
 [functions.planner-menu-preview]
 verify_jwt = true

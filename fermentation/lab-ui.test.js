@@ -19,7 +19,7 @@ assert.equal(doughCategory.href, "fermentation/index.html?v=1");
 assert.equal(doughCategory.etichetta_stato, "Operativa");
 
 assert.match(home, /href="fermentation\/index\.html\?v=1"[^>]*><span>🍕<\/span> Pizza e impasti<\/a>/i);
-assert.match(home, /app\.js\?v=21/i);
+assert.match(home, /app\.js\?v=22/i);
 assert.match(app, /category\.href/);
 assert.match(app, /category\.etichetta_stato/);
 
