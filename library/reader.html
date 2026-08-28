@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#365d44">
   <meta name="description" content="Lettore privato EPUB e PDF di Cucina Hub.">
   <title>Lettore documenti — Cucina Hub</title>
-  <link rel="stylesheet" href="reader.css?v=2">
+  <link rel="stylesheet" href="reader.css?v=3">
 </head>
 <body>
   <a class="skip-link" href="#readerMain">Vai al lettore</a>
@@ -22,12 +22,12 @@
         <div>
           <p class="eyebrow">Reader privato</p>
           <h2 id="openTitle">Apri un EPUB o PDF</h2>
-          <p>Il documento resta sull’iPhone o iPad. Cucina Hub memorizza soltanto il punto di lettura EPUB e le preferenze.</p>
+          <p>Il documento resta sull’iPhone o iPad. Cucina Hub memorizza soltanto il punto di lettura EPUB, le preferenze e i segnalibri locali.</p>
         </div>
       </div>
       <label class="file-button" for="documentFile">SCEGLI EPUB O PDF</label>
       <input id="documentFile" type="file" accept=".epub,.pdf,application/epub+zip,application/pdf">
-      <p class="privacy-note">Limite locale: 64 MB per EPUB, 128 MB per PDF. Nessun caricamento su GitHub, Supabase o OpenAI.</p>
+      <p class="privacy-note">Limite locale: 64 MB per EPUB, 128 MB per PDF. Ricerca e risultati non vengono salvati o indicizzati. Nessun caricamento su GitHub, Supabase o OpenAI.</p>
       <p id="readerStatus" class="reader-status" role="status" aria-live="polite">Seleziona un EPUB o PDF per iniziare.</p>
     </section>
 
@@ -53,6 +53,30 @@
             <option value="paper">Carta</option><option value="sepia">Seppia</option><option value="night">Notte</option>
           </select>
         </div>
+
+        <section class="reader-toolbox" aria-labelledby="searchTitle">
+          <h3 id="searchTitle">Cerca nel documento</h3>
+          <form id="searchForm" class="search-form" role="search">
+            <label class="sr-only" for="documentSearch">Testo da cercare</label>
+            <input id="documentSearch" type="search" autocomplete="off" autocapitalize="none" placeholder="Frase esatta…">
+            <div class="tool-actions">
+              <button id="searchDocument" type="submit">CERCA</button>
+              <button id="cancelSearch" class="secondary-button compact-button" type="button" hidden>ANNULLA</button>
+            </div>
+          </form>
+          <p id="searchProgress" class="tool-status" role="status" aria-live="polite">Inserisci una frase da cercare nel documento.</p>
+          <ol id="searchResults" class="search-results" aria-label="Risultati ricerca"></ol>
+        </section>
+
+        <section class="reader-toolbox" aria-labelledby="bookmarkTitle">
+          <div class="tool-heading">
+            <h3 id="bookmarkTitle">Segnalibri</h3>
+            <button id="addBookmark" class="compact-button" type="button">+ AGGIUNGI</button>
+          </div>
+          <p class="tool-note">Solo posizione/pagina e data, massimo 50 per documento.</p>
+          <ul id="bookmarkList" class="bookmark-list" aria-label="Segnalibri del documento"></ul>
+        </section>
+
         <a id="openPdfExternally" class="pdf-open-button" href="#" target="_blank" rel="noopener" hidden>APRI PDF A SCHERMO INTERO</a>
         <button id="closeBook" class="secondary-button" type="button">CHIUDI DOCUMENTO</button>
       </aside>
@@ -70,6 +94,6 @@
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
   <script src="epub-reader-core.js?v=2"></script>
-  <script src="reader.js?v=2"></script>
+  <script src="reader.js?v=3"></script>
 </body>
 </html>
