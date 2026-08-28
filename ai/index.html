@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#2f6b4f">
+  <meta name="description" content="Assistente AI di Cucina Hub: scegli il modulo adatto e mantieni visibili fonti e guardrail.">
+  <title>Assistente AI — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../style.css?v=15">
+  <link rel="stylesheet" href="ai-hub.css?v=1">
+</head>
+<body>
+  <a class="skip-link" href="#aiMain">Vai al contenuto</a>
+
+  <header class="ai-topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">✨</div>
+      <div>
+        <p class="eyebrow">Milestone D</p>
+        <h1>Assistente AI</h1>
+      </div>
+    </div>
+    <a class="button secondary" href="../index.html?v=16">← CUCINA HUB</a>
+  </header>
+
+  <main id="aiMain" class="ai-main" tabindex="-1">
+    <section class="ai-intro">
+      <div>
+        <p class="eyebrow">Un punto di ingresso, moduli separati</p>
+        <h2>Scegli l’assistente in base a quello che devi fare.</h2>
+        <p>
+          Cucina Hub mantiene separati conoscenza, esecuzione e pianificazione.
+          Ogni assistente usa prima i dati personali disponibili e non sostituisce i moduli che governa.
+        </p>
+      </div>
+      <div class="ai-principle" role="note">
+        <strong>Controllo umano sempre.</strong>
+        <span>Le funzioni AI non applicano modifiche automatiche a ricette, sessioni o Planner.</span>
+      </div>
+    </section>
+
+    <p id="aiStatus" class="ai-status" role="status" aria-live="polite">Verifica dell’accesso…</p>
+
+    <section id="aiAuthGate" class="ai-panel ai-gate" hidden>
+      <span class="gate-icon" aria-hidden="true">🔐</span>
+      <div>
+        <h2>Accedi prima di continuare</h2>
+        <p>Gli assistenti possono consultare soltanto i dati autorizzati dal tuo account.</p>
+      </div>
+      <a class="button" href="../index.html?v=16">VAI ALL’ACCESSO</a>
+    </section>
+
+    <div id="aiWorkspace" class="ai-workspace" hidden>
+      <section class="ai-panel ai-route-panel" aria-labelledby="routeTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Instradamento esplicito</p>
+            <h2 id="routeTitle">Cosa vuoi fare?</h2>
+          </div>
+        </div>
+
+        <div class="assistant-grid">
+          <a class="assistant-card" href="../chef/index.html?v=1" data-assistant="chef">
+            <span class="assistant-icon" aria-hidden="true">👨‍🍳</span>
+            <div>
+              <h3>Chef AI</h3>
+              <p>Domande di cucina, tecniche, manuali, ricette e adattamenti con fonti personali visibili.</p>
+            </div>
+            <span class="assistant-action">APRI CHEF AI →</span>
+          </a>
+
+          <a class="assistant-card" href="../fermentation/fermentation-assistant.html?v=1" data-assistant="fermentation">
+            <span class="assistant-icon" aria-hidden="true">🍕</span>
+            <div>
+              <h3>Fermentation AI</h3>
+              <p>Supporto agli impasti e alle fermentazioni partendo da profili, sessioni e contesto del Laboratorio.</p>
+            </div>
+            <span class="assistant-action">APRI FERMENTATION AI →</span>
+          </a>
+
+          <a class="assistant-card" href="../planner/ai.html?v=1" data-assistant="planner">
+            <span class="assistant-icon" aria-hidden="true">🗓️</span>
+            <div>
+              <h3>Planner AI</h3>
+              <p>Proposte di menu in anteprima, usando Biblioteca e Planner senza salvataggi automatici.</p>
+            </div>
+            <span class="assistant-action">APRI PLANNER AI →</span>
+          </a>
+
+          <a class="assistant-card sources" href="../knowledge/rag.html?v=5" data-assistant="sources">
+            <span class="assistant-icon" aria-hidden="true">📚</span>
+            <div>
+              <h3>Fonti AI</h3>
+              <p>Controlla quali documenti sono indicizzati e quali contenuti possono essere recuperati dagli assistenti.</p>
+            </div>
+            <span class="assistant-action">GESTISCI LE FONTI →</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="ai-panel ai-state-panel" aria-labelledby="stateTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Stato del modulo</p>
+            <h2 id="stateTitle">Cosa è già pronto</h2>
+          </div>
+        </div>
+
+        <div class="state-list">
+          <div class="state-row">
+            <span class="state-mark ready" aria-hidden="true">✓</span>
+            <div><strong>RAG privato</strong><span>Fonti recuperate con accesso owner-scoped e provenienza visibile.</span></div>
+          </div>
+          <div class="state-row">
+            <span class="state-mark ready" aria-hidden="true">✓</span>
+            <div><strong>Assistenti specializzati</strong><span>Chef, Fermentation e Planner hanno interfacce e guardrail separati.</span></div>
+          </div>
+          <div class="state-row">
+            <span class="state-mark pending" aria-hidden="true">○</span>
+            <div><strong>Generazione reale</strong><span>La validazione end-to-end resta dipendente dall’attivazione operativa del provider AI.</span></div>
+          </div>
+          <div class="state-row">
+            <span class="state-mark pending" aria-hidden="true">○</span>
+            <div><strong>Chat interna conversazionale</strong><span>Non è inclusa in questo step: ogni modulo mantiene per ora il proprio flusso controllato.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="ai-boundary" role="note">
+        <strong>Confine architetturale.</strong>
+        <span>L’Assistente AI instrada verso i moduli esistenti; non duplica dati e non introduce un secondo database o una memoria parallela.</span>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js?v=12"></script>
+  <script src="../supabase-client.js?v=16"></script>
+  <script src="ai-hub.js?v=1"></script>
+</body>
+</html>
