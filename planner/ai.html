@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6b4f">
+  <meta name="description" content="Planner AI di Cucina Hub: genera proposte menu in anteprima usando la Biblioteca personale.">
+  <title>Planner AI — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="../manifest.json">
+  <link rel="stylesheet" href="../style.css?v=17">
+  <link rel="stylesheet" href="planner-ai.css?v=1">
+</head>
+<body>
+  <a class="skip-link" href="#plannerAiMain">Vai al contenuto</a>
+
+  <header class="planner-ai-topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">✨</div>
+      <div><p class="eyebrow">Milestone D · Planner</p><h1>Planner AI</h1></div>
+    </div>
+    <a class="button secondary" href="index.html?v=15">← Planner Hub</a>
+  </header>
+
+  <main id="plannerAiMain" class="planner-ai-main" tabindex="-1">
+    <section class="planner-ai-intro">
+      <p class="eyebrow">Proposta, non salvataggio</p>
+      <h2>Descrivi il menu che vuoi ottenere.</h2>
+      <p>
+        Planner AI consulta prima il catalogo ricette personale e, quando utile, le fonti RAG disponibili.
+        Genera un pacchetto <code>cucina-hub.menu-plan</code> che resta separato dal Planner finché non lo invii esplicitamente all’anteprima.
+      </p>
+    </section>
+
+    <p id="plannerAiStatus" class="planner-ai-status" role="status" aria-live="polite">Verifica sessione…</p>
+
+    <section id="plannerAiAuthGate" class="planner-ai-panel planner-ai-gate" hidden>
+      <span aria-hidden="true">🔐</span>
+      <div><h2>Accedi prima di continuare</h2><p>Planner AI usa soltanto dati privati autorizzati dal tuo account.</p></div>
+      <a class="button" href="../index.html?v=17">Vai all’accesso</a>
+    </section>
+
+    <section id="plannerAiWorkspace" class="planner-ai-panel" hidden>
+      <form id="plannerAiForm">
+        <div class="planner-ai-grid">
+          <div class="planner-ai-field wide">
+            <label for="plannerAiPrompt">Cosa vuoi pianificare?</label>
+            <textarea
+              id="plannerAiPrompt"
+              maxlength="800"
+              required
+              placeholder="Es. Preparami una settimana pratica, con buone proteine, cene semplici e almeno due pasti che riusino ricette già presenti nella Biblioteca."
+            ></textarea>
+          </div>
+
+          <div class="planner-ai-field">
+            <label for="plannerAiStart">Dal</label>
+            <input id="plannerAiStart" type="date" required>
+          </div>
+
+          <div class="planner-ai-field">
+            <label for="plannerAiEnd">Al <span>massimo 14 giorni</span></label>
+            <input id="plannerAiEnd" type="date" required>
+          </div>
+
+          <div class="planner-ai-field">
+            <label for="plannerAiServings">Porzioni indicative</label>
+            <input id="plannerAiServings" type="number" min="1" max="20" step="1" value="2" required>
+          </div>
+        </div>
+
+        <div class="planner-ai-actions">
+          <button id="plannerAiGenerate" class="button" type="submit">GENERA PROPOSTA</button>
+          <button id="plannerAiStage" class="button secondary" type="button" hidden>INVIA ALL’ANTEPRIMA DEL PLANNER</button>
+          <button id="plannerAiReset" class="button secondary" type="button">AZZERA PROPOSTA</button>
+        </div>
+      </form>
+
+      <div class="planner-ai-guardrail" role="note">
+        <strong>Nessuna scrittura automatica.</strong>
+        Generazione → richiesta di anteprima → resolver e conflitti → tua conferma finale → eventuale commit atomico.
+      </div>
+
+      <div id="plannerAiResult" class="planner-ai-result" aria-live="polite">
+        <div class="planner-ai-empty">
+          <strong>Nessuna proposta generata.</strong>
+          <span>Planner AI può preparare un pacchetto, ma non può attivarlo o salvare pasti automaticamente.</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js?v=14"></script>
+  <script src="../supabase-client.js?v=14"></script>
+  <script src="planner-ai-core.js?v=1"></script>
+  <script src="planner-ai.js?v=1"></script>
+</body>
+</html>
