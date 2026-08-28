@@ -45,10 +45,42 @@ test("reader exposes accessible navigation and status",()=>{
   assert.match(js,/localStorage\.setItem\(core\.progressStorageKey/);
 });
 
+test("reader searches EPUB and PDF locally with bounded cancellable scans",()=>{
+  for(const id of["documentSearch","searchDocument","cancelSearch","searchProgress","searchResults"]){
+    assert.match(html,new RegExp(`id="${id}"`));
+  }
+  assert.match(js,/const MAX_SEARCH_RESULTS=100/);
+  assert.match(js,/state\.book\?\.spine\?\.spineItems/);
+  assert.match(js,/section\.find\(query\)/);
+  assert.match(js,/page\.getTextContent\(\)/);
+  assert.match(js,/state\.searchToken\+=1/);
+  assert.match(js,/Ricerca PDF: pagina/);
+  assert.match(js,/Ricerca EPUB:/);
+});
+
+test("search results jump to the matching EPUB position or PDF page without persistence",()=>{
+  assert.match(js,/state\.rendition\.display\(result\.cfi\)/);
+  assert.match(js,/renderPdfPage\(result\.page\)/);
+  assert.match(html,/Ricerca e risultati non vengono salvati o indicizzati/);
+  assert.doesNotMatch(js,/localStorage\.setItem\([^\n]*search/i);
+});
+
+test("bookmarks stay local, store only position or page plus date, and are capped at 50",()=>{
+  for(const id of["addBookmark","bookmarkList"]){
+    assert.match(html,new RegExp(`id="${id}"`));
+  }
+  assert.match(js,/const MAX_BOOKMARKS=50/);
+  assert.match(js,/cucina-hub:reader-bookmarks:/);
+  assert.match(js,/\{format:"epub",cfi:item\.cfi,createdAt:item\.createdAt\}/);
+  assert.match(js,/\{format:"pdf",page:item\.page,createdAt:item\.createdAt\}/);
+  assert.match(js,/samePosition/);
+  assert.match(html,/Solo posizione\/pagina e data, massimo 50 per documento/);
+});
+
 test("Cucina Hub links and caches the document reader",()=>{
   assert.match(home,/library\/reader\.html\?v=2/);
   assert.match(app,/Lettore EPUB e PDF/);
-  assert.match(worker,/cucina-hub-v31/);
+  assert.match(worker,/cucina-hub-v32/);
   for(const asset of["library/reader.html","library/reader.css","library/epub-reader-core.js","library/reader.js"]){
     assert.match(worker,new RegExp(asset.replaceAll(".","\\.")));
   }
