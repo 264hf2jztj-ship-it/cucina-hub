@@ -222,6 +222,7 @@ function renderDashboard() {
         ${dashboardAction("🧪", "Esperimenti", "Prove controllate collegate alle ricette", "experiments/index.html?v=1")}
         ${dashboardAction("🗃️", "Versioni ricette", "Storico immutabile e promozione delle prove riuscite", "versions/index.html?v=1")}
         ${dashboardAction("🍕", "Laboratorio", "Impasti, sessioni e risultati", "fermentation/index.html?v=1")}
+        ${dashboardAction("👨‍🍳", "Chef AI", "Risposte culinarie con fonti personali verificabili", "chef/index.html?v=1")}
         ${dashboardAction("✨", "Assistente AI", "Proposte d’impasto in anteprima controllata", "fermentation/fermentation-assistant.html?v=5")}
         ${dashboardAction("🔎", "Ricerca", "Trova contenuti e conoscenza", "knowledge/search.html?v=1")}
       </div>
