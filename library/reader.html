@@ -1,6 +1,75 @@
-<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#365d44"><meta name="description" content="Reader EPUB privato di Cucina Hub."><title>Libri EPUB — Cucina Hub</title><link rel="stylesheet" href="reader.css?v=1"></head><body>
-<a class="skip-link" href="#readerMain">Vai al lettore</a><header class="reader-topbar"><a class="back-link" href="../?v=28">← Cucina Hub</a><div><p class="eyebrow">Biblioteca</p><h1>Libri EPUB</h1></div></header>
-<main id="readerMain" class="reader-main"><section id="openPanel" class="reader-panel open-panel" aria-labelledby="openTitle"><div class="open-copy"><span class="book-mark" aria-hidden="true">📚</span><div><p class="eyebrow">Reader privato</p><h2 id="openTitle">Apri un libro dal dispositivo</h2><p>Il file resta sull’iPhone o iPad. Cucina Hub memorizza soltanto il punto di lettura e le preferenze.</p></div></div><label class="file-button" for="epubFile">SCEGLI FILE EPUB</label><input id="epubFile" type="file" accept=".epub,application/epub+zip"><p class="privacy-note">Limite locale: 64 MB. Nessun caricamento su GitHub, Supabase o OpenAI.</p><p id="readerStatus" class="reader-status" role="status" aria-live="polite">Seleziona un EPUB per iniziare.</p></section>
-<section id="workspace" class="reader-workspace" hidden><aside class="reader-sidebar reader-panel" aria-labelledby="tocTitle"><div class="book-summary"><p class="eyebrow">Libro aperto</p><h2 id="bookTitle">Caricamento…</h2><p id="bookAuthor"></p><div class="progress-row"><span>Avanzamento</span><strong id="progressText">—</strong></div><div class="progress-track" aria-hidden="true"><span id="progressBar"></span></div></div><label class="toc-label" for="tocSelect" id="tocTitle">Indice</label><select id="tocSelect"><option value="">Caricamento indice…</option></select><div class="reader-settings" aria-label="Preferenze lettura"><button id="fontDown" type="button" aria-label="Riduci testo">A−</button><output id="fontValue" aria-live="polite">105%</output><button id="fontUp" type="button" aria-label="Ingrandisci testo">A+</button></div><label class="theme-label" for="themeSelect">Tema</label><select id="themeSelect"><option value="paper">Carta</option><option value="sepia">Seppia</option><option value="night">Notte</option></select><button id="closeBook" class="secondary-button" type="button">CHIUDI LIBRO</button></aside>
-<section class="reader-stage reader-panel" aria-label="Contenuto del libro"><div id="bookArea" class="book-area" tabindex="0"></div><nav class="page-controls" aria-label="Navigazione pagine"><button id="previousPage" type="button">← PRECEDENTE</button><button id="nextPage" type="button">SUCCESSIVA →</button></nav></section></section></main>
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script><script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script><script src="epub-reader-core.js?v=1"></script><script src="reader.js?v=1"></script></body></html>
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#365d44">
+  <meta name="description" content="Lettore privato EPUB e PDF di Cucina Hub.">
+  <title>Lettore documenti — Cucina Hub</title>
+  <link rel="stylesheet" href="reader.css?v=2">
+</head>
+<body>
+  <a class="skip-link" href="#readerMain">Vai al lettore</a>
+  <header class="reader-topbar">
+    <a class="back-link" href="../?v=28">← Cucina Hub</a>
+    <div><p class="eyebrow">Biblioteca</p><h1>Lettore documenti</h1></div>
+  </header>
+
+  <main id="readerMain" class="reader-main">
+    <section id="openPanel" class="reader-panel open-panel" aria-labelledby="openTitle">
+      <div class="open-copy">
+        <span class="book-mark" aria-hidden="true">📚</span>
+        <div>
+          <p class="eyebrow">Reader privato</p>
+          <h2 id="openTitle">Apri un EPUB o PDF</h2>
+          <p>Il documento resta sull’iPhone o iPad. Cucina Hub memorizza soltanto il punto di lettura EPUB e le preferenze.</p>
+        </div>
+      </div>
+      <label class="file-button" for="documentFile">SCEGLI EPUB O PDF</label>
+      <input id="documentFile" type="file" accept=".epub,.pdf,application/epub+zip,application/pdf">
+      <p class="privacy-note">Limite locale: 64 MB per EPUB, 128 MB per PDF. Nessun caricamento su GitHub, Supabase o OpenAI.</p>
+      <p id="readerStatus" class="reader-status" role="status" aria-live="polite">Seleziona un EPUB o PDF per iniziare.</p>
+    </section>
+
+    <section id="workspace" class="reader-workspace" hidden>
+      <aside id="readerSidebar" class="reader-sidebar reader-panel" aria-labelledby="tocTitle">
+        <div class="book-summary">
+          <p class="eyebrow">Documento aperto</p>
+          <h2 id="bookTitle">Caricamento…</h2>
+          <p id="bookAuthor"></p>
+          <div class="progress-row"><span>Avanzamento</span><strong id="progressText">—</strong></div>
+          <div class="progress-track" aria-hidden="true"><span id="progressBar"></span></div>
+        </div>
+        <div class="epub-only">
+          <label class="toc-label" for="tocSelect" id="tocTitle">Indice</label>
+          <select id="tocSelect"><option value="">Caricamento indice…</option></select>
+          <div class="reader-settings" aria-label="Preferenze lettura">
+            <button id="fontDown" type="button" aria-label="Riduci testo">A−</button>
+            <output id="fontValue" aria-live="polite">105%</output>
+            <button id="fontUp" type="button" aria-label="Ingrandisci testo">A+</button>
+          </div>
+          <label class="theme-label" for="themeSelect">Tema</label>
+          <select id="themeSelect">
+            <option value="paper">Carta</option><option value="sepia">Seppia</option><option value="night">Notte</option>
+          </select>
+        </div>
+        <a id="openPdfExternally" class="pdf-open-button" href="#" target="_blank" rel="noopener" hidden>APRI PDF A SCHERMO INTERO</a>
+        <button id="closeBook" class="secondary-button" type="button">CHIUDI DOCUMENTO</button>
+      </aside>
+
+      <section class="reader-stage reader-panel" aria-label="Contenuto del documento">
+        <div id="bookArea" class="book-area" tabindex="0"></div>
+        <nav id="pageControls" class="page-controls" aria-label="Navigazione pagine">
+          <button id="previousPage" type="button">← PRECEDENTE</button>
+          <button id="nextPage" type="button">SUCCESSIVA →</button>
+        </nav>
+      </section>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
+  <script src="epub-reader-core.js?v=2"></script>
+  <script src="reader.js?v=2"></script>
+</body>
+</html>
