@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#365d44">
   <meta name="description" content="Lettore privato EPUB e PDF di Cucina Hub.">
   <title>Lettore documenti — Cucina Hub</title>
-  <link rel="stylesheet" href="reader.css?v=3">
+  <link rel="stylesheet" href="reader.css?v=4">
 </head>
 <body>
   <a class="skip-link" href="#readerMain">Vai al lettore</a>
@@ -68,14 +68,16 @@
           <ol id="searchResults" class="search-results" aria-label="Risultati ricerca"></ol>
         </section>
 
-        <section class="reader-toolbox" aria-labelledby="bookmarkTitle">
-          <div class="tool-heading">
-            <h3 id="bookmarkTitle">Segnalibri</h3>
-            <button id="addBookmark" class="compact-button" type="button">+ AGGIUNGI</button>
+        <details id="bookmarkPanel" class="reader-toolbox bookmark-panel">
+          <summary class="bookmark-summary"><span class="bookmark-summary-icon" aria-hidden="true">🔖</span><span>Segnalibri</span></summary>
+          <div class="bookmark-panel-body">
+            <div class="tool-heading">
+              <p class="tool-note">Solo posizione/pagina e data, massimo 50 per documento.</p>
+              <button id="addBookmark" class="compact-button" type="button">+ AGGIUNGI</button>
+            </div>
+            <ul id="bookmarkList" class="bookmark-list" aria-label="Segnalibri del documento"></ul>
           </div>
-          <p class="tool-note">Solo posizione/pagina e data, massimo 50 per documento.</p>
-          <ul id="bookmarkList" class="bookmark-list" aria-label="Segnalibri del documento"></ul>
-        </section>
+        </details>
 
         <a id="openPdfExternally" class="pdf-open-button" href="#" target="_blank" rel="noopener" hidden>APRI PDF A SCHERMO INTERO</a>
         <button id="closeBook" class="secondary-button" type="button">CHIUDI DOCUMENTO</button>
@@ -95,5 +97,6 @@
   <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
   <script src="epub-reader-core.js?v=2"></script>
   <script src="reader.js?v=3"></script>
+  <script src="reader-lifecycle.js?v=1"></script>
 </body>
 </html>
