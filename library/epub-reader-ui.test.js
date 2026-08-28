@@ -6,6 +6,7 @@ const test=require("node:test");
 const root=path.join(__dirname,"..");
 const html=fs.readFileSync(path.join(__dirname,"reader.html"),"utf8");
 const js=fs.readFileSync(path.join(__dirname,"reader.js"),"utf8");
+const lifecycle=fs.readFileSync(path.join(__dirname,"reader-lifecycle.js"),"utf8");
 const home=fs.readFileSync(path.join(root,"index.html"),"utf8");
 const app=fs.readFileSync(path.join(root,"app.js"),"utf8");
 const worker=fs.readFileSync(path.join(root,"sw.js"),"utf8");
@@ -33,7 +34,7 @@ test("PDF renders locally with PDF.js and keeps a native full-screen fallback",(
   assert.match(js,/page\.render\(/);
   assert.match(js,/document\.createElement\("canvas"\)/);
   assert.match(js,/URL\.createObjectURL\(file\)/);
-  assert.match(js,/URL\.revokeObjectURL\(state\.objectUrl\)/);
+  assert.match(lifecycle,/URL\.revokeObjectURL\(detached\.objectUrl\)/);
   assert.match(html,/id="openPdfExternally"[\s\S]*target="_blank"/);
 });
 
@@ -77,11 +78,27 @@ test("bookmarks stay local, store only position or page plus date, and are cappe
   assert.match(html,/Solo posizione\/pagina e data, massimo 50 per documento/);
 });
 
+test("bookmark list is collapsed behind a bookmark icon by default",()=>{
+  assert.match(html,/<details id="bookmarkPanel" class="reader-toolbox bookmark-panel">/);
+  assert.match(html,/<summary class="bookmark-summary">[\s\S]*🔖[\s\S]*Segnalibri[\s\S]*<\/summary>/);
+  assert.doesNotMatch(html,/<details id="bookmarkPanel"[^>]*\sopen(?:\s|>)/);
+});
+
+test("closing a PDF resets the UI immediately and defers potentially slow PDF destruction",()=>{
+  assert.match(html,/reader-lifecycle\.js\?v=1/);
+  assert.match(lifecycle,/const detached=\{/);
+  assert.match(lifecycle,/state\.pdfDoc=null/);
+  assert.match(lifecycle,/elements\.workspace\.hidden=true/);
+  assert.match(lifecycle,/void disposeDetachedDocument\(detached\)/);
+  assert.match(lifecycle,/Promise\.resolve\(\)[\s\S]*detached\.pdfDoc\.destroy\(\)/);
+  assert.ok(lifecycle.indexOf("elements.workspace.hidden=true")<lifecycle.indexOf("void disposeDetachedDocument(detached)"));
+});
+
 test("Cucina Hub links and caches the document reader",()=>{
   assert.match(home,/library\/reader\.html\?v=2/);
   assert.match(app,/Lettore EPUB e PDF/);
-  assert.match(worker,/cucina-hub-v32/);
-  for(const asset of["library/reader.html","library/reader.css","library/epub-reader-core.js","library/reader.js"]){
+  assert.match(worker,/cucina-hub-v33/);
+  for(const asset of["library/reader.html","library/reader.css","library/epub-reader-core.js","library/reader.js","library/reader-lifecycle.js"]){
     assert.match(worker,new RegExp(asset.replaceAll(".","\\.")));
   }
 });
