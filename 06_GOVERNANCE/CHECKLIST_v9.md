@@ -1,6 +1,8 @@
 # CHECKLIST v9
 
-## Milestone A — Knowledge Base
+## Stato consolidato al 29 agosto 2026
+
+## Milestone A — Knowledge Base ✅
 - [x] Database
 - [x] Ricette
 - [x] Manuali
@@ -9,207 +11,167 @@
 - [x] Import ZIP
 - [x] Import incrementale
 - [x] Storage ibrido
-- [x] Archivio esterno
+- [x] Archivio esterno iCloud
+- [x] Biblioteca Supabase e collegamenti ai materiali
 
-## Milestone B — Laboratorio
+## Milestone B — Laboratorio ✅
 
-### 8.4.1 Profili ambiente
-- [x] Completato
-
-### 8.4.2 Profili impasto
-- [x] Database
-- [x] CRUD
-- [x] Collegamento profilo ambiente
-- [x] Parametri fermentazione
-- [x] Parametri ingredienti
-- [x] Processo impasto
-- [x] Obiettivo temporale
-- [x] Test
-- [x] Merge
-
-### 8.4.3 Sessioni impasto
-- [x] Database
-- [x] CRUD
-- [x] Duplica sessione
-- [x] Storico
-- [x] Foto
-- [x] Test
-- [x] Merge
-
-### 8.4.4 Timeline intelligente
-- [x] Motore timeline
-- [x] Correzione temperatura
-- [x] Correzione umidità
-- [x] Correzione frigorifero
-- [x] Notifiche / Calendario
-- [x] Test
-
-### 8.4.5 Diario fermentazioni
-- [x] Valutazione
-- [x] Foto
-- [x] Note
-- [x] Learning
+### Profili, sessioni e workflow
+- [x] Profili ambiente
+- [x] Profili impasto
+- [x] Sessioni impasto
+- [x] Timeline intelligente
+- [x] Correzione temperatura, umidità e frigorifero
+- [x] Diario fermentazioni
+- [x] Foto, note e valutazioni
+- [x] Learning delle fermentazioni
 - [x] Esclusione delle sessioni fittizie dal Learning
-- [x] Test
 
-### 8.4.6A Importazione Chat progetto Cucina → Wizard
-- [x] Contratto `cucina-hub.chat-recipe` versione 1
-- [x] Parser JSON e blocchi copiati dalla chat
-- [x] Validazione di formula, formato, fermentazione, forno e guardrail
-- [x] Collegamento dei profili farina
-- [x] Collegamento del profilo ambiente
-- [x] Anteprima prima del trasferimento
-- [x] Conferma esplicita
-- [x] Trasferimento e generazione della proposta del Wizard
-- [x] Provenienza dalla chat conservata nel workflow
+### Import Chat → Wizard
+- [x] Contratto `cucina-hub.chat-recipe` v1
+- [x] Preview e conferma esplicita
 - [x] Nessun salvataggio automatico
-- [x] Blocco di sicurezza validato
-- [x] Test iPad completato
-- [x] Merge PR #110
+- [x] Trasferimento al Wizard
+- [x] Contratto v2 per impasti fritti
+- [x] Frittura, induzione e più lavorazioni
+- [x] Compatibilità con i pacchetti v1
+- [ ] Calcolo automatico di `mixing_batches` dalla capacità dell'impastatrice
 
-### 8.4.6B Supporto impasti fritti / Chat→Wizard v2
-- [x] Contratto `cucina-hub.chat-recipe` versione 2
-- [x] `product_style: fried_dough`
-- [x] `cooking.method: deep_fry`
-- [x] Profilo KitchenCraft inox Ø20 cm senza cestello
-- [x] Piastra a induzione IKEA con potenze operative
-- [x] Temperatura olio e tempo per lato
-- [x] Nessuna fase frigorifero
-- [x] Timeline con riscaldamento olio e frittura
-- [x] Gestione olio e zucchero/miele nell’impasto
-- [x] Più lavorazioni tramite `mixing_batches`
-- [x] Salvataggio della sessione validato
-- [x] Sessione Guidata validata
-- [x] Flusso frittura e impostazioni induzione validati
-- [x] Compatibilità pacchetti v1 da forno
-- [x] Blocco di sicurezza validato
-- [x] Merge PR #112
-
-> Nota: `mixing_batches` è attualmente un input del pacchetto Chat→Wizard. La divisione automatica in base alla quantità di farina o alla capacità dell’impastatrice non è implementata e non va considerata una funzione completata.
-
-### 8.4.6 AI Fermentation Assistant — rinviato alla fase AI finale
+### Fermentation Assistant
 - [x] Richiesta strutturata in anteprima
 - [x] Contratto e validatore della risposta
-- [x] Prototipo server-side e ADR del provider
-- [ ] Configurazione della chiave API
-- [ ] Deploy della Edge Function
-- [ ] Test con generazione reale
-- [ ] Integrazione con Biblioteca, Planner e Learning
+- [x] Provider server-side
+- [x] Edge Function attivata
+- [x] Integrazione con RAG e fonti personali
+- [x] Accesso dall'AI Hub
+- [x] Merge PR #154
 
-> La configurazione e l’uso del provider AI sono intenzionalmente sospesi per evitare costi e consumo API durante lo sviluppo delle sezioni principali.
+## Milestone C — Knowledge ✅
+- [x] Knowledge Objects — PR #114
+- [x] Tag Engine — PR #116
+- [x] Ricerca globale — PR #118
+- [x] Knowledge Graph — PR #120
+- [x] RLS per proprietario
+- [x] Navigazione Knowledge
+- [x] Validazioni iPad completate
 
-## Milestone C ✅
-- [x] Knowledge Objects MVP
-  - [x] Tabelle `knowledge_objects` e `knowledge_object_links`
-  - [x] CRUD dei Knowledge Object
-  - [x] Collegamenti tipizzati a ricette, manuali, corsi, elettrodomestici e sessioni
-  - [x] Integrità referenziale e blocco dei collegamenti duplicati
-  - [x] RLS per proprietario e verifica della proprietà delle fonti
-  - [x] UI iPad-first e accesso dalla navigazione principale
-  - [x] Test iPad completato
-  - [x] Merge PR #114
-- [x] Tag Engine MVP
-  - [x] Riuso del catalogo `tags` e dei collegamenti ricetta `recipe_tags`
-  - [x] Tabella `tag_links` per Knowledge Object, manuali, corsi, elettrodomestici e sessioni
-  - [x] Creazione, rinomina ed eliminazione dei tag
-  - [x] Applicazione e rimozione dei tag sui sei tipi di contenuto
-  - [x] Vincolo a singolo target e blocco dei collegamenti duplicati
-  - [x] RLS per proprietario e verifica della proprietà delle fonti
-  - [x] UI iPad-first e navigazione Knowledge
-  - [x] Test iPad completato
-  - [x] Merge PR #116
-- [x] Ricerca globale MVP
-  - [x] Indice unificato derivato al caricamento dai dati autorizzati via RLS
-  - [x] Knowledge Object, ricette, manuali, corsi, elettrodomestici e sessioni
-  - [x] Ricerca in titoli, ingredienti, tag, note e metadati
-  - [x] Normalizzazione degli accenti e ordinamento per rilevanza
-  - [x] Filtri per tipo e tag
-  - [x] Azzeramento dei filtri e navigazione alle sezioni originali
-  - [x] Nessuna copia persistente e nessuna migration aggiuntiva
-  - [x] UI iPad-first e test iPad completato
-  - [x] Merge PR #118
-- [x] Knowledge Graph MVP
-  - [x] Tabella `knowledge_relations`
-  - [x] Relazioni esplicite e tipizzate tra Knowledge Object
-  - [x] Tipi supportati: `uses`, `compatible_with`, `derives_from`, `replaces`, `requires`, `related_to`, `executed_with`, `improved_by`
-  - [x] Blocco delle auto-relazioni e dei duplicati, inclusi quelli invertiti per le relazioni simmetriche
-  - [x] RLS con verifica della proprietà di entrambi i nodi
-  - [x] Vista iPad-first con grafo visuale e lista accessibile
-  - [x] Creazione, centratura ed eliminazione delle relazioni validate
-  - [x] Test iPad completato
-  - [x] Merge PR #120
+## Milestone D — AI ✅
 
-## Milestone D — rinviata alla fase AI finale
-- [ ] AI operativa
-- [ ] Chat interna
-- [ ] RAG
-- [ ] Assistenti specializzati
+### RAG e fonti
+- [x] Tabelle private `rag_sources` e `rag_chunks`
+- [x] RLS e ricerca limitata al proprietario
+- [x] Ingestione controllata con preview e conferma
+- [x] Ingestione diretta PDF
+- [x] Compatibilità Safari
+- [x] Ricerca in linguaggio naturale
+- [x] PDF fino a 32 MB verificati
+- [x] Migration `052_private_rag_core.sql`
+- [x] Migration `053_rag_controlled_ingestion.sql`
+- [x] Migration `054_rag_natural_language_search.sql`
 
-## Milestone E
-- [ ] Planner
-  - [x] Planner Core MVP
-    - [x] Tabella personale `planned_meals` collegata alle ricette della Biblioteca tramite FK, senza duplicazione dei contenuti
-    - [x] Data, fascia del pasto, orario facoltativo, porzioni e nota
-    - [x] Vincoli, indici, blocco dei duplicati e RLS per proprietario
-    - [x] Creazione, modifica ed eliminazione dei pasti pianificati
-    - [x] Elenco cronologico raggruppato per giorno
-    - [x] Stati di caricamento, autenticazione assente, vuoto, successo ed errore
-    - [x] UI touch-first e accesso dalla navigazione principale
-    - [x] Test iPad completato
-    - [x] Merge PR #122
-  - [x] Vista settimanale
-    - [x] Intervallo lunedì-domenica
-    - [x] Navigazione settimana precedente / oggi / successiva
-    - [x] Giorni vuoti sempre visibili
-    - [x] Aggiunta con data precompilata dalla griglia
-    - [x] Modifica diretta dalla card del pasto
-    - [x] Query Supabase limitata alla settimana selezionata
-    - [x] UI touch-first e test iPad completato
-    - [x] Merge PR #124
-  - [ ] Menu quindicinali / Menu Package
-    - [x] Modello `Menu Package → Planned Meal → Planned Meal Item` accettato
-    - [x] ADR-011 `Menu package e pasti multi-elemento nel Planner`
-    - [x] Contratto `cucina-hub.menu-plan` versione 1
-    - [x] Periodo espresso con `period_start` / `period_end`, senza durata hard-coded
-    - [x] Tipi elemento definiti: `recipe`, `food`, `preparation`
-    - [x] Regola Hurom: usare i codici stabili della Biblioteca quando disponibili, senza duplicare ingredienti e procedimento
-    - [x] Idempotenza definita tramite provenienza, `external_id`, revisione e `payload_hash`
-    - [x] Guardrail obbligatori: preview, nessun salvataggio automatico, conferma esplicita
-    - [x] Integrazione diretta ChatGPT → Cucina Hub separata e rinviata a endpoint autenticato
-    - [ ] Migration `planner_menu_packages`
-    - [ ] Migration `planned_meal_items`
-    - [ ] Evoluzione compatibile di `planned_meals`
-    - [ ] Migrazione dei `recipe_id` esistenti in item `recipe`
-    - [ ] Vincoli, indici e RLS per proprietario
-    - [ ] Parser `cucina-hub.menu-plan` v1
-    - [ ] Validatore strutturale e guardrail
-    - [ ] Resolver dei `recipe_code` della Biblioteca
-    - [ ] Gestione specifica riferimenti Hurom
-    - [ ] Calcolo `payload_hash` e protezione dai retry
-    - [ ] Anteprima importazione
-    - [ ] Conflict engine
-    - [ ] Conflitti con pasti manuali e menu sovrapposti
-    - [ ] Protezione dei pasti/elementi modificati manualmente
-    - [ ] Conferma esplicita prima del commit
-    - [ ] Commit atomico del pacchetto
-    - [ ] Vista/import quindicinale iPad-first
-    - [ ] Test iPad
-    - [ ] Merge
-  - [ ] Integrazione diretta ChatGPT → Cucina Hub
-    - [ ] Endpoint autenticato
-    - [ ] Riutilizzo del contratto `cucina-hub.menu-plan`
-    - [ ] `owner_user_id` derivato dal JWT
-    - [ ] Creazione della sola preview/staging
-    - [ ] Conferma finale obbligatoria nell'app
-- [ ] Meal Prep
-- [ ] Calendario
-- [ ] Lista spesa
-- [ ] Dashboard
+### Assistenti
+- [x] Fermentation Assistant — PR #154
+- [x] Chef AI contestuale e read-only — PR #162
+- [x] Planner AI read-only e preview-first — PR #167
+- [x] Risposte strutturate e citazioni verificabili
+- [x] Chiavi provider mantenute server-side
 
-**Target:** Release 1.0
+### Biblioteca privata
+- [x] Lettore EPUB sul dispositivo
+- [x] Lettore PDF sul dispositivo
+- [x] Nessun caricamento automatico dei documenti
+- [x] Ricerca locale
+- [x] Segnalibri locali
+- [x] Chiusura reader non bloccante
+- [x] PR #163 e fix successivi
+
+### AI Hub e navigazione
+- [x] AI Hub autenticato — PR #168
+- [x] Accesso a Chef AI, Fermentation Assistant, Planner AI e Fonti
+- [x] Una sola card “Assistente AI” nella Dashboard
+- [x] Ritorno diretto all'AI Hub dalle sezioni AI
+- [x] Regressione Dashboard corretta — PR #170 e #171
+
+## Milestone E — Planner ✅
+
+### Planner Core
+- [x] Migration `040_planner_core.sql`
+- [x] CRUD personale e RLS
+- [x] Collegamento alle ricette
+- [x] Vista settimanale
+- [x] PR #122 e #124
+
+### Menu Package
+- [x] ADR-011
+- [x] Contratto `cucina-hub.menu-plan` v1
+- [x] Migration `041_planner_menu_packages.sql`
+- [x] Pasti multi-elemento
+- [x] Evoluzione compatibile dei pasti esistenti
+- [x] Parser e validatore
+- [x] Resolver dei `recipe_code`
+- [x] Riferimenti Hurom senza duplicazione
+- [x] Idempotenza e `payload_hash`
+- [x] Preview importazione
+- [x] Conflict engine
+- [x] Protezione delle modifiche manuali
+- [x] Risoluzioni esplicite
+- [x] Commit atomico
+- [x] Fix runtime del commit
+- [x] Staging autenticato della preview
+- [x] Migration `042_planner_menu_atomic_commit.sql`
+- [x] Migration `043_planner_menu_commit_runtime_fix.sql`
+- [x] Migration `044_planner_menu_preview_staging.sql`
+- [x] PR #127, #130–#135
+
+### Moduli operativi
+- [x] Meal Prep — migration `045`, PR #136
+- [x] Lista spesa — migration `046`, PR #137
+- [x] Fix lista spesa — migration `047` e `048`, PR #138 e #145
+- [x] Calendario — PR #143 e #144
+- [x] Notifiche — migration `049`, PR #146
+- [x] Planner Hub — PR #147
+- [x] Planner AI — PR #167
+
+## Release 0.9 — Esperienza operativa ✅
+- [x] Dashboard Operativa — PR #148
+- [x] Learning Hub — PR #149
+- [x] Analytics personali — PR #150
+- [x] Esperimenti — migration `050_recipe_experiments_core.sql`
+- [x] Versioni ricette — migration `051_recipe_versions_core.sql`
+- [x] AI Hub — PR #168
+- [x] Navigazione AI consolidata — PR #169–#171
+- [x] Suite automatica 137/137 — PR #172
+
+## Release 1.0 — Integrazione e collaudo 🟡
+
+### Integrazione diretta ChatGPT → Cucina Hub
+- [ ] Endpoint autenticato
+- [ ] Riutilizzo del contratto `cucina-hub.menu-plan` v1
+- [ ] `owner_user_id` derivato dal JWT
+- [ ] Creazione della sola preview/staging
+- [ ] Nessun commit automatico nel Planner
+- [ ] Conferma finale obbligatoria nell'app
+- [ ] Idempotenza e provenienza ChatGPT
+- [ ] Test di sicurezza e test end-to-end
+- [ ] Validazione iPhone/iPad
+- [ ] Merge
+
+### Gate Release 1.0
+- [x] Suite automatica completa: 137/137
+- [ ] Smoke test autenticazione
+- [ ] Smoke test navigazione principale e Dashboard
+- [ ] Smoke test Planner completo
+- [ ] Smoke test app shell offline
+- [ ] Test reale Chef AI
+- [ ] Test reale Fermentation Assistant
+- [ ] Test reale Planner AI
+- [ ] Test reale RAG e fonti
+- [ ] Aggiornamento documentazione finale
+- [ ] Tag Release 1.0
 
 ---
 
-**Aggiornato:** 12 agosto 2026
-
-**Stato corrente:** Milestone E — Planner in corso; Planner Core e vista settimanale sono completati e validati su iPad. L'architettura dei menu quindicinali è definita con ADR-011 e contratto `cucina-hub.menu-plan` v1. Prossimo task operativo: database Menu Package + pasti multi-elemento. Milestone D — AI resta rinviata alla fase finale.
+**Aggiornato:** 29 agosto 2026  
+**Stato corrente:** Release 0.8 e 0.9 implementate; Release 1.0 in fase di integrazione e collaudo.  
+**Ultimo step completato:** stabilizzazione della suite PWA, 137/137 test superati (PR #172).  
+**Prossimo task operativo:** endpoint autenticato ChatGPT → staging Planner, con conferma finale obbligatoria nell'app.

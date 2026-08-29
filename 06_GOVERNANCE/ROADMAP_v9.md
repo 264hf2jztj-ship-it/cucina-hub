@@ -1,77 +1,94 @@
 # ROADMAP v9
 
-## Release 0.8 — Knowledge & AI
+## Stato consolidato al 29 agosto 2026
+
+Cucina Hub ha completato i blocchi funzionali previsti per le Release 0.8 e 0.9. Il repository `main` include le migration fino alla `054_rag_natural_language_search.sql`, l'AI Hub e il Planner AI.
+
+## Release 0.8 — Knowledge, Laboratorio, Planner e AI
 
 ### Milestone A — Knowledge Base ✅
-- Database
-- Manuali
-- Ricette
-- Corsi
-- Import ZIP
-- Storage ibrido
-- Archivio esterno iCloud
+- Database, manuali, ricette e corsi
+- Import ZIP e incrementale
+- Storage ibrido e archivio esterno iCloud
+- Biblioteca Supabase e collegamenti ai materiali
 
 ### Milestone B — Laboratorio ✅
-- ✅ 8.4.1 Profili ambiente
-- ✅ 8.4.2 Profili impasto
-- ✅ 8.4.3 Sessioni impasto
-- ✅ 8.4.4 Timeline intelligente
-- ✅ 8.4.5 Diario fermentazioni
-- ✅ 8.4.6A Importazione Chat progetto Cucina → Wizard
-- ✅ 8.4.6B Supporto impasti fritti / contratto Chat→Wizard v2
-- ⏸️ 8.4.6 AI Fermentation Assistant — infrastruttura prototipata; configurazione del provider, consumo API e attivazione operativa rinviati alla fase AI finale del progetto
+- Profili ambiente e profili impasto
+- Sessioni, timeline intelligente e correzioni operative
+- Diario fermentazioni, foto, note e Learning
+- Import Chat → Wizard v1
+- Supporto impasti fritti / Chat → Wizard v2
+- Fermentation Assistant attivato con provider server-side (PR #154)
 
-> Stato del supporto impasti fritti: validati trasferimento dalla chat, salvataggio sessione, Sessione Guidata, frittura, gestione piastra a induzione e più lavorazioni. Il numero di lavorazioni (`mixing_batches`) è attualmente fornito dal pacchetto JSON; la suddivisione automatica in base alla capacità dell’impastatrice non è implementata.
+> Debito funzionale noto: `mixing_batches` resta un dato del pacchetto Chat → Wizard; la suddivisione automatica in base alla capacità dell'impastatrice non è implementata.
 
 ### Milestone C — Knowledge ✅
-- ✅ Knowledge Objects — MVP con CRUD, collegamenti tipizzati alle fonti, RLS e test iPad completato (PR #114)
-- ✅ Tag Engine — MVP con catalogo condiviso, collegamenti tipizzati ai contenuti, RLS e test iPad completato (PR #116)
-- ✅ Ricerca globale — MVP con indice derivato, ricerca unificata, filtri per tipo/tag e test iPad completato (PR #118)
-- ✅ Knowledge Graph — MVP con relazioni esplicite e tipizzate tra Knowledge Object, vincoli di integrità, RLS, vista grafica/lista e test iPad completato (PR #120)
+- Knowledge Objects (PR #114)
+- Tag Engine (PR #116)
+- Ricerca globale (PR #118)
+- Knowledge Graph (PR #120)
 
-### Milestone D — AI
-- Assistente AI
-- RAG
-- Chef AI
-- Fermentation AI
-- Planner AI
+### Milestone D — AI ✅
+- Fermentation Assistant operativo (PR #154)
+- RAG privato per le fonti della Biblioteca, con RLS e ricerca per proprietario (PR #155)
+- Ingestione controllata e diretta dei PDF (PR #157–#159)
+- Ricerca RAG in linguaggio naturale (PR #160)
+- Supporto PDF verificato fino a 32 MB (PR #161)
+- Chef AI contestuale, server-side e con citazioni strutturate (PR #162)
+- Lettore privato EPUB/PDF sul dispositivo, con ricerca e segnalibri locali (PR #163 e fix successivi)
+- Planner AI read-only e preview-first (PR #167)
+- AI Hub con accesso unificato agli assistenti e alle fonti (PR #168)
+- Navigazione AI consolidata: una sola card “Assistente AI” nella Dashboard, con ritorno all'AI Hub dalle sezioni AI (PR #169–#171)
 
-> Decisione operativa: durante lo sviluppo delle sezioni non-AI, le ricette vengono preparate e perfezionate nella chat del progetto Cucina e trasferite in Cucina Hub tramite pacchetti strutturati e validati. L’AI interna verrà attivata soltanto quando Biblioteca, Laboratorio, Planner e Learning saranno sufficientemente completi.
+### Milestone E — Planner ✅
+- Planner Core MVP (PR #122)
+- Vista settimanale (PR #124)
+- Menu Package e pasti multi-elemento
+  - migration `041_planner_menu_packages.sql`
+  - parser e resolver delle ricette (PR #127)
+  - idempotenza e protezione dai retry (PR #130)
+  - conflict engine (PR #131)
+  - risoluzioni in anteprima (PR #132)
+  - commit atomico (PR #133)
+  - correzione runtime (PR #134)
+  - staging autenticato della preview (PR #135)
+- Meal Prep (PR #136)
+- Lista spesa e correzioni di regressione (PR #137, #138 e #145)
+- Calendario (PR #143 e #144)
+- Notifiche (PR #146)
+- Planner Hub (PR #147)
+- Planner AI (PR #167)
 
-### Milestone E — Planner
-- ✅ Planner Core MVP — pianificazione manuale collegata alle ricette della Biblioteca, CRUD, vincoli, RLS e test iPad completato (PR #122)
-- ✅ Vista settimanale — navigazione lunedì-domenica, giorni vuoti, aggiunta/modifica dalla griglia e query limitate alla settimana; validata su iPad (PR #124)
-- 🟡 Menu quindicinali / Menu Package
-  - ✅ Modello architetturale `Menu Package → Planned Meal → Planned Meal Item` accettato (ADR-011)
-  - ✅ Contratto `cucina-hub.menu-plan` versione 1 definito
-  - Database menu package e pasti multi-elemento
-  - Migrazione compatibile dei pasti Planner Core esistenti
-  - Riferimenti Biblioteca e codici stabili Hurom senza duplicazione
-  - Importazione manuale idempotente con preview, conflict engine e conferma esplicita
-  - Vista/import quindicinale nel Planner
-  - Protezione delle modifiche manuali tra revisioni successive
-- Meal Prep
-- Lista spesa
-- Calendario
-- Notifiche
+## Release 0.9 — Esperienza operativa ✅
+- Dashboard Operativa completa (PR #148)
+- Learning Hub (PR #149)
+- Analytics personali (PR #150)
+- Esperimenti strutturati
+- Versioni ricetta immutabili
+- AI Hub e navigazione consolidata
+- Suite automatica stabilizzata: 137/137 test superati (PR #172)
 
-> Integrazione diretta ChatGPT → Cucina Hub: fase separata e successiva. Userà lo stesso contratto `cucina-hub.menu-plan` tramite endpoint autenticato, senza scrittura automatica e con conferma finale nell'app.
+## Release 1.0 — Gate finale 🟡
 
-## Release 0.9
-- Dashboard
-- Learning
-- Analytics
-- Esperimenti
-- Versioni ricette
+### Prossimo task operativo
+Integrazione diretta ChatGPT → Cucina Hub, mantenendo gli stessi guardrail del contratto `cucina-hub.menu-plan` v1:
 
-**Target:** Release 1.0
+1. endpoint autenticato;
+2. `owner_user_id` derivato dal JWT;
+3. creazione della sola preview/staging;
+4. nessuna scrittura automatica nel Planner;
+5. conferma finale obbligatoria nell'app;
+6. idempotenza, tracciabilità della provenienza e test end-to-end.
+
+### Chiusura Release 1.0
+- Collaudo end-to-end su iPhone e iPad
+- Verifica autenticazione, navigazione, app shell offline e moduli operativi
+- Verifica reale dei tre assistenti AI e delle fonti
+- Aggiornamento finale di documentazione e checklist
 
 ---
 
-**Aggiornato:** 12 agosto 2026
-
-**Step completato:** definizione architetturale dei menu quindicinali nel Planner — ADR-011 e contratto `cucina-hub.menu-plan` v1
-
-**Macro-step in corso:** Milestone E — Planner
-
-**Prossimo task operativo:** modello database `planner_menu_packages` + `planned_meal_items` ed evoluzione compatibile di `planned_meals`; Milestone D — AI resta rinviata alla fase AI finale.
+**Aggiornato:** 29 agosto 2026  
+**Stato corrente:** Release 0.8 e 0.9 implementate; Release 1.0 in fase di integrazione e collaudo finale.  
+**Ultimo step completato:** quality gate della suite automatica, 137/137 test superati (PR #172).  
+**Prossimo task operativo:** endpoint autenticato ChatGPT → staging Planner, senza commit automatico.
