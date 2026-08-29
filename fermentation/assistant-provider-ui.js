@@ -9,6 +9,17 @@
     })[char]);
   }
 
+  function ensureAiHubLink() {
+    const actions = document.querySelector(".head-actions");
+    if (!actions || actions.querySelector("[data-ai-hub-link]")) return;
+    const link = document.createElement("a");
+    link.className = "button secondary";
+    link.href = "../ai/index.html?v=2";
+    link.dataset.aiHubLink = "true";
+    link.textContent = "← ASSISTENTE AI";
+    actions.insertBefore(link, actions.firstChild);
+  }
+
   function addStyles() {
     if (document.querySelector("#assistant-provider-style")) return;
     const style = document.createElement("style");
@@ -111,6 +122,7 @@
   }
 
   function initialize() {
+    ensureAiHubLink();
     if (document.querySelector("#assistantProviderPanel")) return true;
     const resultRoot = document.querySelector("#result");
     const responseContract = document.querySelector("#assistantResponseContract");
