@@ -213,7 +213,18 @@ function renderDashboard() {
         <div><h3>Azioni rapide</h3><p>Vai direttamente alla funzione che ti serve.</p></div>
       </div>
       <div class="dashboard-action-grid">
+        ${dashboardAction("🗓️", "Planner Hub", "Riepilogo settimanale e pianificazione", "planner/index.html?v=14")}
+        ${dashboardAction("🛒", "Lista spesa", "Controlla e spunta gli acquisti", "planner/workspace.html?v=14&section=shopping-list")}
+        ${dashboardAction("🧰", "Meal Prep", "Preparazioni da fare e completare", "planner/workspace.html?v=14&section=meal-prep")}
+        ${dashboardAction("🔔", "Notifiche", "Promemoria e avvisi personali", "planner/notifications.html?v=2")}
+        ${dashboardAction("🧠", "Learning", "Pattern e suggerimenti dal tuo storico", "learning/index.html?v=1")}
+        ${dashboardAction("📊", "Analytics", "Numeri e andamento della tua attività", "analytics/index.html?v=1")}
+        ${dashboardAction("🧪", "Esperimenti", "Prove controllate collegate alle ricette", "experiments/index.html?v=1")}
+        ${dashboardAction("🗃️", "Versioni ricette", "Storico immutabile e promozione delle prove riuscite", "versions/index.html?v=1")}
+        ${dashboardAction("📚", "Lettore EPUB e PDF", "Leggi i tuoi documenti senza caricarli online", "library/reader.html?v=2")}
+        ${dashboardAction("🍕", "Laboratorio", "Impasti, sessioni e risultati", "fermentation/index.html?v=1")}
         ${dashboardAction("✨", "Assistente AI", "Chef, impasti, Planner e fonti da un unico punto", "ai/index.html?v=2")}
+        ${dashboardAction("🔎", "Ricerca", "Trova contenuti e conoscenza", "knowledge/search.html?v=1")}
       </div>
     </section>
 
