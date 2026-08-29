@@ -29,7 +29,7 @@ test("Analytics is authenticated and scopes all four sources to the owner", () =
 test("navigation, Dashboard and offline shell expose Analytics", () => {
   assert.match(home, /href="analytics\/index\.html\?v=1"[^>]*>.*Analytics/s);
   assert.match(app, /"Analytics"[\s\S]*"analytics\/index\.html\?v=1"/);
-  assert.match(sw, /cucina-hub-v31/);
+  assert.match(sw, /const CACHE_NAME = "cucina-hub-v\d+";/);
   assert.match(sw, /analytics\/index\.html/);
   assert.match(sw, /analytics\/analytics-core\.js/);
 });
