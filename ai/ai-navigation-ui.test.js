@@ -27,7 +27,7 @@ test("le sezioni AI permettono di tornare all'Assistente AI Hub", () => {
   assert.match(planner, /href="\.\.\/ai\/index\.html\?v=2"/);
   assert.match(rag, /href="\.\.\/ai\/index\.html\?v=2"/);
   assert.match(fermentationProvider, /href = "\.\.\/ai\/index\.html\?v=2"/);
-  assert.match(fermentationProvider, /data\.aiHubLink = "true"/);
+  assert.match(fermentationProvider, /dataset\.aiHubLink = "true"/);
 });
 
 test("il menu principale instrada direttamente all'AI Hub", () => {
