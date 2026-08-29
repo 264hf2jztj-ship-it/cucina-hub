@@ -181,9 +181,11 @@ Per `fried_dough` sono obbligatori:
 
 1. valida schema, versione, formula, profili e guardrail;
 2. collega farina e ambiente già presenti;
-3. genera due lavorazioni con la DCG quando `mixing_batches` vale `2`;
+3. interpreta `mixing_batches` come suddivisione minima richiesta dal pacchetto e la aumenta automaticamente quando la farina supera il limite operativo di 500 g per lavorazione della DCG KM1401R;
 4. non crea una fase frigorifero;
 5. calcola il tempo complessivo di frittura usando pezzi, tempo per lato, cambio pezzo e batch;
 6. crea gli eventi `Riscaldamento olio` e `Frittura pizzonde`;
 7. conserva il pacchetto originale nel workflow della sessione;
 8. salva nel database soltanto dopo il comando esplicito `SALVA SESSIONE`.
+
+Il calcolo automatico non riduce mai una suddivisione più prudente già indicata nel pacchetto. Il risultato e i parametri usati vengono conservati nello snapshot del workflow.

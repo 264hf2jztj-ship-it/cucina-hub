@@ -20,7 +20,7 @@ Cucina Hub ha completato i blocchi funzionali previsti per le Release 0.8 e 0.9.
 - Supporto impasti fritti / Chat → Wizard v2
 - Fermentation Assistant attivato con provider server-side (PR #154)
 
-> Debito funzionale noto: `mixing_batches` resta un dato del pacchetto Chat → Wizard; la suddivisione automatica in base alla capacità dell'impastatrice non è implementata.
+> Il Wizard calcola automaticamente `mixing_batches` in base al limite operativo della DCG KM1401R, senza ridurre eventuali suddivisioni più prudenti ricevute dal pacchetto Chat → Wizard.
 
 ### Milestone C — Knowledge ✅
 - Knowledge Objects (PR #114)

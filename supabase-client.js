@@ -31,7 +31,8 @@
       modulePaths.push("./dough-sizing-ui.js?v=1");
       modulePaths.push("../workflow-engine/chat-recipe-import-engine-v2.js?v=2");
       modulePaths.push("./fried-dough-workflow-loader.js?v=1");
-      modulePaths.push("./fried-dough-ui.js?v=1");
+      modulePaths.push("../workflow-engine/mixing-batches-engine.js?v=1");
+      modulePaths.push("./fried-dough-ui.js?v=2");
       modulePaths.push("./chat-recipe-import-ui.js?v=2");
       modulePaths.push("./fried-dough-example-ui.js?v=1");
       modulePaths.push("./calendar-ui-cleanup.js?v=1");
