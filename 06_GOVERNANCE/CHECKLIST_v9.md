@@ -35,7 +35,7 @@
 - [x] Contratto v2 per impasti fritti
 - [x] Frittura, induzione e più lavorazioni
 - [x] Compatibilità con i pacchetti v1
-- [ ] Calcolo automatico di `mixing_batches` dalla capacità dell'impastatrice
+- [x] Calcolo automatico di `mixing_batches` dalla capacità dell'impastatrice
 
 ### Fermentation Assistant
 - [x] Richiesta strutturata in anteprima
@@ -157,7 +157,7 @@
 - [ ] Merge
 
 ### Gate Release 1.0
-- [x] Suite automatica completa: 137/137
+- [x] Suite automatica completa: 139/139
 - [ ] Smoke test autenticazione
 - [ ] Smoke test navigazione principale e Dashboard
 - [ ] Smoke test Planner completo
