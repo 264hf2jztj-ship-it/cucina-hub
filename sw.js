@@ -1,4 +1,4 @@
-const CACHE_NAME = "cucina-hub-v36";
+const CACHE_NAME = "cucina-hub-v37";
 
 const APP_SHELL = [
   "./",
@@ -8,7 +8,6 @@ const APP_SHELL = [
   "./dashboard-core.js",
   "./dashboard.js",
   "./dashboard.css",
-  "./dashboard-ai-shortcut.js",
   "./learning/index.html",
   "./learning/learning-core.js",
   "./learning/learning.js",
