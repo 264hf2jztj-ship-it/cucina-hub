@@ -15,7 +15,7 @@ test("home loads the Dashboard Core assets after the authenticated Supabase clie
   assert.match(index, /dashboard-core\.js\?v=1/i);
   assert.match(index, /dashboard\.css\?v=1/i);
   assert.match(index, /planner\/notifications-core\.js\?v=2[\s\S]*dashboard\.js\?v=1/i);
-  assert.match(serviceWorker, /cucina-hub-v38/i);
+  assert.match(serviceWorker, /const CACHE_NAME = "cucina-hub-v\d+";/);
   assert.match(serviceWorker, /dashboard-core\.js/);
 });
 

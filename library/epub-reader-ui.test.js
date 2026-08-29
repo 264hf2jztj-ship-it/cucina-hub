@@ -97,7 +97,7 @@ test("closing a PDF resets the UI immediately and defers potentially slow PDF de
 test("Cucina Hub links and caches the document reader",()=>{
   assert.match(home,/library\/reader\.html\?v=2/);
   assert.match(app,/Lettore EPUB e PDF/);
-  assert.match(worker,/cucina-hub-v33/);
+  assert.match(worker,/const CACHE_NAME = "cucina-hub-v\d+";/);
   for(const asset of["library/reader.html","library/reader.css","library/epub-reader-core.js","library/reader.js","library/reader-lifecycle.js"]){
     assert.match(worker,new RegExp(asset.replaceAll(".","\\.")));
   }

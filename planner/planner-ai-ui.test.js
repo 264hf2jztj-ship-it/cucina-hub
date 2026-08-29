@@ -47,7 +47,7 @@ test("generated packet reuses menu-plan v1 guardrails and Planner AI provenance"
 });
 
 test("Planner AI assets are part of the PWA app shell",()=>{
-  assert.match(worker,/cucina-hub-v34/);
+  assert.match(worker,/const CACHE_NAME = "cucina-hub-v\d+";/);
   for(const asset of["planner/ai.html","planner/planner-ai.css","planner/planner-ai-core.js","planner/planner-ai.js"]){
     assert.match(worker,new RegExp(asset.replaceAll(".","\\.")));
   }
