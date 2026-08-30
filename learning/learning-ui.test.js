@@ -19,7 +19,8 @@ test("Learning Hub loads the existing analysis engine and dedicated assets", () 
 });
 
 test("Learning Hub is authenticated and scopes every data source to the owner", () => {
-  assert.match(js, /client\.auth\.getSession\(\)/);
+  assert.match(html, /auth-guard\.js\?v=1/);
+  assert.match(js, /CucinaHubAuthGuard\.requireAdministrator\(client\)/);
   assert.match(js, /\.from\("fermentation_learning_preferences"\)/);
   assert.match(js, /\.from\("baking_sessions"\)/);
   assert.match(js, /\.from\("baking_session_evaluations"\)/);

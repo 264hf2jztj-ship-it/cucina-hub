@@ -14,10 +14,9 @@ async function initializeLab() {
   try {
     if (!client) throw new Error("Il collegamento a Cucina Hub non è disponibile.");
 
-    const { data, error } = await client.auth.getSession();
-    if (error) throw error;
+    const access = await window.CucinaHubAuthGuard.requireAdministrator(client);
 
-    if (!data.session?.user) {
+    if (!access.authorized) {
       authGate.hidden = false;
       workspace.hidden = true;
       setStatus("Accedi dalla Dashboard per usare il Laboratorio.", "error");

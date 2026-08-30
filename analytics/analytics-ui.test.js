@@ -19,7 +19,8 @@ test("Analytics offers bounded periods and dedicated assets", () => {
 });
 
 test("Analytics is authenticated and scopes all four sources to the owner", () => {
-  assert.match(js, /client\.auth\.getSession\(\)/);
+  assert.match(html, /auth-guard\.js\?v=1/);
+  assert.match(js, /CucinaHubAuthGuard\.requireAdministrator\(client\)/);
   for (const table of ["planned_meals", "meal_prep_tasks", "baking_sessions", "recipes"]) assert.match(js, new RegExp(`\\.from\\(\\"${table}\\"\\)`));
   assert.equal((js.match(/\.eq\("owner_user_id", user\.id\)/g) || []).length, 4);
   assert.match(js, /\.gte\("planned_date", queryStart\)/);

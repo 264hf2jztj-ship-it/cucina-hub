@@ -128,10 +128,9 @@
   async function load() {
     try {
       if (!client || !engine || !core) throw new Error("Il collegamento Learning non è disponibile.");
-      const auth = await client.auth.getSession();
-      if (auth.error) throw auth.error;
-      user = auth.data.session?.user;
-      if (!user) {
+      const access = await window.CucinaHubAuthGuard.requireAdministrator(client);
+      user = access.user;
+      if (!access.authorized) {
         elements.gate.hidden = false;
         elements.workspace.hidden = true;
         setStatus("Accedi dalla Dashboard per usare il Learning.", "error");

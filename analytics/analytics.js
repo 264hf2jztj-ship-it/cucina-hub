@@ -103,10 +103,9 @@
     try {
       if (!client || !core) throw new Error("Il collegamento Analytics non è disponibile.");
       setStatus("Aggiornamento delle statistiche personali…");
-      const auth = await client.auth.getSession();
-      if (auth.error) throw auth.error;
-      user = auth.data.session?.user;
-      if (!user) {
+      const access = await window.CucinaHubAuthGuard.requireAdministrator(client);
+      user = access.user;
+      if (!access.authorized) {
         elements.gate.hidden = false;
         elements.workspace.hidden = true;
         setStatus("Accedi dalla Dashboard per vedere gli Analytics.", "error");

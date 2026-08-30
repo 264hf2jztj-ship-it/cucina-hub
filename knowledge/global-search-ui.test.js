@@ -109,13 +109,11 @@ global.document = {
 
 global.window = {
   CucinaHubGlobalSearchEngine: engine,
+  CucinaHubAuthGuard: {
+    requireAdministrator: async () => ({ authorized: true, user: { id: "user-1" } })
+  },
   cucinaHubSupabase: {
-    auth: {
-      getSession: async () => ({
-        data: { session: { user: { id: "user-1" } } },
-        error: null
-      })
-    },
+    auth: {},
     from: queryFor
   },
   location: { search: "?q=farina" },
