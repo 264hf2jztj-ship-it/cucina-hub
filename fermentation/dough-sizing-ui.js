@@ -185,6 +185,13 @@
         roomTemperatureC: Number(environment?.room_temperature_c ?? 22), referenceTemperatureC: 22
       });
     }
+    function syncFormula(formula, sizing) {
+      flourInput.value = formula.flour_weight_g.toFixed(1);
+      if (typeof updateFlourPreview === "function") updateFlourPreview();
+      window.dispatchEvent(new CustomEvent("cucina-hub:dough-sizing-updated", {
+        detail: { style: currentStyle(), sizing, formula }
+      }));
+    }
     function updatePreview() {
       try {
         renderMode();
@@ -193,6 +200,7 @@
         latestSizing = sizing;
         if (sizing.shape === engine.SHAPES.MANUAL) return;
         const formula = formulaEstimate(sizing);
+        syncFormula(formula, sizing);
         nodes.preview.innerHTML = `<strong>${sizing.explanation}</strong><span class="dough-sizing-helper">Stima ingredienti: ${formula.flour_weight_g.toFixed(0)} g farina · ${formula.water_weight_g.toFixed(0)} g acqua · ${formula.salt_weight_g.toFixed(1)} g sale. Il lievito verrà corretto con orario e temperatura reali.</span>`;
       } catch (error) {
         nodes.preview.innerHTML = `<span class="error">${error.message}</span>`;
@@ -203,8 +211,7 @@
       latestSizing = sizing;
       if (sizing.shape === engine.SHAPES.MANUAL) return sizing;
       const formula = formulaEstimate(sizing);
-      flourInput.value = formula.flour_weight_g.toFixed(1);
-      if (typeof updateFlourPreview === "function") updateFlourPreview();
+      syncFormula(formula, sizing);
       return sizing;
     }
     function attachSizingToGeneratedPlan(sizing) {

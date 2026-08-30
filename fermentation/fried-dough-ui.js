@@ -77,6 +77,11 @@
     if(note)note.innerHTML=`<strong>${esc(result.appliance_label)} · ciotola ${result.bowl_capacity_l} l:</strong> ${esc(result.explanation)}${result.capacity_adjusted?' La suddivisione è stata aumentata automaticamente rispetto al pacchetto.':''}`;
     return result;
   }
+  function syncMixingFromSizing(event){
+    if(document.querySelector("#style")?.value!==STYLE)return;
+    const flour=n(event?.detail?.formula?.flour_weight_g,document.querySelector("#flourWeight")?.value);
+    if(flour>0)calculateMixingBatches(flour,currentPacket());
+  }
   function attachImportedSnapshot(packet){if(!packet||!window.CucinaHubChatRecipeImportEngine||!workflow)return;const linkedFlours=(typeof blendRows!=="undefined"?blendRows:[]).map(row=>{const profile=flourProfiles.find(item=>item.id===row.profileId);return profile?{profile_id:profile.id,label:profileLabel(profile),percentage:Number(row.percentage)}:null;}).filter(Boolean);workflow.context.chat_recipe_import=window.CucinaHubChatRecipeImportEngine.sessionSnapshot(packet,{environmentProfileId:document.querySelector("#environmentProfile")?.value||null,flours:linkedFlours});plan.workflow_definition=workflow;}
   function renderFriedInfo(profile,count,totalMinutes,oilWeight,sugarWeight){let box=document.querySelector("#friedCookingInfo");if(!box){box=document.createElement("div");box.id="friedCookingInfo";box.className="info-box fried-info";document.querySelector("#ovenNote")?.insertAdjacentElement("beforebegin",box);}box.innerHTML=`<div class="info-head"><div><strong>Frittura profonda</strong><br><span class="muted">${esc(profile.vessel_name)} · ${esc(profile.hob_name)}</span></div><span class="info-badge">SENZA CESTELLO</span></div><div class="action-grid"><div class="action-card"><span>Olio</span><strong>${profile.oil_volume_ml} ml ${esc(profile.oil_type)}</strong></div><div class="action-card"><span>Intervallo operativo</span><strong>${profile.temperature_min_c}–${profile.temperature_max_c} °C</strong></div><div class="action-card"><span>Durata stimata</span><strong>${totalMinutes} min per ${count} pezzi</strong></div><div class="action-card"><span>Tempo per lato</span><strong>${profile.seconds_per_side} secondi</strong></div><div class="action-card"><span>Olio nell’impasto</span><strong>${oilWeight.toFixed(1)} g</strong></div><div class="action-card"><span>Zucchero/miele</span><strong>${sugarWeight.toFixed(1)} g</strong></div></div>`;}
   function rebuildFried(packet){
@@ -120,10 +125,11 @@
     await waitFor(()=>document.querySelector("#style")&&document.querySelector("#ovenType")&&document.querySelector("#generate")&&window.CucinaHubDoughSizingWizard&&window.CucinaHubDoughSizingEngine&&window.CucinaHubMixingBatchesEngine?.VERSION===1&&window.CucinaHubChatRecipeImportEngine?.VERSION===2&&window.CucinaHubSessionWorkflowBuilder?.buildFried&&typeof presets!=="undefined"&&typeof appliances!=="undefined");
     patchEngines();addOptions();addStyles();const panel=createPanel(),style=document.querySelector("#style"),device=document.querySelector("#ovenType"),generateButton=document.querySelector("#generate"),resetButton=document.querySelector("#reset");
     const visibility=()=>{const active=style.value===STYLE;panel.hidden=!active;if(active){device.value=DEVICE;device.disabled=true;}else device.disabled=false;};
+    window.addEventListener("cucina-hub:dough-sizing-updated",syncMixingFromSizing);
     style.addEventListener("change",visibility);visibility();
     const originalGenerate=generateButton.onclick;generateButton.onclick=function(){try{const packet=style.value===STYLE?currentPacket():null;if(style.value===STYLE){syncPacket(packet);device.disabled=false;device.value=DEVICE;}originalGenerate.call(generateButton);if(style.value===STYLE&&plan)rebuildFried(packet);}catch(error){msg(error.message,"error");}finally{visibility();}};
     const originalReset=resetButton.onclick;resetButton.onclick=function(){originalReset.call(resetButton);Object.entries(DEFAULTS).forEach(()=>{});document.querySelector("#friedCookingInfo")?.remove();visibility();};
-    window.CucinaHubFriedDoughWizard={VERSION:2,DEFAULTS,readProfile,rebuildFried,syncPacket,calculateMixingBatches};
+    window.CucinaHubFriedDoughWizard={VERSION:3,DEFAULTS,readProfile,rebuildFried,syncPacket,calculateMixingBatches,syncMixingFromSizing};
   }
   init().catch(error=>console.error("Supporto impasti fritti non disponibile:",error));
 })();
