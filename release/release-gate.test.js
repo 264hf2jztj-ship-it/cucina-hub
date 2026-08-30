@@ -11,6 +11,12 @@ const home = read("index.html");
 const auth = read("auth.js");
 const plannerHub = read("planner/index.html");
 const plannerWorkspace = read("planner/workspace.html");
+const plannerPages = [
+  [plannerHub, read("planner/planner-hub.js")],
+  [plannerWorkspace, read("planner/planner.js")],
+  [read("planner/calendar.html"), read("planner/calendar.js")],
+  [read("planner/notifications.html"), read("planner/notifications.js")]
+];
 const serviceWorker = read("sw.js");
 
 function appShellAssets() {
@@ -44,7 +50,7 @@ test("Release gate exposes the main operational navigation", () => {
   }
 });
 
-test("Release gate keeps Planner modules behind their session gates", () => {
+test("Release gate keeps Planner modules behind administrator gates", () => {
   assert.match(plannerHub, /id="hubAuthGate"[^>]+hidden/);
   assert.match(plannerHub, /id="hubWorkspace"[^>]+hidden/);
   assert.match(plannerWorkspace, /id="authGate"[^>]+hidden/);
@@ -52,6 +58,11 @@ test("Release gate keeps Planner modules behind their session gates", () => {
 
   for (const section of ["meal-plan", "shopping-list", "meal-prep", "menu-package"]) {
     assert.match(plannerWorkspace, new RegExp(`data-planner-module="${section}"`));
+  }
+
+  for (const [html, script] of plannerPages) {
+    assert.match(html, /auth-guard\.js\?v=1/);
+    assert.match(script, /CucinaHubAuthGuard\.requireAdministrator\(client\)/);
   }
 });
 
@@ -74,6 +85,8 @@ test("Release gate caches a complete and valid Planner app shell", () => {
   ]) {
     assert.ok(assets.includes(asset), `Planner offline incompleto: ${asset}`);
   }
+
+  assert.ok(assets.includes("./auth-guard.js"), "Il controllo admin deve essere disponibile offline");
 
   assert.match(serviceWorker, /caches\.match\(url\.pathname\)/);
   assert.match(serviceWorker, /if \(cachedPath\)[\s\S]*return cachedPath/);

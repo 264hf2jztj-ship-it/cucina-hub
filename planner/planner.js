@@ -2845,9 +2845,8 @@ async function initialize() {
 
   setStatus("Caricamento del Planner…");
   try {
-    const { data, error } = await client.auth.getSession();
-    assertOk(error, "Lettura sessione");
-    const user = data.session?.user;
+    const access = await window.CucinaHubAuthGuard.requireAdministrator(client);
+    const user = access.user;
     if (!user) {
       elements.authGate.hidden = false;
       setStatus("Sessione non disponibile.", "error");

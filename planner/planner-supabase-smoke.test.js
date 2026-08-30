@@ -403,6 +403,9 @@ global.window = {
   CucinaHubMealPrepCore: require("./meal-prep-core.js"),
   CucinaHubShoppingListCore: shoppingListCore,
   CucinaHubMenuPlanImportEngine: menuPlanEngine,
+  CucinaHubAuthGuard: {
+    requireAdministrator: async () => ({ authorized: true, user: { id: "user-1" } })
+  },
   cucinaHubSupabase: {
     auth: {
       getSession: async () => ({
