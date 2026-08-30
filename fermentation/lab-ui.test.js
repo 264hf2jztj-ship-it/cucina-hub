@@ -43,7 +43,8 @@ assert.match(html, /OPERATIVO/);
 assert.match(html, /AI separata dalle funzioni operative/);
 assert.match(html, /href="fermentation-assistant\.html\?v=5/i);
 assert.match(home, /href="ai\/index\.html\?v=2"[^>]*><span>✨<\/span> Assistente AI<\/a>/);
-assert.match(js, /client\.auth\.getSession\(\)/);
+assert.match(html, /auth-guard\.js\?v=1/);
+assert.match(js, /CucinaHubAuthGuard\.requireAdministrator\(client\)/);
 assert.match(js, /workspace\.hidden = false/);
 assert.match(css, /min-height:\s*48px/i);
 assert.match(css, /@media \(max-width: 760px\)/i);
@@ -57,15 +58,15 @@ async function renderAuthenticationState(authenticated) {
   ]);
   const sandbox = {
     window: {
-      cucinaHubSupabase: {
-        auth: {
-          async getSession() {
-            return {
-              data: { session: authenticated ? { user: { id: "user-1" } } : null },
-              error: null
-            };
-          }
+      CucinaHubAuthGuard: {
+        async requireAdministrator() {
+          return authenticated
+            ? { authorized: true, user: { id: "user-1" } }
+            : { authorized: false, user: null };
         }
+      },
+      cucinaHubSupabase: {
+        auth: {}
       }
     },
     document: {
