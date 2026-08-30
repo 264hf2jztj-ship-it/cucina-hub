@@ -1,4 +1,4 @@
-const CACHE_NAME = "cucina-hub-v40";
+const CACHE_NAME = "cucina-hub-v41";
 
 const APP_SHELL = [
   "./",
@@ -8,6 +8,25 @@ const APP_SHELL = [
   "./dashboard-core.js",
   "./dashboard.js",
   "./dashboard.css",
+  "./planner/index.html",
+  "./planner/planner-hub.css",
+  "./planner/planner-hub-core.js",
+  "./planner/planner-hub.js",
+  "./planner/workspace.html",
+  "./planner/planner.css",
+  "./planner/planner-core.js",
+  "./planner/meal-prep-core.js",
+  "./planner/shopping-list-core.js",
+  "./planner/menu-plan-import-engine.js",
+  "./planner/planner.js",
+  "./planner/calendar.html",
+  "./planner/calendar.css",
+  "./planner/calendar-core.js",
+  "./planner/calendar.js",
+  "./planner/notifications.html",
+  "./planner/notifications.css",
+  "./planner/notifications-core.js",
+  "./planner/notifications.js",
   "./learning/index.html",
   "./learning/learning-core.js",
   "./learning/learning.js",
@@ -119,6 +138,12 @@ self.addEventListener("fetch", event => {
         return response;
       })
       .catch(async () => {
+        const cachedPath = await caches.match(url.pathname);
+
+        if (cachedPath) {
+          return cachedPath;
+        }
+
         if (isNavigation) {
           return (
             (await caches.match("./index.html")) ??
