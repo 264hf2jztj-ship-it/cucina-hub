@@ -117,9 +117,8 @@ function render() {
 }
 
 async function currentUser() {
-  const { data, error } = await client.auth.getSession();
-  assertOk(error, "Sessione");
-  return data.session?.user || null;
+  const access = await window.CucinaHubAuthGuard.requireAdministrator(client);
+  return access.user;
 }
 
 async function queryOptional(promise, tablePattern) {

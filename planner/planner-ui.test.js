@@ -150,7 +150,7 @@ assert.match(js, /\.lte\("planned_date",\s*week\.endDate\)/i);
 assert.match(js, /\.insert\(payload\)/i);
 assert.match(js, /\.update\(payload\)/i);
 assert.match(js, /\.delete\(\)/i);
-assert.match(js, /client\.auth\.getSession\(\)/i);
+assert.match(js, /CucinaHubAuthGuard\.requireAdministrator\(client\)/i);
 assert.match(js, /owner_user_id:\s*state\.ownerUserId/i);
 assert.match(js, /core\.weekForDate\(state\.weekAnchor/i);
 assert.match(js, /function selectWeek\(anchorDate\)/i);
