@@ -41,5 +41,6 @@ function render(){const q=$('#search').value.trim().toLowerCase();let visible=se
 async function load(){try{$('#status').textContent='Caricamento…';const auth=await c.auth.getSession();if(!auth.data.session?.user)throw new Error('Accedi prima di continuare.');const {data,error}=await c.from('baking_sessions').select('*').eq('status','completed').order('completed_at',{ascending:false,nullsFirst:false});if(error)throw error;sessions=data||[];evaluations={};if(sessions.length){const result=await c.from('baking_session_evaluations').select('*').in('session_id',sessions.map(item=>item.id));if(result.error)throw result.error;(result.data||[]).forEach(item=>{evaluations[item.session_id]=item})}updateStats();render();$('#status').textContent=`${sessions.length} sessioni nello storico · ${Object.keys(evaluations).length} valutazioni nel Diario.`}catch(e){$('#list').innerHTML='<div class="empty">Impossibile caricare lo storico.</div>';$('#status').textContent=e.message}}
 $('#search').addEventListener('input',render);$('#sort').addEventListener('change',render);load();
 </script>
+  <script src="../page-navigation.js?v=1"></script>
 </body>
 </html>

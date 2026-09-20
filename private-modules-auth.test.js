@@ -37,6 +37,6 @@ test("every primary private module uses the shared administrator guard", () => {
 
 test("the shared guard stays available in the offline app shell", () => {
   const worker = fs.readFileSync("sw.js", "utf8");
-  assert.match(worker, /const CACHE_NAME = "cucina-hub-v43";/);
+  assert.match(worker, /const CACHE_NAME = "cucina-hub-v\d+";/);
   assert.match(worker, /"\.\/auth-guard\.js"/);
 });

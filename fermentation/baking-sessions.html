@@ -58,5 +58,6 @@ $('#closeEdit').onclick=()=>{$('#editor').classList.remove('open');editingId=nul
 $('#filters').onclick=e=>{const b=e.target.closest('button[data-filter]');if(!b)return;filter=b.dataset.filter;document.querySelectorAll('#filters button').forEach(x=>x.classList.toggle('active',x===b));render()};
 load();
 </script>
+  <script src="../page-navigation.js?v=1"></script>
 </body>
 </html>
