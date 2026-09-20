@@ -44,10 +44,9 @@
       card.appendChild(panel);
 
       try {
-        const {data: sessionData, error: sessionError} = await client.auth.getSession();
-        if (sessionError) throw sessionError;
-        const ownerId = sessionData.session?.user?.id;
-        if (!ownerId) throw new Error("Sessione non disponibile.");
+        const access = await frame.contentWindow.CucinaHubAuthGuard.requireAdministrator(client);
+        if (!access.authorized) throw new Error("Accedi dalla Dashboard prima di continuare.");
+        const ownerId = access.user.id;
 
         const {data: links, error: linkError} = await client
           .from("recipe_appliances")

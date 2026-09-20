@@ -49,12 +49,20 @@
       modulePaths.push("./assistant-provider-ui.js?v=1");
     }
 
-    modulePaths.forEach(modulePath => {
-      const script = document.createElement("script");
-      script.src = modulePath;
-      script.async = false;
-      document.head.appendChild(script);
-    });
+    function loadPageModules() {
+      modulePaths.forEach(modulePath => {
+        const script = document.createElement("script");
+        script.src = modulePath;
+        script.async = false;
+        document.head.appendChild(script);
+      });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", loadPageModules, { once: true });
+    } else {
+      loadPageModules();
+    }
   } catch (error) {
     console.error("Supabase non inizializzato:", error);
     window.cucinaHubSupabase = null;
