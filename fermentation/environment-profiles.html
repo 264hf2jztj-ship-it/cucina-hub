@@ -60,5 +60,6 @@ $('#save').onclick=async()=>{try{if(!fields.name.value.trim())throw new Error('I
 $('#reset').onclick=resetForm;window.editProfile=editProfile;window.removeProfile=removeProfile;
 (async()=>{try{owner=(await currentUser()).id;await loadProfiles();setStatus('Pronto.','ok')}catch(e){setStatus(e.message,'error');rows.innerHTML='<tr><td colspan="4">Impossibile caricare i profili.</td></tr>'}})();
 </script>
+  <script src="../page-navigation.js?v=1"></script>
 </body>
 </html>

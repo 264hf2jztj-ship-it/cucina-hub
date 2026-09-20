@@ -92,5 +92,6 @@ async function save(){try{
 async function init(){try{const{data,error}=await c.auth.getSession();if(error)throw error;if(!data.session?.user)throw new Error('Accedi prima di continuare.');owner=data.session.user.id;await load();reset();msg('Pronto.','ok')}catch(error){msg(error.message,'error')}}
 $('#save').onclick=save;$('#reset').onclick=reset;window.editProfile=editProfile;window.deleteProfile=deleteProfile;init();
 </script>
+  <script src="../page-navigation.js?v=1"></script>
 </body>
 </html>
