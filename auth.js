@@ -20,6 +20,7 @@ async function initializeAuthentication() {
   const recipeDialog = document.querySelector("#recipeDialog");
   const recipeDialogContent = document.querySelector("#recipeDialogContent");
   const client = window.cucinaHubSupabase;
+  const authErrors = window.CucinaHubAuthErrors;
 
   let validatedUserId = null;
   let authenticationBusy = false;
@@ -180,11 +181,7 @@ async function initializeAuthentication() {
       passwordInput.value = "";
     } catch (error) {
       console.error("Errore durante l’accesso:", error);
-      setMessage(
-        error.message === "Invalid login credentials"
-          ? "Email o password non corrette."
-          : error.message
-      );
+      setMessage(authErrors?.signInMessage(error) ?? "Non riesco a completare l’accesso. Riprova tra poco.");
     } finally {
       authenticationBusy = false;
       loginButton.disabled = false;
@@ -224,7 +221,7 @@ async function initializeAuthentication() {
 
   if (error) {
     console.error("Errore lettura sessione:", error);
-    setMessage("Non riesco a controllare la sessione.");
+    setMessage(authErrors?.sessionMessage(error) ?? "Non riesco a controllare la sessione. Verifica la connessione e riprova.");
     showLogin();
     return;
   }
