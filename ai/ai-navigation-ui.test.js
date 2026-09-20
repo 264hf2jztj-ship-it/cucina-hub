@@ -17,7 +17,7 @@ const fermentationProvider = read("fermentation/assistant-provider-ui.js");
 
 test("dashboard operativa espone solo la scorciatoia Assistente AI", () => {
   assert.doesNotMatch(index, /dashboard-ai-shortcut\.js/);
-  assert.match(index, /app\.js\?v=25/);
+  assert.match(index, /app\.js\?v=26/);
 
   for (const content of [
     "Dashboard personale",

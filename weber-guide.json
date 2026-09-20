@@ -1,0 +1,149 @@
+{
+  "meta": {
+    "titolo": "Guida operativa Weber Kettle 57 cm",
+    "versione": "1.0",
+    "fonte": "Weber - La cucina al barbecue",
+    "pagine_fonte": "11-22",
+    "nota": "Sintesi operativa originale. Il volume sorgente resta privato e non viene pubblicato nell'app."
+  },
+  "navigazione": [
+    {
+      "id": "fondamentali",
+      "titolo": "Fondamentali",
+      "icona": "♨️",
+      "descrizione": "Coperchio, aerazione e logica del Kettle come forno a convezione."
+    },
+    {
+      "id": "accensione",
+      "titolo": "Accensione carbone",
+      "icona": "🔥",
+      "descrizione": "Una sequenza prudente per preparare la brace prima della cottura."
+    },
+    {
+      "id": "metodi",
+      "titolo": "Diretta o indiretta",
+      "icona": "↔️",
+      "descrizione": "Scegli il metodo in base a dimensione dell'alimento e durata prevista."
+    },
+    {
+      "id": "affumicatura",
+      "titolo": "Affumicatura leggera",
+      "icona": "💨",
+      "descrizione": "Legni ed elementi aromatici per aggiungere fumo senza coprire il cibo."
+    },
+    {
+      "id": "combustibile",
+      "titolo": "Combustibile 57 cm",
+      "icona": "⚫",
+      "descrizione": "Differenze tra bricchetti e carbonella, con riferimenti per il Kettle da 57 cm."
+    },
+    {
+      "id": "sicurezza",
+      "titolo": "Sicurezza e strumenti",
+      "icona": "🧤",
+      "descrizione": "Controlli essenziali, accessori utili e regole per lavorare con ordine."
+    },
+    {
+      "id": "ricette",
+      "titolo": "Ricette barbecue",
+      "icona": "🍖",
+      "descrizione": "Le future ricette Weber resteranno nel ricettario centrale, senza duplicazioni."
+    }
+  ],
+  "fondamentali": {
+    "principi": [
+      {
+        "titolo": "Coperchio chiuso",
+        "testo": "Trattiene calore e umidità, stabilizza la circolazione dell'aria e riduce il rischio di bruciare l'esterno prima che il centro sia pronto."
+      },
+      {
+        "titolo": "Aerazione controllata",
+        "testo": "Le prese inferiori alimentano la brace; quelle superiori permettono a calore e fumo di attraversare la camera di cottura."
+      },
+      {
+        "titolo": "Due zone",
+        "testo": "Organizzare una zona calda e una zona senza brace consente di rosolare, spostare e terminare la cottura con maggiore controllo."
+      }
+    ],
+    "promemoria": "Aprire il coperchio solo quando serve: ogni apertura disperde calore e allunga la cottura.",
+    "fonte": "pp. 11-15"
+  },
+  "accensione": {
+    "tempo_indicativo": "25-30 minuti con il metodo tradizionale descritto nel volume",
+    "sequenza": [
+      "Posiziona il barbecue all'aperto, su una superficie stabile e lontano da materiali combustibili.",
+      "Togli il coperchio e apri completamente le prese d'aria.",
+      "Misura il combustibile sulla griglia carbone e raccoglilo al centro oppure usa un cesto accenditore.",
+      "Accendi con prodotti specifici per barbecue seguendo le istruzioni del produttore.",
+      "Attendi che la brace sia avviata e presenti una copertura di cenere chiara.",
+      "Distribuisci il combustibile per il metodo scelto, monta la griglia e preriscalda con il coperchio."
+    ],
+    "allerta": "Non aggiungere mai liquido accendifuoco su carbone caldo o già acceso.",
+    "fonte": "pp. 12-13"
+  },
+  "metodi": [
+    {
+      "id": "diretta",
+      "titolo": "Cottura diretta",
+      "quando": "Alimenti piccoli o sottili e cotture orientativamente inferiori a 25 minuti.",
+      "assetto": "Brace distribuita sotto la zona di cottura; alimento sopra la fonte di calore.",
+      "gestione": "Coperchio chiuso e un controllo a metà cottura per valutare la rotazione."
+    },
+    {
+      "id": "indiretta",
+      "titolo": "Cottura indiretta",
+      "quando": "Arrosti, pollame intero, costine e tagli grandi che richiedono più tempo.",
+      "assetto": "Brace ai lati, leccarda al centro e alimento nella zona senza calore diretto.",
+      "gestione": "Coperchio chiuso; il calore circola intorno al cibo e la brace va mantenuta nelle cotture lunghe."
+    }
+  ],
+  "affumicatura": {
+    "regola": "Usa una quantità moderata di materiale aromatico e fumo pulito: l'obiettivo è profumare, non rendere il risultato amaro.",
+    "preparazione_fonte": "Il volume suggerisce di bagnare trucioli ed elementi aromatici per circa 30 minuti; verifica sempre anche le indicazioni del produttore del materiale scelto.",
+    "legni": ["melo", "ciliegio", "acero", "hickory", "quercia", "pecan"],
+    "alternative": ["rametti di rosmarino", "alloro", "timo", "vite", "gusci di frutta secca"],
+    "fonte": "p. 16"
+  },
+  "combustibile": {
+    "tipi": [
+      {
+        "nome": "Bricchetti",
+        "caratteristica": "Forma regolare e combustione generalmente più lunga e prevedibile.",
+        "uso": "Adatti a cotture indirette o prolungate, quando la stabilità è prioritaria."
+      },
+      {
+        "nome": "Carbonella",
+        "caratteristica": "Si accende rapidamente e raggiunge temperature elevate, ma tende a consumarsi prima.",
+        "uso": "Utile per cotture dirette e rapide o per una forte rosolatura iniziale."
+      }
+    ],
+    "riferimento_57_cm": {
+      "bricchetti_quadrati_per_lato": "25-50",
+      "bricchetti_rotondi_per_lato": "44-88",
+      "aggiunta_oraria_per_lato": "9"
+    },
+    "nota": "Le quantità sono riferimenti storici del volume. Dimensione e resa cambiano tra marche: calibra sempre sul combustibile reale e sulla temperatura misurata.",
+    "fonte": "pp. 16-17"
+  },
+  "sicurezza": {
+    "regole": [
+      "Usa il barbecue soltanto all'aperto e mantieni libera l'area circostante.",
+      "Indossa guanti resistenti al calore e preferisci utensili con manico lungo.",
+      "Non ostruire le prese d'aria e non rivestire il fondo o tutta la griglia con alluminio.",
+      "Gestisci il grasso con una leccarda nelle cotture indirette per limitare le fiammate.",
+      "Non forare inutilmente carne e pollame durante la cottura; usa pinze o spatola.",
+      "A fine uso chiudi le prese solo secondo la procedura del barbecue e verifica il completo spegnimento prima di smaltire la cenere."
+    ],
+    "accessori": [
+      "pinze lunghe",
+      "spatola metallica",
+      "guanto termico lungo",
+      "spazzola adatta alla griglia",
+      "timer",
+      "termometro per alimenti",
+      "leccarda",
+      "spiedini"
+    ],
+    "fonte": "pp. 20-22"
+  }
+}
