@@ -122,7 +122,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../supabase-config.js?v=12"></script>
-<script src="../supabase-client.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script><script src="../auth-guard.js?v=1"></script>
 <script type="module">
 const client=window.cucinaHubSupabase;
 const $=selector=>document.querySelector(selector);
@@ -134,7 +134,7 @@ const state={materials:[],categories:new Map(),sources:[]};
 const esc=value=>String(value??"").replace(/[&<>\"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[char]));
 const check=(error,context)=>{if(error)throw new Error(`${context}: ${error.message}`)};
 const basename=value=>String(value??"").split(/[\\/]/).filter(Boolean).pop()||"";
-async function currentUser(){const{data,error}=await client.auth.getSession();check(error,"Sessione");if(!data.session?.user)throw new Error("Accedi prima di aprire i corsi.");return data.session.user}
+async function currentUser(){const access=await window.CucinaHubAuthGuard.requireAdministrator(client);if(!access.authorized)throw new Error("Accedi dalla Dashboard prima di aprire i corsi.");return access.user}
 function preferredRow(rows=[]){return rows.find(row=>row.file_role==="primary")||rows[0]||null}
 function materialBadge(material){if(material.accessKind==="direct")return material.archiveUrl?"Link diretto + iCloud":"Link diretto";if(material.accessKind==="internal")return material.archiveUrl?"Supabase + iCloud":"Supabase";if(material.accessKind==="folder")return "iCloud";return material.content_type?.toUpperCase()||"Materiale"}
 function renderArchives(categoryRows){

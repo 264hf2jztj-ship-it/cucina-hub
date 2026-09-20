@@ -30,5 +30,5 @@ test("the login loads and caches the shared error mapper", () => {
   assert.match(auth, /CucinaHubAuthErrors/);
   assert.match(auth, /signInMessage\(error\)/);
   assert.match(worker, /"\.\/auth-errors\.js"/);
-  assert.match(worker, /const CACHE_NAME = "cucina-hub-v45";/);
+  assert.match(worker, /const CACHE_NAME = "cucina-hub-v46";/);
 });

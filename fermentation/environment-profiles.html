@@ -44,13 +44,13 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../supabase-config.js?v=12"></script>
-<script src="../supabase-client.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script><script src="../auth-guard.js?v=1"></script>
 <script>
 const c=window.cucinaHubSupabase,$=s=>document.querySelector(s);let owner=null,profiles=[];
 const fields={id:$('#profileId'),name:$('#name'),location:$('#location'),season:$('#season'),roomTemp:$('#roomTemp'),humidity:$('#humidity'),fridgeTemp:$('#fridgeTemp'),isDefault:$('#isDefault'),notes:$('#notes')};
 const status=$('#status'),rows=$('#rows');
 function setStatus(message,kind='muted'){status.className=kind;status.textContent=message}
-async function currentUser(){const{data,error}=await c.auth.getSession();if(error)throw error;if(!data.session?.user)throw new Error('Accedi prima di continuare.');return data.session.user}
+async function currentUser(){const access=await window.CucinaHubAuthGuard.requireAdministrator(c);if(!access.authorized)throw new Error('Accedi dalla Dashboard prima di continuare.');return access.user}
 function resetForm(){Object.assign(fields.id,{value:''});fields.name.value='';fields.location.value='';fields.season.value='custom';fields.roomTemp.value='22';fields.humidity.value='55';fields.fridgeTemp.value='4';fields.isDefault.checked=false;fields.notes.value='';$('#formTitle').textContent='Nuovo profilo';setStatus('In attesa.')}
 function editProfile(id){const p=profiles.find(x=>x.id===id);if(!p)return;fields.id.value=p.id;fields.name.value=p.name;fields.location.value=p.location_label||'';fields.season.value=p.season;fields.roomTemp.value=p.room_temperature_c;fields.humidity.value=p.relative_humidity_percent;fields.fridgeTemp.value=p.fridge_temperature_c??'';fields.isDefault.checked=p.is_default;fields.notes.value=p.notes||'';$('#formTitle').textContent='Modifica profilo';scrollTo({top:0,behavior:'smooth'})}
 async function removeProfile(id){if(!confirm('Eliminare questo profilo?'))return;const{error}=await c.from('fermentation_environment_profiles').delete().eq('id',id).eq('owner_user_id',owner);if(error)return setStatus(error.message,'error');await loadProfiles();resetForm()}

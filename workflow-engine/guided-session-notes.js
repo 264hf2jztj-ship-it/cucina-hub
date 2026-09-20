@@ -191,10 +191,9 @@
 
   async function init() {
     injectStyles();
-    const auth = await client.auth.getSession();
-    if (auth.error) throw auth.error;
-    user = auth.data.session?.user;
-    if (!user) return;
+    const access = await window.CucinaHubAuthGuard.requireAdministrator(client);
+    if (!access.authorized) return;
+    user = access.user;
 
     const waitForUi = window.setInterval(async () => {
       if (!buildPanel()) return;

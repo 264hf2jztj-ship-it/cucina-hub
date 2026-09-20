@@ -59,7 +59,7 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../supabase-config.js?v=12"></script>
-<script src="../supabase-client.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script><script src="../auth-guard.js?v=1"></script>
 <script>
 const c=window.cucinaHubSupabase,$=selector=>document.querySelector(selector);
 let owner,profiles=[];
@@ -89,7 +89,7 @@ async function save(){try{
   const query=fields.id.value?c.from('flour_profiles').update(row).eq('id',fields.id.value).eq('owner_user_id',owner):c.from('flour_profiles').insert(row);
   const{error}=await query;if(error)throw error;await load();reset();msg('Profilo farina salvato.','ok');
 }catch(error){msg(error.message,'error')}}
-async function init(){try{const{data,error}=await c.auth.getSession();if(error)throw error;if(!data.session?.user)throw new Error('Accedi prima di continuare.');owner=data.session.user.id;await load();reset();msg('Pronto.','ok')}catch(error){msg(error.message,'error')}}
+async function init(){try{const access=await window.CucinaHubAuthGuard.requireAdministrator(c);if(!access.authorized)throw new Error('Accedi dalla Dashboard prima di continuare.');owner=access.user.id;await load();reset();msg('Pronto.','ok')}catch(error){msg(error.message,'error')}}
 $('#save').onclick=save;$('#reset').onclick=reset;window.editProfile=editProfile;window.deleteProfile=deleteProfile;init();
 </script>
   <script src="../page-navigation.js?v=1"></script>

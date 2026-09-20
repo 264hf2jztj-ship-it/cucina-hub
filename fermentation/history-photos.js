@@ -52,8 +52,8 @@
 
   async function init() {
     injectStyles();
-    const auth = await client.auth.getSession();
-    if (!auth.data.session?.user) return;
+    const access = await window.CucinaHubAuthGuard.requireAdministrator(client);
+    if (!access.authorized) return;
     try {
       await loadCovers();
       decorate();
