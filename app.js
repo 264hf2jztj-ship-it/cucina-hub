@@ -7,7 +7,8 @@ const DATA_FILES = {
   appliances: "elettrodomestici.json",
   categories: "categorie.json",
   changelog: "changelog.json",
-  huromGuide: "hurom-guide.json"
+  huromGuide: "hurom-guide.json",
+  weberGuide: "weber-guide.json"
 };
 
 const state = {
@@ -16,13 +17,15 @@ const state = {
   categories: [],
   changelog: [],
   huromGuide: {},
+  weberGuide: {},
   meta: {},
   currentView: "dashboard",
   recipeQuery: "",
   recipeStatus: "all",
   recipeAppliance: "all",
   huromSection: null,
-  huromIngredientQuery: ""
+  huromIngredientQuery: "",
+  weberSection: null
 };
 
 const elements = {
@@ -63,12 +66,13 @@ async function loadJson(url) {
 
 async function init() {
   try {
-    const [recipesData, appliancesData, categoriesData, changelogData, huromGuideData] = await Promise.all([
+    const [recipesData, appliancesData, categoriesData, changelogData, huromGuideData, weberGuideData] = await Promise.all([
       loadJson(DATA_FILES.recipes),
       loadJson(DATA_FILES.appliances),
       loadJson(DATA_FILES.categories),
       loadJson(DATA_FILES.changelog),
-      loadJson(DATA_FILES.huromGuide)
+      loadJson(DATA_FILES.huromGuide),
+      loadJson(DATA_FILES.weberGuide)
     ]);
 
     state.recipes = recipesData.ricette ?? [];
@@ -77,6 +81,7 @@ async function init() {
     state.categories = categoriesData.categorie ?? [];
     state.changelog = changelogData.versioni ?? [];
     state.huromGuide = huromGuideData;
+    state.weberGuide = weberGuideData;
     elements.version.textContent = APP_VERSION;
 
     elements.loading.hidden = true;
@@ -85,7 +90,7 @@ async function init() {
     const parameters = new URLSearchParams(window.location.search);
     const requestedView = parameters.get("view");
     const allowedViews = new Set([
-      "dashboard", "recipes", "hurom", "ninja", "pizza", "appliances", "changelog"
+      "dashboard", "recipes", "hurom", "ninja", "weber", "pizza", "appliances", "changelog"
     ]);
     renderView(allowedViews.has(requestedView) ? requestedView : "dashboard");
 
@@ -130,6 +135,12 @@ function bindEvents() {
     const huromIndexButton = event.target.closest("[data-hurom-index]");
     if (huromIndexButton) renderHuromHub();
 
+    const weberSectionButton = event.target.closest("[data-weber-section]");
+    if (weberSectionButton) renderWeberSection(weberSectionButton.dataset.weberSection);
+
+    const weberIndexButton = event.target.closest("[data-weber-index]");
+    if (weberIndexButton) renderWeberHub();
+
     const recipeButton = event.target.closest("[data-recipe-id]");
     if (recipeButton) openRecipe(recipeButton.dataset.recipeId);
   });
@@ -157,6 +168,7 @@ function renderView(view) {
     recipes: renderRecipes,
     hurom: renderHuromHub,
     ninja: () => renderCategory("ninja"),
+    weber: renderWeberHub,
     pizza: () => renderCategory("pizza-impasti"),
     appliances: renderAppliances,
     changelog: renderChangelog
@@ -650,6 +662,159 @@ function renderHuromGlossaryContent() {
       ${(state.huromGuide.glossario ?? []).map(item => `<div><dt>${escapeHtml(item.termine)}</dt><dd>${escapeHtml(item.definizione)}</dd></div>`).join("")}
     </dl>
     <aside class="hurom-note neutral"><strong>Nota</strong><span>Le indicazioni sono descrittive e non attribuiscono agli estratti proprietà terapeutiche.</span></aside>`;
+}
+
+function renderWeberHub() {
+  state.weberSection = null;
+  const category = state.categories.find(item => item.id === "barbecue");
+  const appliance = state.appliances.find(item => item.id === "weber-kettle-57");
+  const recipes = weberRecipes();
+  const guide = state.weberGuide;
+
+  elements.root.innerHTML = `
+    <header class="page-header hurom-page-header weber-page-header">
+      <div>
+        <p class="eyebrow">Guida operativa v${escapeHtml(guide.meta?.versione ?? "1.0")}</p>
+        <h2>${escapeHtml(category?.icona ?? "♨️")} ${escapeHtml(category?.titolo ?? "Weber Kettle 57 cm")}</h2>
+        <p>Accensione, gestione della brace, metodi di cottura e sicurezza in un indice rapido.</p>
+      </div>
+    </header>
+    ${appliance ? applianceCallout(appliance) : ""}
+    <section class="metric-grid hurom-metrics" aria-label="Riepilogo Weber">
+      ${metricCard("Ricette barbecue", recipes.length, "Nel ricettario centrale")}
+      ${metricCard("Metodi", guide.metodi?.length ?? 0, "Diretto e indiretto")}
+      ${metricCard("Aree guida", guide.navigazione?.length ?? 0, "Consultazione rapida")}
+      ${metricCard("Fonte", guide.meta?.pagine_fonte ?? "—", "Pagine operative sintetizzate")}
+    </section>
+    <aside class="hurom-note neutral"><strong>Fonte privata</strong><span>${escapeHtml(guide.meta?.nota ?? "Il volume sorgente non viene pubblicato.")}</span></aside>
+    <section class="section hurom-index-section" aria-labelledby="weberIndexTitle">
+      <div class="section-heading"><div><h3 id="weberIndexTitle">Cosa vuoi consultare?</h3><p>Tocca una card per aprire la relativa sezione.</p></div></div>
+      <div class="hurom-topic-grid weber-topic-grid">
+        ${(guide.navigazione ?? []).map(weberTopicCard).join("")}
+      </div>
+    </section>`;
+
+  completeHuromNavigation();
+}
+
+function weberRecipes() {
+  return state.recipes.filter(recipe => recipe.sezioni?.includes("barbecue"));
+}
+
+function weberTopicCard(section) {
+  const labels = {
+    fondamentali: `${state.weberGuide.fondamentali?.principi?.length ?? 0} principi`,
+    accensione: `${state.weberGuide.accensione?.sequenza?.length ?? 0} passaggi`,
+    metodi: `${state.weberGuide.metodi?.length ?? 0} metodi`,
+    affumicatura: `${state.weberGuide.affumicatura?.legni?.length ?? 0} legni`,
+    combustibile: "Kettle 57 cm",
+    sicurezza: `${state.weberGuide.sicurezza?.regole?.length ?? 0} controlli`,
+    ricette: `${weberRecipes().length} ricette`
+  };
+
+  return `
+    <button class="hurom-topic-card weber-topic-card" data-weber-section="${escapeHtml(section.id)}" type="button">
+      <span class="hurom-topic-top"><span class="hurom-topic-icon" aria-hidden="true">${escapeHtml(section.icona)}</span><span class="badge">${escapeHtml(labels[section.id] ?? "Guida pratica")}</span></span>
+      <strong>${escapeHtml(section.titolo)}</strong>
+      <span class="hurom-topic-description">${escapeHtml(section.descrizione)}</span>
+      <span class="hurom-topic-action">Apri sezione <span aria-hidden="true">→</span></span>
+    </button>`;
+}
+
+function renderWeberSection(sectionId) {
+  const section = state.weberGuide.navigazione?.find(item => item.id === sectionId);
+  const renderers = {
+    fondamentali: renderWeberFundamentals,
+    accensione: renderWeberIgnition,
+    metodi: renderWeberMethods,
+    affumicatura: renderWeberSmoking,
+    combustibile: renderWeberFuel,
+    sicurezza: renderWeberSafety,
+    ricette: renderWeberRecipes
+  };
+
+  if (!section || !renderers[sectionId]) {
+    renderWeberHub();
+    return;
+  }
+
+  state.weberSection = sectionId;
+  elements.root.innerHTML = `
+    ${weberBackButtonHtml()}
+    <header class="page-header hurom-detail-header"><div><p class="eyebrow">Guida Weber Kettle 57 cm</p><h2><span aria-hidden="true">${escapeHtml(section.icona)}</span> ${escapeHtml(section.titolo)}</h2><p>${escapeHtml(section.descrizione)}</p></div></header>
+    ${renderers[sectionId]()}
+    <div class="hurom-back-footer">${weberBackButtonHtml()}</div>`;
+
+  completeHuromNavigation();
+}
+
+function weberBackButtonHtml() {
+  return `<nav class="hurom-back-row" aria-label="Navigazione sezione Weber"><button class="button secondary" data-weber-index type="button"><span aria-hidden="true">←</span> Torna all'indice Weber</button></nav>`;
+}
+
+function weberSourceNote(source) {
+  return `<aside class="hurom-note neutral"><strong>Riferimento</strong><span>${escapeHtml(state.weberGuide.meta?.fonte)} · ${escapeHtml(source)}</span></aside>`;
+}
+
+function renderWeberFundamentals() {
+  const content = state.weberGuide.fondamentali;
+  return `
+    <section class="hurom-info-grid" aria-label="Principi del Kettle">
+      ${(content.principi ?? []).map(item => `<article class="hurom-info-card"><h3>${escapeHtml(item.titolo)}</h3><p>${escapeHtml(item.testo)}</p></article>`).join("")}
+    </section>
+    <aside class="hurom-alert"><strong>Da ricordare</strong><span>${escapeHtml(content.promemoria)}</span></aside>
+    ${weberSourceNote(content.fonte)}`;
+}
+
+function renderWeberIgnition() {
+  const content = state.weberGuide.accensione;
+  return `
+    <section class="hurom-content-section"><h3>Sequenza di accensione</h3><ol class="hurom-step-list">${(content.sequenza ?? []).map(step => `<li><span>${escapeHtml(step)}</span></li>`).join("")}</ol></section>
+    <aside class="hurom-note"><strong>Tempo indicativo</strong><span>${escapeHtml(content.tempo_indicativo)}</span></aside>
+    <aside class="hurom-alert"><strong>Sicurezza</strong><span>${escapeHtml(content.allerta)}</span></aside>
+    ${weberSourceNote(content.fonte)}`;
+}
+
+function renderWeberMethods() {
+  return `
+    <section class="hurom-info-grid" aria-label="Metodi di cottura Weber">
+      ${(state.weberGuide.metodi ?? []).map(method => `<article class="hurom-info-card"><h3>${escapeHtml(method.titolo)}</h3><dl class="hurom-spec-list"><div><dt>Quando</dt><dd>${escapeHtml(method.quando)}</dd></div><div><dt>Assetto</dt><dd>${escapeHtml(method.assetto)}</dd></div><div><dt>Gestione</dt><dd>${escapeHtml(method.gestione)}</dd></div></dl></article>`).join("")}
+    </section>
+    ${weberSourceNote("pp. 14-15")}`;
+}
+
+function renderWeberSmoking() {
+  const content = state.weberGuide.affumicatura;
+  return `
+    <aside class="hurom-note"><strong>Regola</strong><span>${escapeHtml(content.regola)}</span></aside>
+    <section class="hurom-info-grid"><article class="hurom-info-card"><h3>Legni aromatici</h3><p>${(content.legni ?? []).map(escapeHtml).join(" · ")}</p></article><article class="hurom-info-card"><h3>Alternative</h3><p>${(content.alternative ?? []).map(escapeHtml).join(" · ")}</p></article></section>
+    <aside class="hurom-alert"><strong>Preparazione indicata dalla fonte</strong><span>${escapeHtml(content.preparazione_fonte)}</span></aside>
+    ${weberSourceNote(content.fonte)}`;
+}
+
+function renderWeberFuel() {
+  const content = state.weberGuide.combustibile;
+  const reference = content.riferimento_57_cm ?? {};
+  return `
+    <section class="hurom-info-grid">${(content.tipi ?? []).map(item => `<article class="hurom-info-card"><h3>${escapeHtml(item.nome)}</h3><p>${escapeHtml(item.caratteristica)}</p><p><strong>Uso:</strong> ${escapeHtml(item.uso)}</p></article>`).join("")}</section>
+    <div class="hurom-table-wrap" tabindex="0" role="region" aria-label="Riferimenti combustibile Weber 57 centimetri"><table class="hurom-table"><thead><tr><th scope="col">Configurazione</th><th scope="col">Riferimento del volume</th></tr></thead><tbody><tr><th scope="row">Bricchetti quadrati per lato</th><td>${escapeHtml(reference.bricchetti_quadrati_per_lato)}</td></tr><tr><th scope="row">Bricchetti rotondi per lato</th><td>${escapeHtml(reference.bricchetti_rotondi_per_lato)}</td></tr><tr><th scope="row">Aggiunta oraria per lato</th><td>${escapeHtml(reference.aggiunta_oraria_per_lato)}</td></tr></tbody></table></div>
+    <aside class="hurom-alert"><strong>Calibrazione necessaria</strong><span>${escapeHtml(content.nota)}</span></aside>
+    ${weberSourceNote(content.fonte)}`;
+}
+
+function renderWeberSafety() {
+  const content = state.weberGuide.sicurezza;
+  return `
+    <section class="hurom-content-section hurom-list-panel"><h3>Controlli di sicurezza</h3><ul class="hurom-check-list">${(content.regole ?? []).map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>
+    <section class="hurom-content-section hurom-list-panel"><h3>Strumenti utili</h3><div class="appliance-tags">${(content.accessori ?? []).map(item => `<span class="badge">${escapeHtml(item)}</span>`).join("")}</div></section>
+    ${weberSourceNote(content.fonte)}`;
+}
+
+function renderWeberRecipes() {
+  const recipes = weberRecipes();
+  return `
+    <aside class="hurom-note"><strong>Archivio unico</strong><span>Le ricette Weber vengono lette dal ricettario centrale e non sono duplicate nella guida.</span></aside>
+    <section class="section"><div class="section-heading"><div><h3>Ricette barbecue</h3><p>${recipes.length ? "Contenuti già collegati al modulo Weber." : "La struttura è pronta per il prossimo inserimento."}</p></div><span class="badge">${recipes.length}</span></div><div class="card-grid">${recipes.length ? recipes.map(recipeCard).join("") : emptyStateHtml("Nessuna ricetta barbecue ancora inserita.")}</div></section>`;
 }
 
 function applianceCallout(appliance) {
