@@ -1,4 +1,4 @@
-const CACHE_NAME = "cucina-hub-v46";
+const CACHE_NAME = "cucina-hub-v47";
 
 const APP_SHELL = [
   "./",
@@ -64,6 +64,12 @@ const APP_SHELL = [
   "./fermentation/fermentation-assistant.html",
   "./fermentation/assistant-response-ui.js",
   "./fermentation/assistant-provider-ui.js",
+  "./knowledge/index.html",
+  "./knowledge/knowledge.css",
+  "./knowledge/knowledge-objects.js",
+  "./knowledge/search.html",
+  "./knowledge/global-search-engine.js",
+  "./knowledge/global-search.js",
   "./knowledge/rag.html",
   "./knowledge/rag.css",
   "./knowledge/rag-ingestion.css",
