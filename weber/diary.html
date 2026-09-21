@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#5f3a1f">
+  <title>Diario Weber — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="diary.css?v=1">
+  <style>[hidden]{display:none!important}</style>
+</head>
+<body>
+  <main class="weber-diary-shell">
+    <header class="weber-diary-topbar">
+      <div>
+        <p class="eyebrow">Cucina Hub · Weber Kettle 57 cm</p>
+        <h1>Diario prove Weber</h1>
+        <p class="muted">Registra il setup realmente usato e confronta le cotture successive.</p>
+      </div>
+      <nav class="weber-diary-actions" aria-label="Navigazione diario Weber">
+        <a class="button secondary" href="../index.html?view=weber">← GUIDA WEBER</a>
+        <a class="button secondary" href="../experiments/index.html?v=1">ESPERIMENTI</a>
+      </nav>
+    </header>
+
+    <p id="pageStatus" class="weber-page-status" role="status" aria-live="polite">Caricamento del diario personale…</p>
+
+    <section id="authGate" class="weber-panel weber-gate" hidden>
+      <h2>Accesso richiesto</h2>
+      <p>Il diario contiene dati personali ed è visibile soltanto al tuo account amministratore.</p>
+      <a class="button" href="../index.html?view=weber">ACCEDI DALLA DASHBOARD</a>
+    </section>
+
+    <div id="diaryWorkspace" hidden>
+      <section class="weber-panel weber-hero">
+        <div>
+          <p class="eyebrow">Step 2A</p>
+          <h2>Una cottura, un setup misurabile</h2>
+          <p>Combustibile, prese d’aria, temperature, durata e risultato restano nello storico.</p>
+        </div>
+        <button id="newSession" class="button" type="button">+ NUOVA SESSIONE</button>
+      </section>
+
+      <section class="weber-metrics" aria-label="Riepilogo diario Weber">
+        <article><span>Totali</span><strong id="metricTotal">0</strong></article>
+        <article><span>Pianificate</span><strong id="metricPlanned">0</strong></article>
+        <article><span>In corso</span><strong id="metricActive">0</strong></article>
+        <article><span>Concluse</span><strong id="metricCompleted">0</strong></article>
+        <article><span>Voto medio</span><strong id="metricAverageRating">—</strong></article>
+      </section>
+
+      <section class="weber-panel weber-filters">
+        <div><label for="sessionSearch">Cerca</label><input id="sessionSearch" type="search" placeholder="Titolo, ricetta, risultato"></div>
+        <div><label for="sessionStatus">Stato</label><select id="sessionStatus"><option value="all">Tutte</option><option value="planned">Pianificate</option><option value="active">In corso</option><option value="completed">Concluse</option><option value="cancelled">Annullate</option></select></div>
+      </section>
+
+      <section id="sessionList" class="weber-session-list" aria-live="polite"></section>
+
+      <section class="weber-panel weber-method-note">
+        <strong>Diario ≠ Esperimento</strong>
+        <p>Il diario fotografa ciò che hai realmente fatto. Se vuoi verificare un’ipotesi modificando una sola variabile, collega invece la ricetta a un Esperimento.</p>
+      </section>
+    </div>
+  </main>
+
+  <dialog id="sessionDialog" class="weber-dialog">
+    <form id="sessionForm">
+      <header>
+        <div><p class="eyebrow">Scheda cottura</p><h2 id="dialogTitle">Nuova sessione</h2></div>
+        <button id="closeDialog" class="icon-button" type="button" aria-label="Chiudi">×</button>
+      </header>
+      <input id="sessionId" type="hidden">
+      <div class="form-grid">
+        <div class="field full"><label for="sessionTitle">Titolo *</label><input id="sessionTitle" maxlength="180" required placeholder="Es. Pollo intero in indiretta"></div>
+        <div class="field"><label for="cookedAt">Data e ora *</label><input id="cookedAt" type="datetime-local" required></div>
+        <div class="field"><label for="status">Stato</label><select id="status"><option value="planned">Pianificata</option><option value="active">In corso</option><option value="completed">Conclusa</option><option value="cancelled">Annullata</option></select></div>
+        <div class="field full"><label for="recipeId">Ricetta collegata</label><select id="recipeId"><option value="">Nessuna ricetta</option></select></div>
+        <div class="field"><label for="cookingMethod">Metodo *</label><select id="cookingMethod" required><option value="">Seleziona</option><option value="direct">Diretta</option><option value="indirect">Indiretta</option><option value="two_zone">Due zone</option><option value="snake">Snake</option></select></div>
+        <div class="field"><label for="fuelType">Combustibile *</label><select id="fuelType" required><option value="">Seleziona</option><option value="briquettes">Bricchetti</option><option value="charcoal">Carbonella</option><option value="mixed">Misto</option><option value="other">Altro</option></select></div>
+        <div class="field"><label for="fuelAmount">Quantità combustibile</label><input id="fuelAmount" type="number" min="0.01" step="0.01" inputmode="decimal"></div>
+        <div class="field"><label for="fuelUnit">Unità</label><select id="fuelUnit"><option value="">Non indicata</option><option value="pieces">Pezzi</option><option value="g">Grammi</option><option value="kg">Chilogrammi</option><option value="chimney">Cesti accenditori</option></select></div>
+        <div class="field full"><label for="ignitionMethod">Accensione</label><input id="ignitionMethod" maxlength="300" placeholder="Es. cesto pieno, cubetto naturale"></div>
+        <div class="field"><label for="ventBottom">Presa inferiore iniziale (%)</label><input id="ventBottom" type="number" min="0" max="100" inputmode="numeric"></div>
+        <div class="field"><label for="ventTop">Presa superiore iniziale (%)</label><input id="ventTop" type="number" min="0" max="100" inputmode="numeric"></div>
+        <div class="field"><label for="targetTemp">Temperatura griglia obiettivo (°C)</label><input id="targetTemp" type="number" min="40" max="450" inputmode="numeric"></div>
+        <div class="field"><label for="peakTemp">Temperatura griglia massima (°C)</label><input id="peakTemp" type="number" min="40" max="450" inputmode="numeric"></div>
+        <div class="field"><label for="coreTemp">Temperatura al cuore finale (°C)</label><input id="coreTemp" type="number" min="0" max="150" step="0.1" inputmode="decimal"></div>
+        <div class="field"><label for="duration">Durata (minuti)</label><input id="duration" type="number" min="1" inputmode="numeric"></div>
+        <div class="field"><label for="rating">Valutazione</label><select id="rating"><option value="">Nessuna</option><option value="1">1 / 5</option><option value="2">2 / 5</option><option value="3">3 / 5</option><option value="4">4 / 5</option><option value="5">5 / 5</option></select></div>
+        <div class="field full"><label for="resultNotes">Risultato osservato</label><textarea id="resultNotes" maxlength="4000" placeholder="Cottura, crosta, succosità, stabilità della temperatura…"></textarea></div>
+        <div class="field full"><label for="nextChange">Cosa cambiare la prossima volta</label><textarea id="nextChange" maxlength="2000"></textarea></div>
+      </div>
+      <p id="formMessage" class="form-message" role="alert"></p>
+      <footer><button id="cancelForm" class="button secondary" type="button">ANNULLA</button><button id="saveSession" class="button" type="submit">SALVA SESSIONE</button></footer>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js?v=12"></script>
+  <script src="../supabase-client.js?v=12"></script>
+  <script src="../auth-guard.js?v=1"></script>
+  <script src="diary-core.js?v=1"></script>
+  <script src="diary.js?v=1"></script>
+  <script src="../page-navigation.js?v=1"></script>
+</body>
+</html>

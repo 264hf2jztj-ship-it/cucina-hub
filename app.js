@@ -678,6 +678,7 @@ function renderWeberHub() {
         <h2>${escapeHtml(category?.icona ?? "♨️")} ${escapeHtml(category?.titolo ?? "Weber Kettle 57 cm")}</h2>
         <p>Accensione, gestione della brace, metodi di cottura e sicurezza in un indice rapido.</p>
       </div>
+      <a class="button" href="weber/diary.html?v=1">Apri diario prove</a>
     </header>
     ${appliance ? applianceCallout(appliance) : ""}
     <section class="metric-grid hurom-metrics" aria-label="Riepilogo Weber">
