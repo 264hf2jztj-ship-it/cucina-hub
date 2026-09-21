@@ -52,12 +52,13 @@ test("categoria, apparecchio e ricettario condividono l'identità Weber", () => 
 
 test("la home collega il modulo Weber e riusa il ricettario centrale", () => {
   assert.match(home, /data-view="weber"/);
-  assert.match(home, /app\.js\?v=26/);
+  assert.match(home, /app\.js\?v=27/);
   assert.match(app, /weberGuide:\s*"weber-guide\.json"/);
   assert.match(app, /weber:\s*renderWeberHub/);
   assert.match(app, /data-weber-section/);
   assert.match(app, /data-weber-index/);
   assert.match(app, /state\.recipes\.filter\(recipe => recipe\.sezioni\?\.includes\("barbecue"\)\)/);
   assert.match(app, /class="hurom-topic-card weber-topic-card"/);
+  assert.match(app, /href="weber\/diary\.html\?v=1"/);
   assert.match(worker, /"\.\/weber-guide\.json"/);
 });

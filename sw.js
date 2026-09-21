@@ -1,4 +1,4 @@
-const CACHE_NAME = "cucina-hub-v48";
+const CACHE_NAME = "cucina-hub-v49";
 
 const APP_SHELL = [
   "./",
@@ -11,6 +11,10 @@ const APP_SHELL = [
   "./changelog.json",
   "./hurom-guide.json",
   "./weber-guide.json",
+  "./weber/diary.html",
+  "./weber/diary-core.js",
+  "./weber/diary.js",
+  "./weber/diary.css",
   "./dashboard-core.js",
   "./dashboard.js",
   "./dashboard.css",
