@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f6b4f">
+  <title>Piano Alimentare — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="../manifest.json">
+  <link rel="stylesheet" href="../style.css?v=17">
+  <link rel="stylesheet" href="planner-hub.css?v=1">
+  <link rel="stylesheet" href="nutrition-plan.css?v=1">
+</head>
+<body>
+  <a class="skip-link" href="#nutritionMain">Vai al contenuto</a>
+  <header class="hub-topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">🍽️</span><div><p class="eyebrow">Cucina Hub</p><h1>Piano Alimentare</h1></div></div>
+    <nav class="hub-top-actions" aria-label="Navigazione"><a class="button secondary" href="index.html?v=14">Planner</a><a class="button secondary" href="../index.html?v=17">Cucina Hub</a></nav>
+  </header>
+  <main id="nutritionMain" class="hub-main" tabindex="-1">
+    <p id="nutritionStatus" class="hub-status" role="status" aria-live="polite">Caricamento del piano…</p>
+    <section id="nutritionAuth" class="hub-panel" hidden><h2>Accedi a Cucina Hub</h2><p>Il piano e le misurazioni sono privati.</p><a class="button" href="../index.html?v=17">Vai all’accesso</a></section>
+    <div id="nutritionWorkspace" hidden>
+      <section class="hub-panel nutrition-navigation">
+        <p class="eyebrow">Settimana selezionata</p><h2 id="nutritionWeek"></h2>
+        <div class="week-controls"><button id="nutritionPrevious" class="button secondary" type="button">← Precedente</button><button id="nutritionCurrent" class="button secondary" type="button">Questa settimana</button><button id="nutritionNext" class="button secondary" type="button">Successiva →</button></div>
+      </section>
+      <section id="nutritionMessage" class="hub-panel" hidden></section>
+      <div id="nutritionPlan" hidden>
+        <section id="nutritionOverview" class="hub-panel"></section>
+        <nav class="nutrition-views" aria-label="Viste del piano"><button class="button" type="button" data-view="today" aria-pressed="true">Oggi</button><button class="button secondary" type="button" data-view="week" aria-pressed="false">Intera settimana</button><button class="button secondary" type="button" data-view="shopping" aria-pressed="false">Lista della spesa</button></nav>
+        <section id="nutritionContent" aria-live="polite"></section>
+      </div>
+    </div>
+    <button id="nutritionRetry" class="button secondary" type="button" hidden>Riprova</button>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js?v=14"></script>
+  <script src="../supabase-client.js?v=14"></script>
+  <script src="../auth-guard.js?v=1"></script>
+  <script src="nutrition-plan-contract.js?v=1"></script>
+  <script src="nutrition-plan-core.js?v=1"></script>
+  <script src="nutrition-plan.js?v=1"></script>
+  <script src="../page-navigation.js?v=1"></script>
+</body>
+</html>

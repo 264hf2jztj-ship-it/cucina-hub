@@ -52,7 +52,7 @@ test("categoria, apparecchio e ricettario condividono l'identità Weber", () => 
 
 test("la home collega il modulo Weber e riusa il ricettario centrale", () => {
   assert.match(home, /data-view="weber"/);
-  assert.match(home, /app\.js\?v=27/);
+  assert.match(home, /app\.js\?v=28/);
   assert.match(app, /weberGuide:\s*"weber-guide\.json"/);
   assert.match(app, /weber:\s*renderWeberHub/);
   assert.match(app, /data-weber-section/);

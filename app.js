@@ -226,6 +226,7 @@ function renderDashboard() {
       </div>
       <div class="dashboard-action-grid">
         ${dashboardAction("🗓️", "Planner Hub", "Riepilogo settimanale e pianificazione", "planner/index.html?v=14")}
+        ${dashboardAction("🍽️", "Piano Alimentare", "Cosa mangiare oggi, settimana e lista della spesa", "planner/nutrition.html?v=1")}
         ${dashboardAction("🛒", "Lista spesa", "Controlla e spunta gli acquisti", "planner/workspace.html?v=14&section=shopping-list")}
         ${dashboardAction("🧰", "Meal Prep", "Preparazioni da fare e completare", "planner/workspace.html?v=14&section=meal-prep")}
         ${dashboardAction("🔔", "Notifiche", "Promemoria e avvisi personali", "planner/notifications.html?v=2")}

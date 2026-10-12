@@ -1,0 +1,29 @@
+[hidden] { display: none !important; }
+#nutritionWorkspace, #nutritionPlan, #nutritionContent { display: grid; gap: 1rem; }
+.nutrition-navigation h2 { margin: .4rem 0; }
+.nutrition-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; margin: 1rem 0; }
+.nutrition-metrics div { padding: .8rem; border-radius: 12px; background: #eaf2ec; }
+.nutrition-metrics dt { font-size: .85rem; color: var(--hub-muted); }
+.nutrition-metrics dd { margin: .3rem 0 0; font-size: 1.35rem; font-weight: 750; }
+.nutrition-views { display: flex; flex-wrap: wrap; gap: .5rem; position: sticky; top: 0; z-index: 1; padding: .65rem 0; background: #f4f1e9; }
+.nutrition-views .button { flex: 1; }
+.nutrition-day h2 { margin: .35rem 0; }
+.nutrition-training { padding: .8rem; background: #eaf2ec; border-radius: 12px; margin: .8rem 0; }
+.nutrition-meal { padding: 1rem 0; border-top: 1px solid var(--hub-line); overflow-wrap: anywhere; }
+.nutrition-meal h3 { margin: .35rem 0; }
+.nutrition-meal ul, .nutrition-shopping ul { padding-left: 1.25rem; line-height: 1.7; }
+.nutrition-meal summary { cursor: pointer; min-height: 48px; display: flex; align-items: center; color: var(--hub-green); font-weight: 700; }
+.nutrition-alternative { padding: .8rem; background: #f4f1e9; border-radius: 12px; margin: .5rem 0; }
+.nutrition-note { color: var(--hub-muted); white-space: pre-line; }
+.nutrition-shopping { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.nutrition-shopping h3 { margin-top: 0; }
+.nutrition-recipe { display: inline-flex; min-height: 48px; align-items: center; margin: .5rem 0; }
+.button, button { min-height: 48px; }
+button:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid #a66b16; outline-offset: 3px; }
+@media (max-width: 600px) {
+  .nutrition-shopping { grid-template-columns: 1fr; }
+  .nutrition-metrics { grid-template-columns: 1fr; }
+  .nutrition-metrics div { display: flex; justify-content: space-between; align-items: center; }
+  .nutrition-metrics dd { margin: 0; }
+  .nutrition-views .button { font-size: .85rem; padding: .65rem; }
+}
