@@ -1,0 +1,276 @@
+{
+  "contract": "cucina-hub.nutrition-plan",
+  "version": 1,
+  "plan": {
+    "external_id": "nutrition-2026-W42",
+    "revision": 1,
+    "title": "Piano alimentare 12–18 ottobre 2026",
+    "week_start": "2026-10-12",
+    "week_end": "2026-10-18",
+    "timezone": "Europe/Rome",
+    "source": {
+      "type": "chatgpt_project",
+      "label": "Allenamento e Dieta",
+      "generated_at": "2026-10-12T19:00:00+02:00"
+    }
+  },
+  "check_in": {
+    "measured_at": "2026-10-12",
+    "weight_kg": 63,
+    "waist_cm": 82,
+    "body_fat_percent": 16.5
+  },
+  "goal": {
+    "summary": "Ricomposizione corporea senza ulteriore calo rapido di peso.",
+    "protein_target_g": {
+      "min": 125,
+      "max": 135
+    },
+    "strategy": "Più carboidrati nei giorni Miletto, medi nei Freeletics e moderati nei giorni di riposo."
+  },
+  "days": [
+    {
+      "date": "2026-10-12",
+      "day_type": "miletto",
+      "training": {
+        "name": "Miletto — Forza A",
+        "start_time": "17:30"
+      },
+      "meals": [
+        {
+          "key": "2026-10-12-breakfast",
+          "slot": "breakfast",
+          "title": "Skyr con overnight oats e pera",
+          "components": [
+            { "name": "Skyr", "quantity": 200, "unit": "g" },
+            { "name": "Protein Overnight Oats Chocolate", "quantity": 50, "unit": "g" },
+            { "name": "Pera", "quantity": 1, "unit": "piece" }
+          ],
+          "alternatives": []
+        },
+        {
+          "key": "2026-10-12-lunch",
+          "slot": "lunch",
+          "title": "Cous cous con salmone, avocado e barbabietola",
+          "components": [],
+          "recipe_ref": { "code": "COUS-SALMONE-001" },
+          "alternatives": [
+            {
+              "label": "Alternativa carboidrati",
+              "components": [
+                { "name": "Riso", "quantity": 80, "unit": "g" }
+              ]
+            }
+          ]
+        },
+        {
+          "key": "2026-10-12-pre-workout",
+          "slot": "pre_workout",
+          "title": "Banana e whey",
+          "time": "16:30",
+          "components": [
+            { "name": "Banana", "quantity": 1, "unit": "piece" },
+            { "name": "Whey", "quantity": 25, "unit": "g" }
+          ],
+          "alternatives": []
+        },
+        {
+          "key": "2026-10-12-dinner",
+          "slot": "dinner",
+          "title": "Pollo, patate e broccoli",
+          "components": [
+            { "name": "Petto di pollo", "quantity": 180, "unit": "g" },
+            { "name": "Patate", "quantity": 300, "unit": "g" },
+            { "name": "Broccoli", "quantity": 250, "unit": "g" }
+          ],
+          "alternatives": []
+        }
+      ],
+      "alcohol": null
+    },
+    {
+      "date": "2026-10-13",
+      "day_type": "freeletics",
+      "training": { "name": "Freeletics — Conditioning" },
+      "meals": [
+        {
+          "key": "2026-10-13-breakfast",
+          "slot": "breakfast",
+          "title": "Yogurt greco, pane e crema di arachidi",
+          "components": [
+            { "name": "Yogurt greco", "quantity": 200, "unit": "g" },
+            { "name": "Pan carré integrale", "quantity": 2, "unit": "slice" },
+            { "name": "Crema di arachidi", "quantity": 15, "unit": "g" }
+          ],
+          "alternatives": []
+        },
+        {
+          "key": "2026-10-13-dinner",
+          "slot": "dinner",
+          "title": "Salmone, riso e finocchi",
+          "components": [
+            { "name": "Salmone", "quantity": 160, "unit": "g" },
+            { "name": "Riso", "quantity": 70, "unit": "g" },
+            { "name": "Finocchi", "quantity": 250, "unit": "g" }
+          ],
+          "alternatives": []
+        }
+      ]
+    },
+    {
+      "date": "2026-10-14",
+      "day_type": "rest",
+      "training": null,
+      "meals": [
+        {
+          "key": "2026-10-14-breakfast",
+          "slot": "breakfast",
+          "title": "Skyr e mela",
+          "components": [
+            { "name": "Skyr", "quantity": 200, "unit": "g" },
+            { "name": "Mela", "quantity": 1, "unit": "piece" }
+          ],
+          "alternatives": []
+        }
+      ]
+    },
+    {
+      "date": "2026-10-15",
+      "day_type": "miletto",
+      "training": { "name": "Miletto — Forza B", "start_time": "17:30" },
+      "meals": [
+        {
+          "key": "2026-10-15-lunch",
+          "slot": "lunch",
+          "title": "Pasta con tacchino e radicchio",
+          "components": [
+            { "name": "Pasta", "quantity": 90, "unit": "g" },
+            { "name": "Tacchino", "quantity": 170, "unit": "g" },
+            { "name": "Radicchio", "quantity": 200, "unit": "g" }
+          ],
+          "alternatives": []
+        }
+      ]
+    },
+    {
+      "date": "2026-10-16",
+      "day_type": "freeletics",
+      "training": { "name": "Freeletics — Cardio" },
+      "meals": [
+        {
+          "key": "2026-10-16-dinner",
+          "slot": "dinner",
+          "title": "Uova, pane e verdure",
+          "components": [
+            { "name": "Uova", "quantity": 3, "unit": "piece" },
+            { "name": "Pane", "quantity": 80, "unit": "g" },
+            { "name": "Verdure miste", "quantity": 250, "unit": "g" }
+          ],
+          "alternatives": []
+        }
+      ]
+    },
+    {
+      "date": "2026-10-17",
+      "day_type": "miletto",
+      "training": { "name": "Miletto — Forza C" },
+      "meals": [
+        {
+          "key": "2026-10-17-dinner",
+          "slot": "dinner",
+          "title": "Pizza",
+          "components": [
+            { "name": "Pizza", "quantity": 1, "unit": "portion" }
+          ],
+          "alternatives": []
+        }
+      ],
+      "alcohol": {
+        "label": "Birra",
+        "quantity": 330,
+        "unit": "ml"
+      }
+    },
+    {
+      "date": "2026-10-18",
+      "day_type": "rest",
+      "training": null,
+      "meals": [
+        {
+          "key": "2026-10-18-lunch",
+          "slot": "lunch",
+          "title": "Maiale magro, zucca e pane",
+          "components": [
+            { "name": "Lonza di maiale", "quantity": 180, "unit": "g" },
+            { "name": "Zucca", "quantity": 300, "unit": "g" },
+            { "name": "Pane", "quantity": 70, "unit": "g" }
+          ],
+          "alternatives": []
+        }
+      ]
+    }
+  ],
+  "shopping_list": {
+    "categories": [
+      {
+        "key": "proteins",
+        "label": "Proteine",
+        "items": [
+          { "name": "Petto di pollo", "quantity": 180, "unit": "g" },
+          { "name": "Salmone", "quantity": 160, "unit": "g" },
+          { "name": "Tacchino", "quantity": 170, "unit": "g" },
+          { "name": "Uova", "quantity": 3, "unit": "piece" }
+        ]
+      },
+      {
+        "key": "carbohydrates",
+        "label": "Carboidrati",
+        "items": [
+          { "name": "Riso", "quantity": 150, "unit": "g" },
+          { "name": "Pasta", "quantity": 90, "unit": "g" },
+          { "name": "Pane", "quantity": 150, "unit": "g" },
+          { "name": "Patate", "quantity": 300, "unit": "g" }
+        ]
+      },
+      {
+        "key": "fruit",
+        "label": "Frutta",
+        "items": [
+          { "name": "Pere", "quantity": 4, "unit": "piece" },
+          { "name": "Mele", "quantity": 4, "unit": "piece" },
+          { "name": "Banane", "quantity": 3, "unit": "piece" }
+        ]
+      },
+      {
+        "key": "vegetables",
+        "label": "Verdura",
+        "items": [
+          { "name": "Broccoli", "quantity": 500, "unit": "g" },
+          { "name": "Finocchi", "quantity": 500, "unit": "g" },
+          { "name": "Radicchio", "quantity": 200, "unit": "g" },
+          { "name": "Zucca", "quantity": 600, "unit": "g" }
+        ]
+      },
+      {
+        "key": "dairy",
+        "label": "Latticini",
+        "items": [
+          { "name": "Skyr", "quantity": 600, "unit": "g" },
+          { "name": "Yogurt greco", "quantity": 400, "unit": "g" }
+        ]
+      },
+      {
+        "key": "fats_extras",
+        "label": "Grassi ed extra",
+        "items": [
+          { "name": "Crema di arachidi", "quantity": 100, "unit": "g" }
+        ]
+      }
+    ]
+  },
+  "publication": {
+    "mode": "auto_if_conflict_free",
+    "on_conflict": "require_confirmation",
+    "preserve_current_on_error": true
+  }
+}
