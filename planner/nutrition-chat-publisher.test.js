@@ -1,0 +1,47 @@
+"use strict";
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const contract = require("./nutrition-plan-contract.js");
+const cases = require("./nutrition-chat-publisher-cases.js");
+const sql = fs.readFileSync("supabase/058_nutrition_chat_publisher.sql", "utf8");
+const fixture = JSON.parse(fs.readFileSync("planner/test-fixtures/nutrition-plan-v1-valid.json", "utf8"));
+test("bridge is private, invoker-secured and owner-fixed", () => {
+  assert.match(sql, /create schema if not exists nutrition_private/);
+  assert.doesNotMatch(sql, /security definer/i);
+  assert.doesNotMatch(sql, /p_owner_user_id|p_resolutions|p_confirmed_conflicts/);
+  assert.match(sql, /revoke all on schema nutrition_private from public, anon, authenticated, service_role/);
+  assert.match(sql, /revoke all on all functions in schema nutrition_private from public, anon, authenticated, service_role/);
+  assert.match(sql, /v_admin_count <> 1/);
+  assert.match(sql, /if not exists \(select 1 from nutrition_private.chat_publisher_config\)/);
+  assert.match(sql, /current_user <> 'postgres' or session_user <> 'postgres'/);
+  assert.match(sql, /set_config\('role', 'authenticated', true\)/);
+  assert.equal((sql.match(/set_config\('role', v_old_role, true\)/g) || []).length, 2);
+  assert.match(sql, /public\.commit_nutrition_plan\(v_packet, v_canonical, v_hash, '\[\]'::jsonb, false\)/);
+});
+test("server contract uses JSON Schema without permitting extra properties", () => {
+  const raw = sql.match(/select \$schema\$\s*([\s\S]*?)\s*\$schema\$::json;/)[1];
+  const schema = JSON.parse(raw);
+  assert.equal(schema.additionalProperties, false);
+  assert.equal(schema.properties.plan.properties.source.properties.type.const, "chatgpt_project");
+  assert.equal(schema.properties.days.minItems, 7);
+  assert.equal(schema.properties.days.maxItems, 7);
+  assert.equal(schema.definitions.component.additionalProperties, false);
+  assert.ok(schema.properties.days.items.properties.meals.items.properties.slot.enum.includes("post_workout"));
+  assert.match(sql, /extensions\.jsonb_matches_schema/);
+  assert.match(sql, /nutrition_chat_duplicate_meal_key/);
+  assert.match(sql, /nutrition_chat_duplicate_shopping_category/);
+  assert.match(sql, /nutrition_chat_dates_or_training_invalid/);
+});
+test("runtime corpus matches the existing JS validator and never commits fixtures", () => {
+  const packet = cases.fixturePacket(fixture);
+  assert.equal(contract.validatePacket(packet).valid, true);
+  for (const item of cases.invalidCases(packet)) assert.equal(contract.validatePacket(item.packet).valid, false, item.name);
+  const runtime = cases.runtimeSql(sql, packet);
+  assert.match(runtime, /^begin;/);
+  assert.doesNotMatch(runtime, /\ncommit;/);
+  assert.match(runtime, /rollback;\nselect true/);
+  assert.match(runtime, /already_imported/);
+  assert.match(runtime, /caller context not restored/);
+  assert.match(runtime, /conflict left partial writes/);
+});
