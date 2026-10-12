@@ -17,7 +17,7 @@ const fermentationProvider = read("fermentation/assistant-provider-ui.js");
 
 test("dashboard operativa espone solo la scorciatoia Assistente AI", () => {
   assert.doesNotMatch(index, /dashboard-ai-shortcut\.js/);
-  assert.match(index, /app\.js\?v=27/);
+  assert.match(index, /app\.js\?v=28/);
 
   for (const content of [
     "Dashboard personale",
@@ -32,7 +32,7 @@ test("dashboard operativa espone solo la scorciatoia Assistente AI", () => {
     /<h3>Azioni rapide<\/h3>[\s\S]*?<div class="dashboard-action-grid">([\s\S]*?)<\/div>\s*<\/section>/
   );
   assert.ok(quickActions, "blocco Azioni rapide non trovato");
-  assert.equal((quickActions[1].match(/dashboardAction\(/g) || []).length, 12);
+  assert.equal((quickActions[1].match(/dashboardAction\(/g) || []).length, 13);
   for (const operationalAction of [
     "Planner Hub",
     "Lista spesa",

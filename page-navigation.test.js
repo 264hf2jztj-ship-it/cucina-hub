@@ -32,6 +32,7 @@ const operationalPages = [
   "planner/ai.html",
   "planner/calendar.html",
   "planner/index.html",
+  "planner/nutrition.html",
   "planner/notifications.html",
   "planner/workspace.html",
   "versions/index.html",

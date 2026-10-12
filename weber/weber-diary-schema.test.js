@@ -49,5 +49,5 @@ test("il diario resta touch-first, offline e distinto dagli Esperimenti", () => 
   for (const asset of ["diary.html", "diary-core.js", "diary.js", "diary.css"]) {
     assert.match(worker, new RegExp(`"\\.\\/weber\\/${asset.replace(".", "\\.")}"`));
   }
-  assert.match(worker, /const CACHE_NAME = "cucina-hub-v49"/);
+  assert.match(worker, /const CACHE_NAME = "cucina-hub-v50"/);
 });
