@@ -6,8 +6,10 @@
     morning_snack: Object.freeze({ label: "Spuntino mattina", icon: "🍎", order: 20 }),
     lunch: Object.freeze({ label: "Pranzo", icon: "🍽️", order: 30 }),
     afternoon_snack: Object.freeze({ label: "Spuntino pomeriggio", icon: "🥛", order: 40 }),
-    dinner: Object.freeze({ label: "Cena", icon: "🌙", order: 50 }),
-    other: Object.freeze({ label: "Altro", icon: "📌", order: 60 })
+    pre_workout: Object.freeze({ label: "Pre-workout", icon: "⚡", order: 50 }),
+    post_workout: Object.freeze({ label: "Post-workout", icon: "💪", order: 60 }),
+    dinner: Object.freeze({ label: "Cena", icon: "🌙", order: 70 }),
+    other: Object.freeze({ label: "Altro", icon: "📌", order: 80 })
   });
 
   const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;

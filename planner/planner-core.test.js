@@ -8,9 +8,14 @@ assert.deepEqual(Object.keys(core.MEAL_SLOTS), [
   "morning_snack",
   "lunch",
   "afternoon_snack",
+  "pre_workout",
+  "post_workout",
   "dinner",
   "other"
 ]);
+
+assert.equal(core.MEAL_SLOTS.pre_workout.label, "Pre-workout");
+assert.equal(core.MEAL_SLOTS.post_workout.label, "Post-workout");
 
 const valid = core.normalizeEntry({
   recipe_id: "recipe-1",
@@ -52,16 +57,24 @@ assert.equal(core.isRealDate("2027-02-29"), false);
 
 const entries = [
   { id: "dinner", planned_date: "2026-08-13", meal_slot: "dinner", planned_time: "20:00" },
+  { id: "post-workout", planned_date: "2026-08-13", meal_slot: "post_workout", planned_time: "19:00" },
+  { id: "pre-workout", planned_date: "2026-08-13", meal_slot: "pre_workout", planned_time: "16:30" },
   { id: "breakfast", planned_date: "2026-08-13", meal_slot: "breakfast", planned_time: "08:00" },
   { id: "lunch", planned_date: "2026-08-12", meal_slot: "lunch", planned_time: null }
 ];
 
-assert.deepEqual(core.sortEntries(entries).map(entry => entry.id), ["lunch", "breakfast", "dinner"]);
+assert.deepEqual(core.sortEntries(entries).map(entry => entry.id), [
+  "lunch",
+  "breakfast",
+  "pre-workout",
+  "post-workout",
+  "dinner"
+]);
 
 const groups = core.groupEntriesByDate(entries);
 assert.equal(groups.length, 2);
 assert.equal(groups[0].date, "2026-08-12");
-assert.deepEqual(groups[1].entries.map(entry => entry.id), ["breakfast", "dinner"]);
+assert.deepEqual(groups[1].entries.map(entry => entry.id), ["breakfast", "pre-workout", "post-workout", "dinner"]);
 
 assert.equal(core.localDateValue(new Date(2026, 7, 11, 23, 30)), "2026-08-11");
 
@@ -89,7 +102,7 @@ assert.deepEqual(week.days.map(day => day.date), [
   "2026-08-15",
   "2026-08-16"
 ]);
-assert.deepEqual(week.entries.map(entry => entry.id), ["lunch", "breakfast", "dinner"]);
+assert.deepEqual(week.entries.map(entry => entry.id), ["lunch", "breakfast", "pre-workout", "post-workout", "dinner"]);
 assert.equal(week.days[2].entries[0].id, "lunch");
 assert.deepEqual(core.weekForDate("invalid", entries), {
   startDate: null,
@@ -98,4 +111,4 @@ assert.deepEqual(core.weekForDate("invalid", entries), {
   entries: []
 });
 
-console.log("Planner Core: 26 controlli superati.");
+console.log("Planner Core: 28 controlli superati.");
