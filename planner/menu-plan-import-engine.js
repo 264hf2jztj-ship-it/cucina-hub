@@ -7,6 +7,8 @@
     "breakfast",
     "morning_snack",
     "lunch",
+    "pre_workout",
+    "post_workout",
     "afternoon_snack",
     "dinner",
     "other"

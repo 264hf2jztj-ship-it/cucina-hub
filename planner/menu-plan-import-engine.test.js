@@ -76,6 +76,11 @@ assert.throws(() => engine.parse("[]"), error => error.code === "invalid_root");
 
 const validation = engine.validatePacket(validPacket);
 assert.equal(validation.valid, true);
+for (const slot of ["pre_workout", "post_workout"]) {
+  const workoutPacket = structuredClone(validPacket);
+  workoutPacket.days[0].meals[0].slot = slot;
+  assert.equal(engine.validatePacket(workoutPacket).valid, true, `${slot} deve essere supportato dal Planner`);
+}
 assert.equal(engine.normalizeUnit(" G "), "g");
 assert.equal(engine.normalizeUnit("cucchiaio"), "cucchiaio");
 const unitsPacket = structuredClone(validPacket);
