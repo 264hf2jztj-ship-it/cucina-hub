@@ -1,0 +1,30 @@
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const guidance = require("./nutrition-guidance.js");
+const core = require("./nutrition-plan-core.js");
+const fixture = require("./test-fixtures/nutrition-plan-v1-valid.json");
+test("alternative distinguono pasto, quota, alimento e ambito sconosciuto", () => {
+  const meal = { components: [{ name: "Cachi" }] };
+  assert.match(guidance.scope({ label: "Pasto completo — Opzione B" }, meal), /tutto il pasto/);
+  assert.match(guidance.scope({ label: "Solo pane — Patate" }, meal), /solo: pane/);
+  assert.match(guidance.scope({ label: "Alternativa frutta" }, meal), /solo la quota frutta/);
+  assert.match(guidance.scope({ components: [{ name: "Cachi" }] }, meal), /Cambia solo: Cachi/);
+  assert.match(guidance.scope({ label: "Alternativa rapida", components: [{ name: "Mela" }] }, meal), /Ambito non specificato/);
+});
+test("indicazioni usano dati pubblicati senza creare nuove dosi o colazioni", () => {
+  assert.match(guidance.seasonal("2026-10-12"), /Cachi, mele, pere/);
+  assert.match(guidance.seasonal("2026-07-12"), /pesche/);
+  const packet = structuredClone(fixture);
+  let html = guidance.daily(packet, packet.days[0].date, core.quantity);
+  assert.match(html, /Nessuna opzione alcol/);
+  assert.match(html, /Frutta prevista nella settimana: Pere, Mele, Banane/);
+  assert.match(html, /Non è stata pubblicata una colazione specifica/);
+  packet.days[0].alcohol = { label: "<vino>", quantity: 125, unit: "ml" };
+  packet.days[0].meals[0].alternatives = [{ label: "Pasto completo — Allenamento entro 60 minuti", components: [{ name: "Yogurt", quantity: 180, unit: "g" }], note: "Dopo: completare come da piano." }];
+  html = guidance.daily(packet, packet.days[0].date, core.quantity);
+  assert.match(html, /&lt;vino&gt; · 125 ml/);
+  assert.match(html, /Yogurt · 180 g/);
+  assert.match(html, /Dopo: completare/);
+  assert.doesNotMatch(html, /<vino>/);
+  assert.equal(guidance.daily(packet, "2026-11-01", core.quantity), "");
+});

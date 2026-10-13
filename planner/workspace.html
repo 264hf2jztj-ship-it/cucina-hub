@@ -8,7 +8,7 @@
   <title>Gestione Planner — Cucina Hub</title>
   <link rel="icon" href="../icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../style.css?v=17">
-  <link rel="stylesheet" href="planner.css?v=11">
+  <link rel="stylesheet" href="planner.css?v=12">
 </head>
 <body>
   <a class="skip-link" href="#plannerMain">Vai al contenuto</a>
@@ -96,6 +96,7 @@
             <span id="mealCount" class="badge">0</span>
           </div>
           <div id="mealList" class="meal-list" aria-live="polite"></div>
+          <div id="nutritionDayGuidance" aria-live="polite"></div>
         </section>
         <details class="planner-week-overview">
           <summary>Panoramica della settimana</summary>
@@ -563,10 +564,13 @@
   <script src="../supabase-client.js?v=12"></script>
   <script src="../auth-guard.js?v=1"></script>
   <script src="planner-core.js?v=3"></script>
+  <script src="nutrition-plan-contract.js?v=1"></script>
+  <script src="nutrition-plan-core.js?v=1"></script>
+  <script src="nutrition-guidance.js?v=1"></script>
   <script src="meal-prep-core.js?v=1"></script>
   <script src="shopping-list-core.js?v=1"></script>
   <script src="menu-plan-import-engine.js?v=5"></script>
-  <script src="planner.js?v=14"></script>
+  <script src="planner.js?v=15"></script>
   <script src="../page-navigation.js?v=1"></script>
 </body>
 </html>

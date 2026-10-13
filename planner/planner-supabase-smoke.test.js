@@ -142,6 +142,7 @@ const selectors = [
   "#mealCount",
   "#mealList",
   "#mealListTitle",
+  "#nutritionDayGuidance",
   "#daySelector"
 ];
 
@@ -1000,6 +1001,32 @@ global.window = {
   assert.equal(elements.get("#mealPrepUnavailable").hidden, true);
   assert.equal(elements.get("#mealPrepBody").hidden, false);
 
+  window.CucinaHubNutritionPlanCore = require("./nutrition-plan-core.js");
+  window.CucinaHubNutritionGuidance = require("./nutrition-guidance.js");
+  const nutritionPacket = structuredClone(require("./test-fixtures/nutrition-plan-v1-valid.json"));
+  const nutritionWeek = core.startOfWeek(core.localDateValue());
+  nutritionPacket.plan.week_start = nutritionWeek;
+  nutritionPacket.plan.week_end = core.addDays(nutritionWeek, 6);
+  nutritionPacket.check_in.measured_at = nutritionWeek;
+  nutritionPacket.days.forEach((day, index) => { day.date = core.addDays(nutritionWeek, index); });
+  database.planner_menu_packages.push({ id: "nutrition-package", owner_user_id: "user-1", import_status: "confirmed", period_start: nutritionWeek, period_end: nutritionPacket.plan.week_end, source_external_id: nutritionPacket.plan.external_id, source_revision: 1 });
+  database.nutrition_plan_weeks = [{ owner_user_id: "user-1", planner_menu_package_id: "nutrition-package", source_payload: nutritionPacket }];
+  database.planned_meals.push({ id: "nutrition-lunch", owner_user_id: "user-1", menu_package_id: "nutrition-package", source_meal_key: nutritionPacket.days[0].meals[1].key, planned_date: nutritionWeek, meal_slot: "lunch", recipe_id: "recipe-1" });
+  elements.get("#currentWeek").listeners.click();
+  await settle();
+  elements.get("#daySelector").listeners.click({ target: { closest: () => ({ dataset: { date: nutritionWeek } }) } });
+  assert.match(elements.get("#nutritionDayGuidance").innerHTML, /Alcol · facoltativo/);
+  assert.match(elements.get("#mealList").innerHTML, /Sostituisce solo la quota carboidrati/);
+  database.planned_meals.find(meal => meal.id === "nutrition-lunch").is_user_modified = true;
+  elements.get("#currentWeek").listeners.click();
+  await settle();
+  elements.get("#daySelector").listeners.click({ target: { closest: () => ({ dataset: { date: nutritionWeek } }) } });
+  assert.doesNotMatch(elements.get("#mealList").innerHTML, /Sostituisce solo la quota carboidrati/);
+  nutritionPacket.days.pop();
+  elements.get("#currentWeek").listeners.click();
+  await settle();
+  assert.match(elements.get("#nutritionDayGuidance").innerHTML, /Indicazioni nutrizionali non disponibili/);
+  assert.equal(elements.get("#plannerWorkspace").hidden, false);
   console.log("Planner Supabase UI: smoke test simulato superato.");
 })().catch(error => {
   console.error(error);

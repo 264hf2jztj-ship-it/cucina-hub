@@ -21,6 +21,9 @@ const state = {
   weekAnchor: null,
   selectedDate: null,
   selectedMealId: null,
+  nutritionPacket: null,
+  nutritionPackageId: null,
+  nutritionGuidanceError: false,
   editingId: null,
   menuAnalysisResult: null,
   menuResolutionSelections: Object.create(null),
@@ -2172,6 +2175,8 @@ function mealCard(meal) {
   const slot = core.MEAL_SLOTS[meal.meal_slot] ?? core.MEAL_SLOTS.other;
   const time = core.normalizeTime(meal.planned_time);
   const imported = Boolean(meal.menu_package_id);
+  const modified = meal.is_user_modified || mealItems(meal).some(item => item.is_user_modified);
+  const nutritionMeal = !modified && state.nutritionPacket?.days.flatMap(day => day.meals).find(item => item.key === meal.source_meal_key && state.nutritionPackageId === meal.menu_package_id);
   return `
     <article id="meal-${escapeHtml(meal.id)}" class="meal-card${state.selectedMealId === meal.id ? " is-selected" : ""}" tabindex="-1">
       <span class="meal-icon" aria-hidden="true">${escapeHtml(slot.icon)}</span>
@@ -2186,6 +2191,7 @@ function mealCard(meal) {
         ${meal.servings ? `<div class="meal-meta"><span class="badge pending">${escapeHtml(meal.servings)} ${meal.servings === 1 ? "porzione" : "porzioni"}</span></div>` : ""}
         ${meal.note ? `<p class="meal-note">${escapeHtml(meal.note)}</p>` : ""}
         ${mealItemsHtml(meal)}
+        ${nutritionMeal && window.CucinaHubNutritionGuidance ? window.CucinaHubNutritionGuidance.alternatives(nutritionMeal, window.CucinaHubNutritionPlanCore.quantity) : ""}
         <div class="meal-actions">
           <button class="button" type="button" data-action="prep" data-meal-id="${escapeHtml(meal.id)}">MEAL PREP</button>
           ${imported
@@ -2211,6 +2217,10 @@ function renderMeals() {
   }).join("");
   elements.list.innerHTML = meals.length ? meals.map(mealCard).join("")
     : `<div class="planner-empty"><h3>Nessun pasto in questa giornata</h3><p>Seleziona un altro giorno o aggiungi un pasto.</p><button class="button secondary" type="button" data-action="add" data-date="${escapeHtml(selection.date)}">Aggiungi pasto</button></div>`;
+  const guidance = document.querySelector("#nutritionDayGuidance");
+  if (guidance) guidance.innerHTML = state.nutritionPacket && window.CucinaHubNutritionGuidance
+    ? window.CucinaHubNutritionGuidance.daily(state.nutritionPacket, selection.date, window.CucinaHubNutritionPlanCore.quantity)
+    : state.nutritionGuidanceError ? '<p>Indicazioni nutrizionali non disponibili. Ricarica per riprovare.</p>' : "";
 }
 
 function selectPlannerDay(date, mealId = null, scroll = true) {
@@ -2294,6 +2304,28 @@ function friendlyWriteError(error) {
   return error.message;
 }
 
+async function fetchNutritionGuidance(anchorDate, meals) {
+  state.nutritionPacket = null;
+  state.nutritionPackageId = null;
+  state.nutritionGuidanceError = false;
+  const nutritionCore = window.CucinaHubNutritionPlanCore;
+  const ids = [...new Set(meals.map(meal => meal.menu_package_id).filter(Boolean))];
+  if (!nutritionCore || !ids.length) return;
+  try {
+    const week = core.weekForDate(anchorDate);
+    const packages = await client.from("planner_menu_packages").select("id,period_start,period_end,source_external_id,source_revision,import_status")
+      .eq("owner_user_id", state.ownerUserId).in("id", ids);
+    assertOk(packages.error, "Lettura piano");
+    const rows = await client.from("nutrition_plan_weeks").select("planner_menu_package_id,source_payload")
+      .eq("owner_user_id", state.ownerUserId).in("planner_menu_package_id", ids);
+    assertOk(rows.error, "Lettura indicazioni");
+    const selected = nutritionCore.selectPlan(packages.data || [], rows.data || [], week.startDate);
+    state.nutritionPacket = selected.packet;
+    state.nutritionPackageId = selected.packageId;
+    state.nutritionGuidanceError = selected.status === "invalid" || selected.status === "ambiguous";
+  } catch { state.nutritionGuidanceError = true; }
+}
+
 async function fetchMealsForWeek(anchorDate) {
   const week = core.weekForDate(anchorDate);
   if (!week.startDate || !week.endDate) {
@@ -2308,6 +2340,7 @@ async function fetchMealsForWeek(anchorDate) {
     .lte("planned_date", week.endDate)
     .order("planned_date", { ascending: true });
   assertOk(error, "Lettura pasti della settimana");
+  await fetchNutritionGuidance(anchorDate, data || []);
   return data ?? [];
 }
 
@@ -2424,6 +2457,9 @@ async function selectWeek(anchorDate) {
   const previousDate = state.selectedDate;
   const previousMealId = state.selectedMealId;
   const previousUrl = window.location.href;
+  const previousNutritionPacket = state.nutritionPacket;
+  const previousNutritionPackageId = state.nutritionPackageId;
+  const previousGuidanceError = state.nutritionGuidanceError;
   const previousMeals = state.meals;
   const previousShoppingListItems = state.shoppingListItems;
   setBusy(true);
@@ -2467,6 +2503,9 @@ async function selectWeek(anchorDate) {
     state.selectedDate = previousDate;
     state.selectedMealId = previousMealId;
     window.history.replaceState(null, "", previousUrl);
+    state.nutritionPacket = previousNutritionPacket;
+    state.nutritionPackageId = previousNutritionPackageId;
+    state.nutritionGuidanceError = previousGuidanceError;
     state.meals = previousMeals;
     state.shoppingListItems = previousShoppingListItems;
     renderPlanner();

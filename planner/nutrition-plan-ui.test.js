@@ -35,7 +35,7 @@ function harness({ authorized = true, empty = false, failed = false, invalid = f
     }
   };
   const context = {
-    window: { cucinaHubSupabase: client, CucinaHubNutritionPlanCore: { ...core, today: () => "2026-10-12", monday: value => core.monday(value || "2026-10-12") }, CucinaHubAuthGuard: { async requireAdministrator() { return { authorized, user: authorized ? { id: "owner" } : null }; } }, setTimeout },
+    window: { CucinaHubNutritionGuidance: require("./nutrition-guidance.js"), cucinaHubSupabase: client, CucinaHubNutritionPlanCore: { ...core, today: () => "2026-10-12", monday: value => core.monday(value || "2026-10-12") }, CucinaHubAuthGuard: { async requireAdministrator() { return { authorized, user: authorized ? { id: "owner" } : null }; } }, setTimeout },
     document: { getElementById: node, querySelectorAll: selector => selector === "[data-view]" ? buttons : [], addEventListener() {}, hidden: false },
     location: { search: "?week=2026-10-12", href: "https://example.test/planner/nutrition.html?week=2026-10-12" },
     history: { replaceState() {} }, navigator: { onLine: true }, URLSearchParams, URL, Intl, Date, setTimeout
