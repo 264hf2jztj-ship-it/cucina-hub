@@ -54,9 +54,10 @@
     return Number.isNaN(value.getTime()) ? Number.POSITIVE_INFINITY : value.getTime();
   }
 
-  function plannerHref(section, week, date) {
+  function plannerHref(section, week, date, mealId) {
     const parameters = new URLSearchParams({ v: "14", section, week });
     if (date) parameters.set("date", date);
+    if (mealId) parameters.set("meal", mealId);
     return `planner/workspace.html?${parameters.toString()}`;
   }
 
@@ -76,7 +77,7 @@
         date: meal.planned_date,
         time: meal.planned_time || null,
         overdue: false,
-        href: plannerHref("meal-plan", meal.planned_date, meal.planned_date)
+        href: plannerHref("meal-plan", meal.planned_date, meal.planned_date, meal.id)
       }));
     const taskItems = tasks
       .filter(task => task.status !== "done" && task.scheduled_date <= weekEnd)

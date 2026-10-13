@@ -63,7 +63,7 @@
     setMetric("dashboardNotificationMetric", data.notificationsUnread, "avvisi da leggere");
 
     nextMeal.innerHTML = data.nextMeal
-      ? `<div><div class="big-icon" aria-hidden="true">🍽️</div><p class="eyebrow">Prossimo pasto</p><h3>${escapeHtml(data.nextMeal.title)}</h3><p>${escapeHtml(dateLabel(data.nextMeal.planned_date))} · ${escapeHtml(timeLabel(data.nextMeal.planned_time))}</p></div><a class="button secondary" href="${escapeHtml(core.plannerHref("meal-plan", data.nextMeal.planned_date, data.nextMeal.planned_date))}">APRI PASTO</a>`
+      ? `<div><div class="big-icon" aria-hidden="true">🍽️</div><p class="eyebrow">Prossimo pasto</p><h3>${escapeHtml(data.nextMeal.title)}</h3><p>${escapeHtml(dateLabel(data.nextMeal.planned_date))} · ${escapeHtml(timeLabel(data.nextMeal.planned_time))}</p></div><a class="button secondary" href="${escapeHtml(core.plannerHref("meal-plan", data.nextMeal.planned_date, data.nextMeal.planned_date, data.nextMeal.id))}">APRI PASTO</a>`
       : '<div><div class="big-icon" aria-hidden="true">🍽️</div><p class="eyebrow">Prossimo pasto</p><h3>Nessun pasto pianificato</h3><p>Puoi aggiungerlo direttamente dal Planner Hub.</p></div><a class="button secondary" href="planner/index.html?v=14">PIANIFICA</a>';
 
     agenda.innerHTML = data.agenda.length

@@ -111,4 +111,8 @@ assert.deepEqual(core.weekForDate("invalid", entries), {
   entries: []
 });
 
-console.log("Planner Core: 28 controlli superati.");
+assert.deepEqual(core.selectionForWeek("2026-08-12", weeklyEntries, null, null, "2026-08-13"), { date: "2026-08-13", mealId: null });
+assert.deepEqual(core.selectionForWeek("2026-08-12", weeklyEntries, "2026-08-14", null, "2026-08-13"), { date: "2026-08-14", mealId: null });
+assert.deepEqual(core.selectionForWeek("2026-08-12", weeklyEntries, "2026-08-10", "lunch", "2026-08-13"), { date: "2026-08-12", mealId: "lunch" });
+assert.deepEqual(core.selectionForWeek("2026-08-12", weeklyEntries, "invalid", "outside", "2026-09-01"), { date: "2026-08-12", mealId: null });
+console.log("Planner Core: controlli superati.");

@@ -8,7 +8,7 @@
   <title>Gestione Planner — Cucina Hub</title>
   <link rel="icon" href="../icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../style.css?v=17">
-  <link rel="stylesheet" href="planner.css?v=10">
+  <link rel="stylesheet" href="planner.css?v=11">
 </head>
 <body>
   <a class="skip-link" href="#plannerMain">Vai al contenuto</a>
@@ -89,7 +89,18 @@
         <p id="weekEmptySummary" class="week-empty-summary" hidden>
           Nessun pasto in questa settimana. Usa “Aggiungi” nel giorno che preferisci.
         </p>
-        <div id="weekGrid" class="week-grid" role="list" aria-live="polite" aria-busy="true"></div>
+        <nav id="daySelector" class="planner-day-selector" aria-label="Scegli il giorno"></nav>
+        <section class="planner-day-detail" aria-labelledby="mealListTitle">
+          <div class="panel-heading">
+            <div><p class="eyebrow">La giornata</p><h2 id="mealListTitle" tabindex="-1">Pasti del giorno</h2></div>
+            <span id="mealCount" class="badge">0</span>
+          </div>
+          <div id="mealList" class="meal-list" aria-live="polite"></div>
+        </section>
+        <details class="planner-week-overview">
+          <summary>Panoramica della settimana</summary>
+          <div id="weekGrid" class="week-grid" role="list" aria-live="polite" aria-busy="true"></div>
+        </details>
       </section>
 
       <section id="shoppingListPanel" class="planner-panel shopping-list-panel" data-planner-module="shopping-list" aria-labelledby="shoppingListTitle">
@@ -544,16 +555,6 @@
         </form>
       </section>
 
-      <section class="planner-panel planner-list-panel" data-planner-module="meal-plan" aria-labelledby="mealListTitle">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">Dettaglio</p>
-            <h2 id="mealListTitle">Pasti della settimana</h2>
-          </div>
-          <span id="mealCount" class="badge">0</span>
-        </div>
-        <div id="mealList" class="meal-list" aria-live="polite"></div>
-      </section>
     </div>
   </main>
 
@@ -561,11 +562,11 @@
   <script src="../supabase-config.js?v=12"></script>
   <script src="../supabase-client.js?v=12"></script>
   <script src="../auth-guard.js?v=1"></script>
-  <script src="planner-core.js?v=2"></script>
+  <script src="planner-core.js?v=3"></script>
   <script src="meal-prep-core.js?v=1"></script>
   <script src="shopping-list-core.js?v=1"></script>
   <script src="menu-plan-import-engine.js?v=5"></script>
-  <script src="planner.js?v=13"></script>
+  <script src="planner.js?v=14"></script>
   <script src="../page-navigation.js?v=1"></script>
 </body>
 </html>

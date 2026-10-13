@@ -92,12 +92,12 @@ for (const fieldId of [
 }
 
 assert.match(html, /aria-live="polite"/i);
-assert.match(html, /planner-core\.js\?v=2/i);
+assert.match(html, /planner-core\.js\?v=3/i);
 assert.match(html, /meal-prep-core\.js\?v=1/i);
 assert.match(html, /shopping-list-core\.js\?v=1/i);
-assert.match(html, /planner\.css\?v=10/i);
+assert.match(html, /planner\.css\?v=11/i);
 assert.match(html, /menu-plan-import-engine\.js\?v=5/i);
-assert.match(html, /planner\.js\?v=13/i);
+assert.match(html, /planner\.js\?v=14/i);
 assert.match(home, /href="planner\/index\.html\?v=14"/i);
 assert.match(html, /href="calendar\.html\?v=3"/i);
 assert.match(html, /href="index\.html\?v=14"/i);
