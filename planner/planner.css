@@ -2283,6 +2283,10 @@
 .planner-day-detail .meal-card.is-selected { outline: 3px solid #2e6b50; outline-offset: 3px; }
 .planner-day-detail .meal-content, .planner-day-detail .meal-heading > div { min-width: 0; }
 .planner-day-detail h4 { overflow-wrap: anywhere; }
+.nutrition-guidance { margin-top: 1rem; }
+.nutrition-options > summary { min-height: 48px; padding: .8rem 0; font-weight: 700; cursor: pointer; }
+.nutrition-option { padding: 1rem; margin: .6rem 0; border-radius: 12px; background: var(--panel-soft); overflow-wrap: anywhere; }
+.nutrition-option p, .nutrition-option li { line-height: 1.5; }
 .planner-day-detail .meal-item-row { grid-template-columns: minmax(0, 1fr) auto; font-size: .95rem; }
 .planner-day-detail .meal-item-row > .badge { display: none; }
 .planner-day-detail .meal-item-row > span:last-child:not(.badge) { grid-column: 2; }

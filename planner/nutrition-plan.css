@@ -13,7 +13,8 @@
 .nutrition-meal h3 { margin: .35rem 0; }
 .nutrition-meal ul, .nutrition-shopping ul { padding-left: 1.25rem; line-height: 1.7; }
 .nutrition-meal summary { cursor: pointer; min-height: 48px; display: flex; align-items: center; color: var(--hub-green); font-weight: 700; }
-.nutrition-alternative { padding: .8rem; background: #f4f1e9; border-radius: 12px; margin: .5rem 0; }
+.nutrition-alternative, .nutrition-option { padding: .8rem; background: #f4f1e9; border-radius: 12px; margin: .5rem 0; overflow-wrap: anywhere; }
+.nutrition-options > summary { min-height: 48px; padding: .8rem 0; cursor: pointer; font-weight: 700; }
 .nutrition-note { color: var(--hub-muted); white-space: pre-line; }
 .nutrition-shopping { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .nutrition-shopping h3 { margin-top: 0; }
