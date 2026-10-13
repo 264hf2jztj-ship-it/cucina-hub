@@ -143,6 +143,16 @@
     return `${year}-${month}-${day}`;
   }
 
+  function selectionForWeek(anchor, entries, date, mealId, today = localDateValue()) {
+    const week = weekForDate(anchor, entries);
+    const meal = week.entries.find(item => item.id === mealId);
+    const inWeek = value => isRealDate(value) && value >= week.startDate && value <= week.endDate;
+    return {
+      date: meal?.planned_date || (inWeek(date) ? date : inWeek(today) ? today : inWeek(anchor) ? anchor : week.startDate),
+      mealId: meal?.id || null
+    };
+  }
+
   const api = Object.freeze({
     MEAL_SLOTS,
     addDays,
@@ -151,6 +161,7 @@
     localDateValue,
     normalizeEntry,
     normalizeTime,
+    selectionForWeek,
     startOfWeek,
     sortEntries,
     weekForDate

@@ -19,6 +19,8 @@ const state = {
   shoppingListError: null,
   shoppingListFilter: "active",
   weekAnchor: null,
+  selectedDate: null,
+  selectedMealId: null,
   editingId: null,
   menuAnalysisResult: null,
   menuResolutionSelections: Object.create(null),
@@ -72,6 +74,8 @@ const elements = {
   weekRange: document.querySelector("#weekRange"),
   weekEmpty: document.querySelector("#weekEmptySummary"),
   weekGrid: document.querySelector("#weekGrid"),
+  daySelector: document.querySelector("#daySelector"),
+  dayTitle: document.querySelector("#mealListTitle"),
   previousWeek: document.querySelector("#previousWeek"),
   currentWeek: document.querySelector("#currentWeek"),
   nextWeek: document.querySelector("#nextWeek"),
@@ -257,11 +261,11 @@ function mealItemLabel(item) {
   return item?.label || "Elemento senza nome";
 }
 
-function mealDisplayLabel(meal) {
+function mealDisplayLabel(meal, compact = true) {
   const items = mealItems(meal);
   if (!items.length) return recipeLabel(recipeFor(meal.recipe_id));
   const labels = items.map(mealItemLabel);
-  return labels.length > 2
+  return compact && labels.length > 2
     ? `${labels.slice(0, 2).join(" · ")} +${labels.length - 2}`
     : labels.join(" · ");
 }
@@ -2109,13 +2113,13 @@ function weekMealCard(meal) {
   const slot = core.MEAL_SLOTS[meal.meal_slot] ?? core.MEAL_SLOTS.other;
   const label = mealDisplayLabel(meal);
   const time = core.normalizeTime(meal.planned_time);
-  const ariaLabel = `${meal.menu_package_id ? "Mostra dettaglio" : "Modifica"} ${slot.label}: ${label}${time ? ` alle ${time}` : ""}`;
+  const ariaLabel = `Apri ${slot.label}: ${label}${time ? ` alle ${time}` : ""}`;
 
   return `
     <button
       class="week-meal"
       type="button"
-      data-action="edit"
+      data-action="open"
       data-meal-id="${escapeHtml(meal.id)}"
       aria-label="${escapeHtml(ariaLabel)}"
     >
@@ -2134,13 +2138,13 @@ function weekDayCard(day, today) {
 
   return `
     <article class="week-day${isToday ? " is-today" : ""}" role="listitem" aria-label="${escapeHtml(formatDate(day.date))}">
-      <div class="week-day-header">
+      <button class="week-day-header" type="button" data-action="day" data-date="${escapeHtml(day.date)}" aria-label="Apri ${escapeHtml(formatDate(day.date))}">
         <time datetime="${escapeHtml(day.date)}">
           <span class="week-day-name">${escapeHtml(formatted.name)}</span>
           <strong class="week-day-date">${escapeHtml(formatted.date)}</strong>
         </time>
         <span class="week-day-count" aria-label="${escapeHtml(countLabel)}">${day.entries.length}</span>
-      </div>
+      </button>
       ${day.entries.length
         ? `<div class="week-day-meals">${day.entries.map(weekMealCard).join("")}</div>`
         : '<p class="week-day-empty">Nessun pasto pianificato.</p>'}
@@ -2169,14 +2173,13 @@ function mealCard(meal) {
   const time = core.normalizeTime(meal.planned_time);
   const imported = Boolean(meal.menu_package_id);
   return `
-    <article class="meal-card">
+    <article id="meal-${escapeHtml(meal.id)}" class="meal-card${state.selectedMealId === meal.id ? " is-selected" : ""}" tabindex="-1">
       <span class="meal-icon" aria-hidden="true">${escapeHtml(slot.icon)}</span>
       <div class="meal-content">
         <div class="meal-heading">
           <div>
             <span class="badge">${escapeHtml(slot.label)}</span>
-            ${imported ? '<span class="badge pending">MENU IMPORTATO</span>' : ""}
-            <h4>${escapeHtml(mealDisplayLabel(meal))}</h4>
+            <h4>${escapeHtml(mealDisplayLabel(meal, false))}</h4>
           </div>
           ${time ? `<time class="meal-time" datetime="${escapeHtml(time)}">${escapeHtml(time)}</time>` : ""}
         </div>
@@ -2186,7 +2189,7 @@ function mealCard(meal) {
         <div class="meal-actions">
           <button class="button" type="button" data-action="prep" data-meal-id="${escapeHtml(meal.id)}">MEAL PREP</button>
           ${imported
-            ? '<span class="field-help">Pasto composto collegato al Menu Package; la gestione degli elementi usa il flusso revisioni protetto.</span>'
+            ? ""
             : `<button class="button secondary" type="button" data-action="edit" data-meal-id="${escapeHtml(meal.id)}">MODIFICA</button>
               <button class="button danger" type="button" data-action="delete" data-meal-id="${escapeHtml(meal.id)}">ELIMINA</button>`}
         </div>
@@ -2195,20 +2198,36 @@ function mealCard(meal) {
 }
 
 function renderMeals() {
-  elements.count.textContent = String(state.meals.length);
-  if (!state.meals.length) {
-    elements.list.innerHTML = emptyStateHtml();
-    return;
-  }
+  const selection = core.selectionForWeek(state.weekAnchor, state.meals, state.selectedDate, state.selectedMealId);
+  state.selectedDate = selection.date;
+  state.selectedMealId = selection.mealId;
+  const week = core.weekForDate(state.weekAnchor, state.meals);
+  const meals = week.entries.filter(meal => meal.planned_date === selection.date);
+  elements.count.textContent = String(meals.length);
+  if (elements.dayTitle) elements.dayTitle.textContent = `${selection.date === core.localDateValue() ? "Oggi · " : ""}${formatDate(selection.date)}`;
+  if (elements.daySelector) elements.daySelector.innerHTML = week.days.map(day => {
+    const label = formatWeekDay(day.date);
+    return `<button class="planner-day-choice${day.date === selection.date ? " is-active" : ""}" type="button" data-date="${escapeHtml(day.date)}" aria-pressed="${day.date === selection.date}"><span>${escapeHtml(label.name)}</span><strong>${escapeHtml(label.date)}</strong><small>${day.entries.length} pasti</small></button>`;
+  }).join("");
+  elements.list.innerHTML = meals.length ? meals.map(mealCard).join("")
+    : `<div class="planner-empty"><h3>Nessun pasto in questa giornata</h3><p>Seleziona un altro giorno o aggiungi un pasto.</p><button class="button secondary" type="button" data-action="add" data-date="${escapeHtml(selection.date)}">Aggiungi pasto</button></div>`;
+}
 
-  elements.list.innerHTML = core.groupEntriesByDate(state.meals).map(group => `
-    <section class="meal-day" aria-labelledby="day-${escapeHtml(group.date)}">
-      <div class="meal-day-heading">
-        <h3 id="day-${escapeHtml(group.date)}">${escapeHtml(formatDate(group.date))}</h3>
-        <span class="badge pending">${group.entries.length} ${group.entries.length === 1 ? "pasto" : "pasti"}</span>
-      </div>
-      ${group.entries.map(mealCard).join("")}
-    </section>`).join("");
+function selectPlannerDay(date, mealId = null, scroll = true) {
+  const selection = core.selectionForWeek(state.weekAnchor, state.meals, date, mealId);
+  state.selectedDate = selection.date;
+  state.selectedMealId = selection.mealId;
+  renderMeals();
+  const url = new URL(window.location.href);
+  url.searchParams.set("date", selection.date);
+  if (selection.mealId) url.searchParams.set("meal", selection.mealId);
+  else url.searchParams.delete("meal");
+  window.history.replaceState(null, "", url);
+  if (scroll) {
+    const target = selection.mealId ? document.getElementById?.(`meal-${selection.mealId}`) : elements.dayTitle;
+    target?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    target?.focus?.({ preventScroll: true });
+  }
 }
 
 function renderPlanner() {
@@ -2243,8 +2262,7 @@ function editMeal(mealId) {
   const meal = state.meals.find(item => item.id === mealId);
   if (!meal) return;
   if (meal.menu_package_id) {
-    setStatus("Questo è un pasto composto importato: il dettaglio degli elementi è visibile nell’elenco della settimana.", "warning");
-    elements.list.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    selectPlannerDay(meal.planned_date, meal.id);
     return;
   }
 
@@ -2403,6 +2421,9 @@ async function reloadMeals() {
 async function selectWeek(anchorDate) {
   if (state.busy || !core.isRealDate(anchorDate)) return;
   const previousAnchor = state.weekAnchor;
+  const previousDate = state.selectedDate;
+  const previousMealId = state.selectedMealId;
+  const previousUrl = window.location.href;
   const previousMeals = state.meals;
   const previousShoppingListItems = state.shoppingListItems;
   setBusy(true);
@@ -2411,8 +2432,12 @@ async function selectWeek(anchorDate) {
   try {
     const meals = await fetchMealsForWeek(anchorDate);
     state.weekAnchor = anchorDate;
+    state.selectedDate = anchorDate;
+    state.selectedMealId = null;
     const url = new URL(window.location.href);
     url.searchParams.set("week", anchorDate);
+    url.searchParams.set("date", anchorDate);
+    url.searchParams.delete("meal");
     window.history.replaceState(null, "", url);
     updateWorkspaceLinks();
     state.meals = meals;
@@ -2439,6 +2464,9 @@ async function selectWeek(anchorDate) {
     }
   } catch (error) {
     state.weekAnchor = previousAnchor;
+    state.selectedDate = previousDate;
+    state.selectedMealId = previousMealId;
+    window.history.replaceState(null, "", previousUrl);
     state.meals = previousMeals;
     state.shoppingListItems = previousShoppingListItems;
     renderPlanner();
@@ -2493,6 +2521,8 @@ async function saveMeal(event) {
 
     assertOk(result.error, wasEditing ? "Modifica pasto" : "Creazione pasto");
     state.weekAnchor = candidate.value.planned_date;
+    state.selectedDate = candidate.value.planned_date;
+    state.selectedMealId = result.data?.id || null;
     await reloadMeals();
     resetForm(candidate.value.planned_date);
     setStatus(wasEditing ? "Pasto aggiornato correttamente." : "Pasto aggiunto al Planner.", "ok");
@@ -2856,7 +2886,10 @@ async function initialize() {
     state.ownerUserId = user.id;
     const requestedWeek = new URLSearchParams(window.location.search).get("week");
     const requestedDate = new URLSearchParams(window.location.search).get("date");
-    state.weekAnchor = state.weekAnchor ?? (core.isRealDate(requestedWeek) ? requestedWeek : core.localDateValue());
+    const requestedMeal = new URLSearchParams(window.location.search).get("meal");
+    state.weekAnchor = state.weekAnchor ?? (core.isRealDate(requestedWeek) ? requestedWeek : core.isRealDate(requestedDate) ? requestedDate : core.localDateValue());
+    state.selectedDate = state.selectedDate ?? (core.isRealDate(requestedDate) ? requestedDate : null);
+    state.selectedMealId = state.selectedMealId ?? requestedMeal;
     await loadData();
     populateRecipes();
     renderPlanner();
@@ -2866,6 +2899,9 @@ async function initialize() {
     resetMenuImport();
     if (!menuPlanEngine) renderMenuPlanUnavailable();
     elements.workspace.hidden = false;
+    if (activeWorkspaceSection === "meal-plan" && (requestedDate || requestedMeal)) {
+      selectPlannerDay(state.selectedDate, state.selectedMealId);
+    }
     updateWorkspaceLinks();
     const previewAvailable = await loadMenuPreviewRequests();
     const baseStatus = state.recipes.length
@@ -2908,6 +2944,8 @@ elements.cancel.addEventListener("click", () => {
   setStatus("Modifica annullata.");
 });
 elements.list.addEventListener("click", event => {
+  const add = event.target.closest("button[data-action='add'][data-date]");
+  if (add) { prepareNewMeal(add.dataset.date); return; }
   const button = event.target.closest("button[data-action][data-meal-id]");
   if (!button) return;
   if (button.dataset.action === "edit") editMeal(button.dataset.mealId);
@@ -2918,7 +2956,16 @@ elements.weekGrid.addEventListener("click", event => {
   const button = event.target.closest("button[data-action]");
   if (!button) return;
   if (button.dataset.action === "edit") editMeal(button.dataset.mealId);
+  if (button.dataset.action === "open") {
+    const meal = mealFor(button.dataset.mealId);
+    if (meal) selectPlannerDay(meal.planned_date, meal.id);
+  }
+  if (button.dataset.action === "day") selectPlannerDay(button.dataset.date);
   if (button.dataset.action === "add") prepareNewMeal(button.dataset.date);
+});
+elements.daySelector?.addEventListener("click", event => {
+  const button = event.target.closest("button[data-date]");
+  if (button) selectPlannerDay(button.dataset.date);
 });
 elements.previousWeek.addEventListener("click", () => {
   void selectWeek(core.addDays(state.weekAnchor, -7));

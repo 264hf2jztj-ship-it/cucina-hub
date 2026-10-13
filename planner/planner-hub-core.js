@@ -10,6 +10,8 @@
     morning_snack: "Spuntino mattina",
     lunch: "Pranzo",
     afternoon_snack: "Spuntino pomeriggio",
+    pre_workout: "Pre-workout",
+    post_workout: "Post-workout",
     dinner: "Cena",
     other: "Altro"
   });

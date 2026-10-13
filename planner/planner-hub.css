@@ -48,12 +48,12 @@ body { margin: 0; color: var(--hub-ink); background: #f4f1e9; }
 .hub-week-grid { display: grid; grid-template-columns: repeat(7, minmax(135px, 1fr)); gap: .65rem; overflow-x: auto; padding-bottom: .35rem; }
 .hub-day { display: flex; flex-direction: column; min-height: 180px; padding: .75rem; border: 1px solid var(--hub-line); border-radius: 14px; background: #f8f8f4; }
 .hub-day.is-today { border: 2px solid var(--hub-green); }
-.hub-day-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: .4rem; padding-bottom: .55rem; border-bottom: 1px solid var(--hub-line); }
+.hub-day-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: .4rem; padding-bottom: .55rem; border-bottom: 1px solid var(--hub-line); color: inherit; text-decoration: none; min-height: 48px; }
 .hub-day-heading div { display: grid; }
 .hub-day-heading span:first-child { color: var(--hub-muted); font-size: .72rem; font-weight: 800; text-transform: uppercase; }
 .today-badge { padding: .2rem .35rem; color: white; border-radius: 999px; background: var(--hub-green); font-size: .62rem; font-weight: 800; }
 .hub-day-meals { display: grid; gap: .45rem; flex: 1; padding: .55rem 0; }
-.hub-meal { display: grid; gap: .12rem; padding: .45rem; border-radius: 9px; background: white; }
+.hub-meal { display: grid; gap: .12rem; padding: .45rem; border-radius: 9px; background: white; color: inherit; text-decoration: none; min-height: 48px; }
 .hub-meal span { color: var(--hub-muted); font-size: .68rem; }
 .hub-meal strong { font-size: .79rem; line-height: 1.25; }
 .hub-day-empty { color: #8b958f; font-size: .78rem; }

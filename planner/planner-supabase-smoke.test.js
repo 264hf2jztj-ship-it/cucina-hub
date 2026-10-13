@@ -140,7 +140,9 @@ const selectors = [
   "#saveMeal",
   "#cancelEdit",
   "#mealCount",
-  "#mealList"
+  "#mealList",
+  "#mealListTitle",
+  "#daySelector"
 ];
 
 const elements = new Map(selectors.map(selector => [selector, new FakeElement()]));
@@ -388,6 +390,9 @@ function queryFor(table) {
 }
 
 global.document = {
+  getElementById(id) {
+    return elements.get(`#${id}`) ?? null;
+  },
   querySelector(selector) {
     return elements.get(selector) ?? null;
   },
@@ -398,7 +403,7 @@ global.document = {
 
 global.window = {
   location: { href: "https://example.test/planner/workspace.html?v=14&section=meal-plan", search: "?v=14&section=meal-plan" },
-  history: { replaceState() {} },
+  history: { replaceState(_state, _title, url) { window.location.href = String(url); } },
   CucinaHubPlannerCore: core,
   CucinaHubMealPrepCore: require("./meal-prep-core.js"),
   CucinaHubShoppingListCore: shoppingListCore,
@@ -923,6 +928,37 @@ global.window = {
   await settle();
   assert.equal(elements.get("#weekRange").textContent, initialRange);
   assert.equal(elements.get("#weekMealCount").textContent, "2");
+
+  // A day click must display that day, even when it is not Monday.
+  const selectedDay = core.addDays(core.startOfWeek(core.localDateValue()), 2);
+  elements.get("#daySelector").listeners.click({ target: { closest: () => ({ dataset: { date: selectedDay } }) } });
+  assert.equal(new URL(window.location.href).searchParams.get("date"), selectedDay);
+  assert.equal(new URL(window.location.href).searchParams.get("meal"), null);
+  assert.equal(elements.get("#mealCount").textContent, String(database.planned_meals.filter(meal => meal.planned_date === selectedDay && meal.owner_user_id === "user-1").length));
+
+  // Opening a meal overrides the selected date and scrolls/focuses that meal.
+  const mealTarget = new FakeElement();
+  let scrolled = false;
+  let focused = false;
+  mealTarget.scrollIntoView = () => { scrolled = true; };
+  mealTarget.focus = () => { focused = true; };
+  elements.set("#meal-meal-1", mealTarget);
+  elements.get("#weekGrid").listeners.click({ target: { closest: () => ({ dataset: { action: "open", mealId: "meal-1" } }) } });
+  assert.equal(new URL(window.location.href).searchParams.get("date"), core.localDateValue());
+  assert.equal(new URL(window.location.href).searchParams.get("meal"), "meal-1");
+  assert.match(elements.get("#mealList").innerHTML, /id="meal-meal-1" class="meal-card is-selected"/);
+  assert.equal(scrolled, true);
+  assert.equal(focused, true);
+
+  const importedMeal = database.planned_meals.find(meal => meal.menu_package_id);
+  assert.ok(importedMeal);
+  const importedTarget = new FakeElement();
+  let importedScrolled = false;
+  importedTarget.scrollIntoView = () => { importedScrolled = true; };
+  elements.set(`#meal-${importedMeal.id}`, importedTarget);
+  elements.get("#weekGrid").listeners.click({ target: { closest: () => ({ dataset: { action: "open", mealId: importedMeal.id } }) } });
+  assert.equal(new URL(window.location.href).searchParams.get("meal"), importedMeal.id);
+  assert.equal(importedScrolled, true);
 
   plannedMealsError = { message: "Connessione simulata non disponibile", code: "TEST" };
   elements.get("#previousWeek").listeners.click();

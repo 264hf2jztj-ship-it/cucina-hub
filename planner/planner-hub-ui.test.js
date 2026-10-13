@@ -39,9 +39,9 @@ test("Planner Hub exposes one weekly summary and the five requested entry cards"
 test("Hub identifiers are unique and assets are versioned", () => {
   const ids = [...hub.matchAll(/\sid=["']([^"']+)["']/g)].map(match => match[1]);
   assert.equal(new Set(ids).size, ids.length);
-  assert.match(hub, /planner-hub\.css\?v=1/i);
-  assert.match(hub, /planner-hub-core\.js\?v=1/i);
-  assert.match(hub, /planner-hub\.js\?v=1/i);
+  assert.match(hub, /planner-hub\.css\?v=2/i);
+  assert.match(hub, /planner-hub-core\.js\?v=2/i);
+  assert.match(hub, /planner-hub\.js\?v=2/i);
   assert.match(home, /planner\/index\.html\?v=14/i);
 });
 

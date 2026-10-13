@@ -79,15 +79,15 @@ function dayHtml(day, grouped) {
   const meals = grouped.get(day.date) || [];
   const isToday = day.date === plannerCore.localDateValue();
   return `<article class="hub-day${isToday ? " is-today" : ""}" role="listitem">
-    <div class="hub-day-heading">
+    <a class="hub-day-heading" href="${escapeHtml(hubCore.moduleHref("meal-plan", state.weekAnchor, { date: day.date }))}">
       <div><span>${escapeHtml(dateLabel(day.date, { weekday: "short" }))}</span><strong>${escapeHtml(dateLabel(day.date, { day: "numeric", month: "short" }))}</strong></div>
       ${isToday ? '<span class="today-badge">OGGI</span>' : ""}
-    </div>
+    </a>
     <div class="hub-day-meals">
-      ${meals.length ? meals.map(meal => `<div class="hub-meal">
+      ${meals.length ? meals.map(meal => `<a class="hub-meal" href="${escapeHtml(hubCore.moduleHref("meal-plan", state.weekAnchor, { date: day.date, meal: meal.id }))}">
         <span>${escapeHtml([timeLabel(meal.planned_time), hubCore.SLOT_LABELS[meal.meal_slot] || "Altro"].filter(Boolean).join(" · "))}</span>
         <strong>${escapeHtml(hubCore.mealLabel(meal, state.recipes))}</strong>
-      </div>`).join("") : '<span class="hub-day-empty">Nessun pasto</span>'}
+      </a>`).join("") : '<span class="hub-day-empty">Nessun pasto</span>'}
     </div>
     <a class="hub-day-add" href="${escapeHtml(hubCore.moduleHref("meal-plan", state.weekAnchor, { date: day.date }))}">${meals.length ? "GESTISCI" : "+ AGGIUNGI"}</a>
   </article>`;

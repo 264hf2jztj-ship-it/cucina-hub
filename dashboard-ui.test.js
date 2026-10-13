@@ -12,9 +12,9 @@ const css = fs.readFileSync("dashboard.css", "utf8");
 const serviceWorker = fs.readFileSync("sw.js", "utf8");
 
 test("home loads the Dashboard Core assets after the authenticated Supabase client", () => {
-  assert.match(index, /dashboard-core\.js\?v=1/i);
+  assert.match(index, /dashboard-core\.js\?v=2/i);
   assert.match(index, /dashboard\.css\?v=1/i);
-  assert.match(index, /planner\/notifications-core\.js\?v=2[\s\S]*dashboard\.js\?v=1/i);
+  assert.match(index, /planner\/notifications-core\.js\?v=2[\s\S]*dashboard\.js\?v=2/i);
   assert.match(serviceWorker, /const CACHE_NAME = "cucina-hub-v\d+";/);
   assert.match(serviceWorker, /dashboard-core\.js/);
 });

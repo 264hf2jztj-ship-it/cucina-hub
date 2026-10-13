@@ -48,6 +48,7 @@ test("summary derives operational counts and skips meals whose time already pass
   assert.equal(result.shoppingOpen, 1);
   assert.equal(result.notificationsUnread, 1);
   assert.equal(result.nextMeal.id, "next");
+  assert.match(result.agenda.find(item => item.id === "meal:next").href, /&meal=next$/);
   assert.equal(result.agenda.some(item => item.id === "meal:past"), false);
   assert.equal(result.agenda[0].id, "prep:overdue");
   assert.equal(result.agenda[0].overdue, true);
