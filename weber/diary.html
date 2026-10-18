@@ -49,6 +49,11 @@
         <article><span>Voto medio</span><strong id="metricAverageRating">—</strong></article>
       </section>
 
+      <section class="weber-panel" aria-labelledby="configurationsTitle">
+        <div class="weber-hero"><div><h2 id="configurationsTitle">Configurazioni salvate</h2><p>Salva un setup e riusalo per una nuova sessione. Le prove precedenti conservano i propri parametri.</p></div><button id="newConfiguration" class="button secondary" type="button">+ NUOVA CONFIGURAZIONE</button></div>
+        <div id="configurationList" class="weber-session-list" aria-live="polite"></div>
+      </section>
+
       <section class="weber-panel weber-filters">
         <div><label for="sessionSearch">Cerca</label><input id="sessionSearch" type="search" placeholder="Titolo, ricetta, risultato"></div>
         <div><label for="sessionStatus">Stato</label><select id="sessionStatus"><option value="all">Tutte</option><option value="planned">Pianificate</option><option value="active">In corso</option><option value="completed">Concluse</option><option value="cancelled">Annullate</option></select></div>
@@ -99,8 +104,8 @@
   <script src="../supabase-config.js?v=12"></script>
   <script src="../supabase-client.js?v=12"></script>
   <script src="../auth-guard.js?v=1"></script>
-  <script src="diary-core.js?v=1"></script>
-  <script src="diary.js?v=1"></script>
+  <script src="diary-core.js?v=2"></script>
+  <script src="diary.js?v=2"></script>
   <script src="../page-navigation.js?v=1"></script>
 </body>
 </html>
