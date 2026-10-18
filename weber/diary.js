@@ -4,7 +4,7 @@
   const client = window.cucinaHubSupabase;
   const core = window.CucinaHubWeberDiaryCore;
   const $ = selector => document.querySelector(selector);
-  const state = { user: null, recipes: [], sessions: [], status: "all", query: "", busy: false };
+  const state = { user: null, recipes: [], sessions: [], configurations: [], editorMode: "session", status: "all", query: "", busy: false };
 
   const escapeHtml = (value = "") => String(value)
     .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
@@ -53,12 +53,17 @@
       </div>
       ${session.result_notes ? `<div class="weber-result"><strong>Risultato${session.rating ? ` · ${session.rating}/5` : ""}</strong><p>${escapeHtml(session.result_notes)}</p></div>` : ""}
       ${session.next_change ? `<p class="next-change"><strong>Prossima modifica:</strong> ${escapeHtml(session.next_change)}</p>` : ""}
-      <footer><button class="button secondary" data-action="edit" data-id="${session.id}" type="button">MODIFICA</button><button class="button danger" data-action="delete" data-id="${session.id}" type="button">ELIMINA</button></footer>
+      <footer><button class="button secondary" data-action="edit" data-id="${session.id}" type="button">MODIFICA</button><button class="button secondary" data-action="save-setup" data-id="${session.id}" type="button">SALVA COME CONFIGURAZIONE</button><button class="button danger" data-action="delete" data-id="${session.id}" type="button">ELIMINA</button></footer>
     </article>`;
   }
 
   function render() {
     renderMetrics();
+    $("#configurationList").innerHTML = state.configurations.length ? state.configurations.map(configuration => `
+      <article class="weber-session-card"><h3>${escapeHtml(configuration.title)}</h3>
+        <p>${escapeHtml(core.METHOD_LABELS[configuration.cooking_method])} · ${escapeHtml(core.FUEL_LABELS[configuration.fuel_type])}${configuration.target_grate_temp_c === null ? "" : ` · ${escapeHtml(configuration.target_grate_temp_c)} °C`}</p>
+        <footer><button class="button" data-configuration-action="use" data-id="${escapeHtml(configuration.id)}" type="button">USA PER NUOVA SESSIONE</button><button class="button secondary" data-configuration-action="edit" data-id="${escapeHtml(configuration.id)}" type="button">MODIFICA</button><button class="button danger" data-configuration-action="delete" data-id="${escapeHtml(configuration.id)}" type="button">ELIMINA</button></footer>
+      </article>`).join("") : '<p class="muted">Nessuna configurazione salvata. Creane una oppure ricavala da una prova del diario.</p>';
     const rows = core.filter(state.sessions.map(session => ({ ...session, recipe_title: recipeFor(session.recipe_id)?.title })), { status: state.status, query: state.query });
     $("#sessionList").innerHTML = rows.length
       ? rows.map(sessionCard).join("")
@@ -78,15 +83,23 @@
     $("#formMessage").textContent = "";
   }
 
-  function openEditor(session = null) {
+  function openEditor(session = null, mode = "session") {
+    if (state.busy) return;
     resetForm();
+    state.editorMode = mode;
+    const configurationMode = mode === "configuration";
+    for (const id of ["cookedAt", "status", "recipeId", "peakTemp", "coreTemp", "duration", "rating", "resultNotes", "nextChange"]) {
+      const input = $(`#${id}`);
+      input.closest(".field").hidden = configurationMode;
+      input.disabled = configurationMode;
+    }
     if (session) {
       $("#dialogTitle").textContent = "Modifica sessione";
-      $("#sessionId").value = session.id;
+      $("#sessionId").value = session.id ?? "";
       const fields = {
         sessionTitle: session.title,
-        cookedAt: localDateTime(session.cooked_at),
-        status: session.status,
+        cookedAt: session.cooked_at ? localDateTime(session.cooked_at) : localDateTime(),
+        status: session.status ?? "planned",
         recipeId: session.recipe_id,
         cookingMethod: session.cooking_method,
         fuelType: session.fuel_type,
@@ -105,6 +118,8 @@
       };
       for (const [id, value] of Object.entries(fields)) $(`#${id}`).value = value ?? "";
     }
+    if (configurationMode) $("#dialogTitle").textContent = session?.id ? "Modifica configurazione" : "Nuova configurazione";
+    $("#saveSession").textContent = configurationMode ? "SALVA CONFIGURAZIONE" : "SALVA SESSIONE";
     $("#sessionDialog").showModal();
   }
 
@@ -138,17 +153,20 @@
     $("#saveSession").disabled = true;
     $("#formMessage").textContent = "";
     try {
-      const data = core.payload(formInput(), state.user.id);
+      const configurationMode = state.editorMode === "configuration";
+      const table = configurationMode ? "weber_cook_configurations" : "weber_cook_sessions";
+      const data = configurationMode ? core.configurationPayload(formInput(), state.user.id) : core.payload(formInput(), state.user.id);
       const id = $("#sessionId").value;
       const result = id
-        ? await client.from("weber_cook_sessions").update(data).eq("id", id).eq("owner_user_id", state.user.id).select().single()
-        : await client.from("weber_cook_sessions").insert(data).select().single();
+        ? await client.from(table).update(data).eq("id", id).eq("owner_user_id", state.user.id).select().single()
+        : await client.from(table).insert(data).select().single();
       if (result.error) throw result.error;
       $("#sessionDialog").close();
       await loadData();
-      setStatus(id ? "Sessione Weber aggiornata." : "Sessione Weber creata.", "ok");
+      setStatus(configurationMode ? "Configurazione Weber salvata." : (id ? "Sessione Weber aggiornata." : "Sessione Weber creata."), "ok");
     } catch (error) {
-      $("#formMessage").textContent = error.message;
+      if ($("#sessionDialog").open) $("#formMessage").textContent = error.message;
+      else setStatus(`Salvataggio riuscito, ma aggiornamento del diario fallito: ${error.message}`, "error");
     } finally {
       state.busy = false;
       $("#saveSession").disabled = false;
@@ -156,9 +174,11 @@
   }
 
   async function handleAction(action, id) {
+    if (state.busy) return;
     const session = state.sessions.find(item => item.id === id);
     if (!session) return;
     if (action === "edit") return openEditor(session);
+    if (action === "save-setup") return openEditor({ ...core.setupValues(session), title: session.title }, "configuration");
     if (action !== "delete" || !confirm(`Eliminare “${session.title}”?`)) return;
     try {
       const result = await client.from("weber_cook_sessions").delete().eq("id", id).eq("owner_user_id", state.user.id);
@@ -170,15 +190,36 @@
     }
   }
 
+  async function handleConfigurationAction(action, id) {
+    if (state.busy) return;
+    const configuration = state.configurations.find(item => item.id === id);
+    if (!configuration) return;
+    if (action === "use") return openEditor({ ...core.setupValues(configuration), title: configuration.title });
+    if (action === "edit") return openEditor(configuration, "configuration");
+    if (action !== "delete" || !confirm(`Eliminare la configurazione “${configuration.title}”? Le sessioni già salvate resteranno invariate.`)) return;
+    state.busy = true;
+    try {
+      const result = await client.from("weber_cook_configurations").delete().eq("id", id).eq("owner_user_id", state.user.id).select("id").single();
+      if (result.error) throw result.error;
+      await loadData();
+      setStatus("Configurazione eliminata. Le sessioni precedenti conservano il proprio setup.", "ok");
+    } catch (error) {
+      setStatus(error.message, "error");
+    } finally { state.busy = false; }
+  }
+
   async function loadData() {
-    const [recipes, sessions] = await Promise.all([
+    const [recipes, sessions, configurations] = await Promise.all([
       client.from("recipes").select("id,code,title,archived_at").eq("owner_user_id", state.user.id).is("archived_at", null).order("title"),
-      client.from("weber_cook_sessions").select("*").eq("owner_user_id", state.user.id).order("cooked_at", { ascending: false })
+      client.from("weber_cook_sessions").select("*").eq("owner_user_id", state.user.id).order("cooked_at", { ascending: false }),
+      client.from("weber_cook_configurations").select("*").eq("owner_user_id", state.user.id).order("title")
     ]);
     if (recipes.error) throw recipes.error;
     if (sessions.error) throw sessions.error;
+    if (configurations.error) throw configurations.error;
     state.recipes = recipes.data ?? [];
     state.sessions = sessions.data ?? [];
+    state.configurations = configurations.data ?? [];
     fillRecipeOptions();
     render();
   }
@@ -203,6 +244,11 @@
   }
 
   $("#newSession").onclick = () => openEditor();
+  $("#newConfiguration").onclick = () => openEditor(null, "configuration");
+  $("#configurationList").onclick = event => {
+    const button = event.target.closest("[data-configuration-action]");
+    if (button) void handleConfigurationAction(button.dataset.configurationAction, button.dataset.id);
+  };
   $("#closeDialog").onclick = $("#cancelForm").onclick = () => $("#sessionDialog").close();
   $("#sessionForm").onsubmit = saveSession;
   $("#sessionSearch").oninput = event => { state.query = event.target.value; render(); };

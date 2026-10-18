@@ -9,6 +9,21 @@
   const METHOD_LABELS = Object.freeze({ direct: "Diretta", indirect: "Indiretta", two_zone: "Due zone", snake: "Snake" });
   const FUEL_LABELS = Object.freeze({ briquettes: "Bricchetti", charcoal: "Carbonella", mixed: "Misto", other: "Altro" });
   const UNIT_LABELS = Object.freeze({ pieces: "pezzi", g: "g", kg: "kg", chimney: "cesti" });
+  const SETUP_FIELDS = Object.freeze([
+    "cooking_method", "fuel_type", "fuel_amount", "fuel_unit", "ignition_method",
+    "vent_bottom_percent", "vent_top_percent", "target_grate_temp_c"
+  ]);
+
+  // Copy only setup parameters: dates, recipe, measurements and results belong to the session.
+  function setupValues(input = {}) {
+    return Object.fromEntries(SETUP_FIELDS.map(key => [key, input[key] ?? null]));
+  }
+
+  function configurationPayload(input, ownerUserId, now = new Date()) {
+    const setup = setupValues(input);
+    const value = payload({ ...setup, title: input.title, cooked_at: now.toISOString() }, ownerUserId, now);
+    return { ...setupValues(value), title: value.title, owner_user_id: ownerUserId, updated_at: value.updated_at };
+  }
 
   function clean(value, max = 4000) {
     const text = String(value ?? "").trim();
@@ -32,6 +47,14 @@
     const unit = clean(input.fuel_unit, 20);
     if ((amount === null) !== (unit === null)) errors.push("Quantità e unità del combustibile devono essere compilate insieme.");
     if (amount !== null && amount <= 0) errors.push("La quantità di combustibile deve essere maggiore di zero.");
+    if (unit !== null && !Object.hasOwn(UNIT_LABELS, unit)) errors.push("Seleziona un’unità di combustibile valida.");
+    for (const key of ["fuel_amount", "vent_bottom_percent", "vent_top_percent", "target_grate_temp_c", "peak_grate_temp_c", "food_core_temp_c", "duration_minutes", "rating"]) {
+      if (clean(input[key]) !== null && numberOrNull(input[key]) === null) errors.push("Inserisci valori numerici validi.");
+    }
+    for (const key of ["vent_bottom_percent", "vent_top_percent", "target_grate_temp_c", "peak_grate_temp_c", "duration_minutes", "rating"]) {
+      const value = numberOrNull(input[key]);
+      if (value !== null && !Number.isInteger(value)) errors.push("Prese d’aria, temperature della griglia, durata e voto richiedono numeri interi.");
+    }
     for (const [key, label] of [["vent_bottom_percent", "Presa inferiore"], ["vent_top_percent", "Presa superiore"]]) {
       const value = numberOrNull(input[key]);
       if (value !== null && (value < 0 || value > 100)) errors.push(`${label}: usa un valore tra 0 e 100%.`);
@@ -99,5 +122,5 @@
     };
   }
 
-  return { STATUS_LABELS, METHOD_LABELS, FUEL_LABELS, UNIT_LABELS, clean, numberOrNull, validate, payload, filter, summary };
+  return { STATUS_LABELS, METHOD_LABELS, FUEL_LABELS, UNIT_LABELS, SETUP_FIELDS, setupValues, configurationPayload, clean, numberOrNull, validate, payload, filter, summary };
 });

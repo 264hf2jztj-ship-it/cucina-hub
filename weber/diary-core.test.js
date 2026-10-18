@@ -4,6 +4,27 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const core = require("./diary-core.js");
 
+test("i preset contengono solo setup e non ereditano risultati o identità della prova", () => {
+  const session = { id: "session-1", title: "Indiretta", cooking_method: "indirect", fuel_type: "briquettes", fuel_amount: 50, fuel_unit: "pieces", vent_bottom_percent: 0, rating: 5, recipe_id: "r1", result_notes: "Buono", food_core_temp_c: 75, cooked_at: "2026-10-01" };
+  const now = new Date("2026-10-18T10:00:00Z");
+  const preset = core.configurationPayload(session, "owner-1", now);
+  assert.equal(preset.vent_bottom_percent, 0);
+  assert.equal(preset.owner_user_id, "owner-1");
+  for (const field of ["id", "recipe_id", "rating", "result_notes", "food_core_temp_c", "cooked_at", "duration_minutes", "peak_grate_temp_c"]) assert.equal(field in preset, false);
+  const copy = core.setupValues(preset);
+  preset.fuel_amount = 20;
+  assert.equal(copy.fuel_amount, 50, "il setup copiato è indipendente dal preset");
+  assert.equal(session.fuel_amount, 50, "la prova sorgente non cambia");
+});
+
+test("i preset accettano valori opzionali vuoti e rifiutano valori non validi", () => {
+  const setup = { title: "Diretta", cooking_method: "direct", fuel_type: "charcoal" };
+  assert.equal(core.configurationPayload(setup, "owner").fuel_amount, null);
+  for (const invalid of [{ fuel_amount: 0, fuel_unit: "kg" }, { vent_bottom_percent: 101 }, { target_grate_temp_c: 80.5 }, { fuel_amount: "abc", fuel_unit: "kg" }, { fuel_amount: 1, fuel_unit: "litri" }]) {
+    assert.throws(() => core.configurationPayload({ ...setup, ...invalid }, "owner"));
+  }
+});
+
 const base = {
   title: "Pollo indiretto",
   cooked_at: "2026-09-21T12:30",
