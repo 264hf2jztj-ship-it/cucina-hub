@@ -5,6 +5,10 @@
   const photos = window.CucinaHubWeberPhotos;
   const $ = selector => document.querySelector(selector);
   const state = { owner: null, list: [], pair: null, request: 0, photoRequest: 0 };
+  const params = new URLSearchParams(window.location?.search || "");
+  const linkedPair = [params.get("a"), params.get("b")];
+  const hasLinkedPair = linkedPair.some(Boolean);
+  const validLinkedPair = linkedPair[0] !== linkedPair[1] && linkedPair.every(id => typeof id === "string" && photos?.UUID.test(id));
   const esc = (value = "") => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
   const date = value => value && Number.isFinite(new Date(value).getTime()) ? new Date(value).toLocaleString("it-IT") : "Data non registrata";
   const label = session => `${session.title} · ${date(session.cooked_at)}`;
@@ -33,14 +37,34 @@
       if (token !== state.request) return;
       if (result.error) throw result.error;
       state.list = result.data || [];
+      const recentCount = state.list.length;
+      if (validLinkedPair) {
+        const missing = linkedPair.filter(id => !state.list.some(row => row.id === id));
+        if (missing.length) {
+          const extra = await client.from("weber_cook_sessions").select("id,title,cooked_at")
+            .eq("owner_user_id", state.owner).in("id", missing);
+          if (token !== state.request) return;
+          if (extra.error) throw extra.error;
+          state.list.push(...(extra.data || []));
+        }
+      }
       const options = state.list.map(row => `<option value="${esc(row.id)}">${esc(label(row))}</option>`).join("");
       $("#trialA").innerHTML = $("#trialB").innerHTML = options;
       $("#trialA").value = state.list[0]?.id || "";
       $("#trialB").value = state.list[1]?.id || "";
       const enough = state.list.length >= 2;
       $("#compareButton").disabled = $("#swapTrials").disabled = !enough;
-      $("#listInfo").textContent = `Mostrate ${state.list.length} prove su ${result.count ?? state.list.length}, ordinate dalla più recente (massimo 200).`;
+      $("#listInfo").textContent = `Mostrate le ${recentCount} prove più recenti su ${result.count ?? recentCount} (massimo 200), più eventuali prove collegate dal Learning.`;
       status(enough ? "Scegli due prove e premi Confronta." : "Servono almeno due prove salvate nel diario per avviare il confronto.");
+      if (hasLinkedPair) {
+        if (!validLinkedPair || !linkedPair.every(id => state.list.some(row => row.id === id))) {
+          status("Le prove del collegamento non sono disponibili. Scegli due prove dall’elenco.", true);
+          return false;
+        }
+        $("#trialA").value = linkedPair[0];
+        $("#trialB").value = linkedPair[1];
+        return true;
+      }
     } catch { if (token === state.request) status("Impossibile caricare le prove. Premi Ricarica prove per riprovare.", true); }
     finally { if (token === state.request) $("#trialA").disabled = $("#trialB").disabled = false; }
   }
@@ -118,7 +142,8 @@
       if (!access.authorized) { $("#authGate").hidden = false; status("Accedi con il tuo account amministratore."); return; }
       state.owner = access.user.id;
       $("#compareWorkspace").hidden = false;
-      await loadTrials();
+      const linkedReady = await loadTrials();
+      if (linkedReady) await compare();
     } catch { status("Impossibile verificare l’accesso. Torna alla dashboard e riprova.", true); }
   })();
 })();
