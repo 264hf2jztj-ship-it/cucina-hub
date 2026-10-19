@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#5f3a1f">
+  <title>Foto della prova Weber — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="diary.css?v=1">
+  <link rel="stylesheet" href="photos.css?v=1">
+  <style>[hidden]{display:none!important}</style>
+</head>
+<body>
+<main class="weber-diary-shell">
+  <header class="weber-diary-topbar"><div><p class="eyebrow">Weber · Diario fotografico privato</p><h1 id="sessionTitle">Foto della prova</h1><p>Setup della brace, fasi di cottura e risultato finale.</p></div><nav><a class="button secondary" href="diary.html?v=1">← DIARIO WEBER</a></nav></header>
+  <p id="photoStatus" role="status" aria-live="polite">Verifica accesso…</p>
+  <button id="retryCleanup" class="button secondary" type="button" hidden>RIPROVA PULIZIA</button>
+  <section id="authGate" class="weber-panel" hidden><h2>Accesso richiesto</h2><a class="button" href="../index.html?view=weber">ACCEDI DALLA DASHBOARD</a></section>
+  <div id="photoWorkspace" hidden>
+    <section class="weber-panel">
+      <h2>Aggiungi una foto</h2>
+      <p>JPEG, PNG, WebP, HEIC o HEIF · massimo 10 MB. I file restano privati; nessuna foto viene pubblicata su GitHub o salvata nella cache offline dell’app.</p>
+      <form id="photoForm">
+        <div class="form-grid">
+          <div class="field"><label for="photoKind">Fase</label><select id="photoKind"><option value="setup">Setup della brace</option><option value="cooking">Fase di cottura</option><option value="result">Risultato finale</option></select></div>
+          <div class="field full"><label for="photoCaption">Didascalia</label><textarea id="photoCaption" maxlength="1000" placeholder="Es. brace ai lati, leccarda centrale, pelle croccante…"></textarea></div>
+        </div>
+        <input id="photoCamera" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" capture="environment" hidden>
+        <input id="photoLibrary" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" hidden>
+        <div class="photo-actions"><button id="chooseCamera" class="button secondary" type="button">SCATTA FOTO</button><button id="chooseLibrary" class="button secondary" type="button">SCEGLI FOTO</button><button id="clearFile" class="button secondary" type="button">ANNULLA SELEZIONE</button></div>
+        <p id="selectedFile">Nessuna foto selezionata.</p>
+        <button id="uploadPhoto" class="button" type="submit">CARICA FOTO</button>
+      </form>
+    </section>
+    <section class="weber-panel"><div class="weber-hero"><h2>Foto della sessione</h2><button id="refreshPhotos" class="button secondary" type="button">AGGIORNA ANTEPRIME</button></div><p class="muted">Le anteprime usano link temporanei di 5 minuti. Se scadono, premi Aggiorna anteprime. HEIC/HEIF potrebbero non essere visualizzabili nel browser.</p><div id="photoGallery" class="photo-grid"></div></section>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script>
+<script src="../auth-guard.js?v=1"></script>
+<script src="photos-core.js?v=1"></script>
+<script src="photos.js?v=1"></script>
+<script src="../page-navigation.js?v=1"></script>
+</body>
+</html>
