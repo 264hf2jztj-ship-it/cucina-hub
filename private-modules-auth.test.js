@@ -5,6 +5,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 
 const modules = [
+  ["Confronto Weber", "weber/compare.html", "weber/compare.js"],
   ["Piano Alimentare", "planner/nutrition.html", "planner/nutrition-plan.js"],
   ["Pizza e impasti", "fermentation/index.html", "fermentation/lab.js"],
   ["Learning", "learning/index.html", "learning/learning.js"],

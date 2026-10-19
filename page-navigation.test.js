@@ -6,6 +6,7 @@ const fs = require("node:fs");
 const { canUseBrowserBack } = require("./page-navigation.js");
 
 const operationalPages = [
+  "weber/compare.html",
   "ai/index.html",
   "analytics/index.html",
   "appliances/open.html",

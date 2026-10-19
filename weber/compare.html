@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#5f3a1f">
+  <title>Confronto prove Weber — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="diary.css?v=1">
+  <link rel="stylesheet" href="compare.css?v=1">
+  <style>[hidden]{display:none!important}</style>
+</head>
+<body>
+<main class="weber-diary-shell">
+  <header class="weber-diary-topbar"><div><p class="eyebrow">Weber · Imparare dalle prove</p><h1>Confronta due prove</h1><p>Setup, temperature, tempi, risultati e foto affiancati. Nessun dato viene modificato.</p></div><nav><a class="button secondary" href="diary.html?v=1">← DIARIO WEBER</a></nav></header>
+  <p id="compareStatus" class="weber-page-status" role="status" aria-live="polite">Verifica accesso…</p>
+  <section id="authGate" class="weber-panel" hidden><h2>Accesso richiesto</h2><p>Il confronto usa soltanto le prove del tuo account amministratore.</p><a class="button" href="../index.html?view=weber">ACCEDI DALLA DASHBOARD</a></section>
+  <div id="compareWorkspace" hidden>
+    <section class="weber-panel">
+      <form id="compareForm">
+        <div class="compare-selectors"><div class="field"><label for="trialA">Prova A · riferimento</label><select id="trialA" required></select></div><div class="field"><label for="trialB">Prova B</label><select id="trialB" required></select></div></div>
+        <p id="listInfo" class="muted"></p>
+        <div class="weber-diary-actions"><button id="compareButton" class="button" type="submit">CONFRONTA</button><button id="swapTrials" class="button secondary" type="button">SCAMBIA A ↔ B</button><button id="reloadTrials" class="button secondary" type="button">RICARICA PROVE</button></div>
+      </form>
+    </section>
+    <div id="comparison" hidden>
+      <section id="comparisonWarnings" class="weber-panel weber-method-note" aria-label="Come leggere il confronto"></section>
+      <section class="weber-panel"><h2>Parametri e risultati</h2><p>Le righe con etichetta «Diverso» evidenziano una variazione. Differenza numerica = B − A; «Dati mancanti» non equivale a zero.</p><p id="pairSummary"></p><div class="compare-scroll" role="region" aria-label="Tabella confronto: scorri orizzontalmente sugli schermi piccoli" tabindex="0"><table><caption class="muted">Confronto in sola lettura</caption><thead><tr><th scope="col">Parametro</th><th scope="col">Prova A</th><th scope="col">Prova B</th><th scope="col">Differenza B − A</th></tr></thead><tbody id="comparisonRows"></tbody></table></div></section>
+      <section class="weber-panel"><h2>Foto affiancate</h2><div class="compare-selectors"><div class="field"><label for="photoPhase">Fase delle foto</label><select id="photoPhase"><option value="setup">Setup della brace</option><option value="cooking">Fase di cottura</option><option value="result">Risultato finale</option></select></div><button id="refreshPreviews" class="button secondary" type="button">AGGIORNA ANTEPRIME</button></div><p class="muted">Fino a 6 foto più recenti per prova e fase. Link privati temporanei di 5 minuti: se scadono, aggiorna le anteprime. HEIC/HEIF potrebbero richiedere un dispositivo compatibile.</p><div class="compare-photos"><div id="photosA"></div><div id="photosB"></div></div></section>
+    </div>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script>
+<script src="../auth-guard.js?v=1"></script>
+<script src="diary-core.js?v=2"></script>
+<script src="photos-core.js?v=1"></script>
+<script src="compare-core.js?v=1"></script>
+<script src="compare.js?v=1"></script>
+<script src="../page-navigation.js?v=1"></script>
+</body>
+</html>
