@@ -1,4 +1,4 @@
-const CACHE_NAME = "cucina-hub-v55";
+const CACHE_NAME = "cucina-hub-v56";
 
 const APP_SHELL = [
   "./",
@@ -23,6 +23,10 @@ const APP_SHELL = [
   "./weber/compare-core.js",
   "./weber/compare.js",
   "./weber/compare.css",
+  "./weber/learning.html",
+  "./weber/learning-core.js",
+  "./weber/learning.js",
+  "./weber/learning.css",
   "./dashboard-core.js",
   "./dashboard.js",
   "./dashboard.css",

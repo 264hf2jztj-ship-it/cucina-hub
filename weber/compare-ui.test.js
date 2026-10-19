@@ -11,7 +11,7 @@ const owner = "00000000-0000-4000-8000-000000000003";
 const trials = ids.map((id, i) => ({ id, title: i ? "Seconda <script>" : "Prima", cooked_at: "2026-10-19T12:00:00Z", status: "completed", rating: i + 3 }));
 const photo = (session, kind = "setup") => ({ id: "photo", session_id: session, storage_file_id: ids[0], photo_kind: kind, caption: "Brace <b>privata</b>", file: { bucket_name: photos.BUCKET, mime_type: "image/jpeg", object_path: photos.objectPath(owner, session, ids[0], "image/jpeg") } });
 
-function harness({ authorized = true, list = trials, query } = {}) {
+function harness({ authorized = true, list = trials, query, search = "" } = {}) {
   const nodes = new Map(), reads = [], signed = [];
   const $ = selector => {
     if (!nodes.has(selector)) nodes.set(selector, { value: selector === "#photoPhase" ? "setup" : "", hidden: true, disabled: false, textContent: "", innerHTML: "", querySelectorAll: () => [] });
@@ -34,8 +34,8 @@ function harness({ authorized = true, list = trials, query } = {}) {
     return q;
   }, storage: { from(bucket) { return { async createSignedUrl(path, seconds) { signed.push({ bucket, path, seconds }); return { data: { signedUrl: "https://example.invalid/private-photo" } }; } }; } } };
   vm.runInNewContext(fs.readFileSync(require.resolve("./compare.js"), "utf8"), {
-    window: { cucinaHubSupabase: client, CucinaHubWeberCompare: core, CucinaHubWeberPhotos: photos, CucinaHubAuthGuard: { requireAdministrator: async () => ({ authorized, user: { id: owner } }) } },
-    document: { querySelector: $ }, Date, encodeURIComponent
+    window: { location: { search }, cucinaHubSupabase: client, CucinaHubWeberCompare: core, CucinaHubWeberPhotos: photos, CucinaHubAuthGuard: { requireAdministrator: async () => ({ authorized, user: { id: owner } }) } },
+    document: { querySelector: $ }, Date, encodeURIComponent, URLSearchParams
   });
   return { $, reads, signed, compare: () => $("#compareForm").onsubmit({ preventDefault() {} }) };
 }
@@ -128,4 +128,25 @@ test("confronto UI: elenco ricaricabile e vuoto, nessuna foto dichiarata quando 
   await h.$("#reloadTrials").onclick();
   assert.equal(h.$("#comparison").hidden, true);
   assert.equal(h.$("#compareButton").disabled, false);
+});
+
+test("confronto da Learning: apre la coppia richiesta anche fuori dalle 200 più recenti", async () => {
+  const h = harness({ list: [trials[0]], search: `?a=${ids[1]}&b=${ids[0]}`, query: read => read.ids && read.columns === "id,title,cooked_at" ? { data: [trials[1]] } : undefined });
+  await settle();
+  assert.equal(h.$("#trialA").value, ids[1]);
+  assert.equal(h.$("#trialB").value, ids[0]);
+  assert.equal(h.$("#trialA").disabled, false);
+  assert.equal(h.$("#comparison").hidden, false);
+  assert.match(h.$("#pairSummary").textContent, /^A: Seconda/);
+  assert.ok(h.reads[1].filters.some(([key, value]) => key === "owner_user_id" && value === owner));
+});
+
+test("confronto da Learning: collegamento non valido o prova inaccessibile non apre una coppia diversa", async () => {
+  for (const search of [`?a=invalid&b=${ids[1]}`, `?a=${ids[1]}&b=${ids[1]}`, `?a=${ids[0]}&b=00000000-0000-4000-8000-000000000099`]) {
+    const h = harness({ search, query: read => read.ids ? { data: [] } : undefined });
+    await settle();
+    assert.equal(h.$("#comparison").hidden, true);
+    assert.match(h.$("#compareStatus").textContent, /collegamento non sono disponibili/);
+    assert.ok(!h.reads.some(read => read.columns.includes("recipe:recipes")));
+  }
 });

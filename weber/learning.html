@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#5f3a1f">
+  <title>Learning Weber — Cucina Hub</title>
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="diary.css?v=1">
+  <link rel="stylesheet" href="learning.css?v=1">
+  <style>[hidden]{display:none!important}</style>
+</head>
+<body>
+<main class="weber-diary-shell">
+  <header class="weber-diary-topbar"><div><p class="eyebrow">Cucina Hub · Imparare dalle prove</p><h1>Learning Weber</h1><p>Ritrova i setup, i risultati e i dati da completare nel tuo storico.</p></div><nav class="weber-diary-actions" aria-label="Navigazione Learning Weber"><a class="button secondary" href="../learning/index.html?v=2">LEARNING HUB</a><a class="button secondary" href="diary.html?v=2">DIARIO WEBER</a><a class="button secondary" href="compare.html?v=2">CONFRONTA PROVE</a></nav></header>
+  <p id="weberLearningStatus" class="weber-page-status" role="status" aria-live="polite">Verifica accesso…</p>
+  <section id="authGate" class="weber-panel" hidden><h2>Accesso richiesto</h2><p>Il Learning Weber usa lo storico del tuo account amministratore.</p><a class="button" href="../index.html?view=weber">ACCEDI DALLA DASHBOARD</a></section>
+  <div id="weberLearningWorkspace" hidden>
+    <section class="weber-panel"><div class="weber-hero"><h2>Prove considerate</h2><button id="reloadLearning" class="button secondary" type="button">AGGIORNA STORICO</button></div><p id="learningScope" class="muted"></p><div class="learning-filters"><div class="field"><label for="learningRecipe">Ricetta</label><select id="learningRecipe"><option value="">Tutte</option></select></div><div class="field"><label for="learningMethod">Metodo</label><select id="learningMethod"><option value="">Tutti</option><option value="direct">Diretta</option><option value="indirect">Indiretta</option><option value="two_zone">Due zone</option><option value="snake">Snake</option></select></div><div class="field"><label for="learningFuel">Combustibile</label><select id="learningFuel"><option value="">Tutti</option><option value="briquettes">Bricchetti</option><option value="charcoal">Carbonella</option><option value="mixed">Misto</option><option value="other">Altro</option></select></div></div><button id="resetLearningFilters" class="button secondary" type="button">AZZERA FILTRI</button></section>
+    <div id="weberLearningResults" hidden>
+      <section class="weber-metrics" aria-label="Riepilogo prove Weber filtrate"><article><span>Prove selezionate</span><strong id="learningTotal">—</strong></article><article><span>Concluse</span><strong id="learningCompleted">—</strong></article><article><span>Concluse con voto</span><strong id="learningRated">—</strong></article><article><span>Concluse senza voto</span><strong id="learningUnrated">—</strong></article><article><span>Voto medio / 5</span><strong id="learningAverage">—</strong></article></section>
+      <p id="learningSummary" role="status" aria-live="polite"></p>
+      <section class="weber-panel weber-method-note"><h2>Come leggere i risultati</h2><p>Medie e voti massimi usano soltanto prove concluse con una valutazione da 1 a 5. Ogni gruppo unisce la stessa ricetta, metodo e tipo di combustibile; quantità, alimento effettivo e altre condizioni possono variare. Una media o un voto alto descrivono il tuo storico e non dimostrano quale modifica abbia causato il risultato.</p><p>Una singola valutazione è una prima osservazione. Le prove senza ricetta collegata restano visibili come dati da completare. I gruppi sono ordinati per nome della ricetta.</p></section>
+      <section class="weber-panel"><h2>Risultati per ricetta, metodo e combustibile</h2><p class="muted">Il confronto apre le due prove concluse più recenti dello stesso gruppo. Puoi cambiare la coppia nella pagina di confronto.</p><div id="learningGroups" class="learning-groups"></div></section>
+      <section class="weber-panel"><h2>Dati da completare nelle prove concluse</h2><p class="muted">Sono informazioni utili per rileggere le prove, non requisiti obbligatori di salvataggio.</p><ul id="learningGaps" class="learning-gaps"></ul><div id="learningIncomplete"></div><a class="button secondary" href="diary.html?v=2">COMPLETA LE SCHEDE NEL DIARIO</a></section>
+    </div>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js?v=12"></script>
+<script src="../supabase-client.js?v=12"></script>
+<script src="../auth-guard.js?v=1"></script>
+<script src="diary-core.js?v=2"></script>
+<script src="learning-core.js?v=1"></script>
+<script src="learning.js?v=1"></script>
+<script src="../page-navigation.js?v=1"></script>
+</body>
+</html>
