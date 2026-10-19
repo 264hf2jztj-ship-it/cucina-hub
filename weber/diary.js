@@ -53,7 +53,7 @@
       </div>
       ${session.result_notes ? `<div class="weber-result"><strong>Risultato${session.rating ? ` · ${session.rating}/5` : ""}</strong><p>${escapeHtml(session.result_notes)}</p></div>` : ""}
       ${session.next_change ? `<p class="next-change"><strong>Prossima modifica:</strong> ${escapeHtml(session.next_change)}</p>` : ""}
-      <footer><button class="button secondary" data-action="edit" data-id="${session.id}" type="button">MODIFICA</button><button class="button secondary" data-action="save-setup" data-id="${session.id}" type="button">SALVA COME CONFIGURAZIONE</button><button class="button danger" data-action="delete" data-id="${session.id}" type="button">ELIMINA</button></footer>
+      <footer><a class="button secondary" href="photos.html?session=${encodeURIComponent(session.id)}">FOTO DELLA PROVA</a><button class="button secondary" data-action="edit" data-id="${session.id}" type="button">MODIFICA</button><button class="button secondary" data-action="save-setup" data-id="${session.id}" type="button">SALVA COME CONFIGURAZIONE</button><button class="button danger" data-action="delete" data-id="${session.id}" type="button">ELIMINA</button></footer>
     </article>`;
   }
 
@@ -186,7 +186,7 @@
       await loadData();
       setStatus("Sessione Weber eliminata.", "ok");
     } catch (error) {
-      setStatus(error.message, "error");
+      setStatus(error.code === "23503" ? "Elimina prima le foto collegate alla sessione, poi riprova a eliminare la prova." : error.message, "error");
     }
   }
 
