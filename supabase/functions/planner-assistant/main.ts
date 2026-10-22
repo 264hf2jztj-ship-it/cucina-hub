@@ -1,3 +1,26 @@
+import { requireAdministrator } from "../_shared/require-administrator.ts";
+
+type PlannerRequest = { prompt: string; period_start: string; period_end: string; servings: number };
+type RequestValidation = { valid: true; request: PlannerRequest } | { valid: false; message: string };
+type CatalogRecipe = { code: string; title: string };
+type Quantity = { quantity?: number; unit?: string };
+type DraftIngredient = { name?: unknown; quantity?: unknown; unit?: unknown };
+type DraftItem = {
+  type?: unknown; recipe_code?: unknown; label?: unknown; quantity?: unknown;
+  unit?: unknown; note?: unknown; ingredients?: DraftIngredient[]; procedure?: unknown[];
+};
+type DraftMeal = { slot?: unknown; time?: unknown; servings?: unknown; items?: DraftItem[]; note?: unknown };
+type MenuDraft = { title?: unknown; days: { date?: unknown; meals?: DraftMeal[] }[] };
+type MenuItem = Quantity & {
+  key: string; type: string; label?: string; recipe_code?: string; note?: string;
+  ingredients?: (Quantity & { name: string })[]; procedure?: string[];
+};
+type MenuMeal = { key: string; slot: string; servings: number; items: MenuItem[]; time?: string; note?: string };
+type ProviderOutput = {
+  output_text?: unknown;
+  output?: { content?: { type?: unknown; text?: unknown }[] }[];
+};
+
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-5.6-terra";
 const MAX_PROMPT_LENGTH = 800;
@@ -105,7 +128,7 @@ function configuredOrigins() {
   return raw.split(",").map(item => item.trim()).filter(Boolean);
 }
 
-function corsHeaders(request) {
+function corsHeaders(request: Request): HeadersInit {
   const origin = request.headers.get("origin") || "";
   const allowed = configuredOrigins();
   return {
@@ -117,7 +140,7 @@ function corsHeaders(request) {
   };
 }
 
-function json(request, status, body) {
+function json(request: Request, status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
@@ -128,7 +151,7 @@ function json(request, status, body) {
   });
 }
 
-function outputText(payload) {
+function outputText(payload: ProviderOutput | null): string | null {
   if (typeof payload?.output_text === "string" && payload.output_text.trim()) {
     return payload.output_text.trim();
   }
@@ -146,11 +169,11 @@ function safeModel() {
   return (Deno.env.get("PLANNER_AI_MODEL") || Deno.env.get("OPENAI_MODEL") || DEFAULT_MODEL).trim() || DEFAULT_MODEL;
 }
 
-function cleanText(value, maxLength = 10_000) {
+function cleanText(value: unknown, maxLength = 10_000) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
 
-function isRealDate(value) {
+function isRealDate(value: string) {
   if (typeof value !== "string" || !DATE_PATTERN.test(value)) return false;
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
@@ -159,14 +182,14 @@ function isRealDate(value) {
     && date.getUTCDate() === day;
 }
 
-function inclusiveDays(start, end) {
+function inclusiveDays(start: string, end: string) {
   if (!isRealDate(start) || !isRealDate(end) || end < start) return null;
   const [sy, sm, sd] = start.split("-").map(Number);
   const [ey, em, ed] = end.split("-").map(Number);
   return Math.floor((Date.UTC(ey, em - 1, ed) - Date.UTC(sy, sm - 1, sd)) / 86_400_000) + 1;
 }
 
-function requestValidation(body) {
+function requestValidation(body: Record<string, unknown> | null): RequestValidation {
   const prompt = cleanText(body?.prompt, MAX_PROMPT_LENGTH + 1);
   const periodStart = cleanText(body?.period_start, 10);
   const periodEnd = cleanText(body?.period_end, 10);
@@ -188,7 +211,7 @@ function requestValidation(body) {
   };
 }
 
-function supabaseHeaders(request) {
+function supabaseHeaders(request: Request) {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const authorization = request.headers.get("authorization");
   if (!anonKey || !authorization) throw new Error("planner_context_configuration_missing");
@@ -205,7 +228,7 @@ function supabaseUrl() {
   return url;
 }
 
-async function retrieveRecipes(request) {
+async function retrieveRecipes(request: Request): Promise<CatalogRecipe[]> {
   const url = new URL(`${supabaseUrl()}/rest/v1/recipes`);
   url.searchParams.set("select", "code,title");
   url.searchParams.set("order", "title.asc");
@@ -219,7 +242,7 @@ async function retrieveRecipes(request) {
     .filter(row => row.code && row.title);
 }
 
-async function retrieveExistingMeals(request, periodStart, periodEnd) {
+async function retrieveExistingMeals(request: Request, periodStart: string, periodEnd: string) {
   const url = new URL(`${supabaseUrl()}/rest/v1/planned_meals`);
   url.searchParams.set("select", "planned_date,meal_slot,planned_time,note");
   url.searchParams.append("planned_date", `gte.${periodStart}`);
@@ -239,7 +262,7 @@ async function retrieveExistingMeals(request, periodStart, periodEnd) {
     : [];
 }
 
-async function retrieveRag(request, prompt) {
+async function retrieveRag(request: Request, prompt: string) {
   try {
     const response = await fetch(`${supabaseUrl()}/rest/v1/rpc/search_rag_sources`, {
       method: "POST",
@@ -261,7 +284,7 @@ async function retrieveRag(request, prompt) {
   }
 }
 
-function normalizeQuantity(target, quantity, unit) {
+function normalizeQuantity(target: Quantity, quantity: unknown, unit: unknown) {
   const parsed = Number(quantity);
   const cleanUnit = cleanText(unit, 40);
   if (Number.isFinite(parsed) && parsed > 0 && cleanUnit) {
@@ -270,7 +293,7 @@ function normalizeQuantity(target, quantity, unit) {
   }
 }
 
-function normalizeDraft(draft, request, recipes) {
+function normalizeDraft(draft: MenuDraft, request: PlannerRequest, recipes: CatalogRecipe[]) {
   if (!draft || typeof draft !== "object" || !Array.isArray(draft.days)) {
     throw new Error("invalid_menu_draft");
   }
@@ -306,7 +329,7 @@ function normalizeDraft(draft, request, recipes) {
         if (type === "recipe") {
           const recipeCode = cleanText(rawItem?.recipe_code, 120);
           if (!recipeByCode.has(recipeCode)) throw new Error(`provider_unknown_recipe_code:${recipeCode || "empty"}`);
-          const item = { key, type, recipe_code: recipeCode };
+          const item: MenuItem = { key, type, recipe_code: recipeCode };
           const label = cleanText(rawItem?.label, 240);
           if (label) item.label = label;
           return item;
@@ -314,7 +337,7 @@ function normalizeDraft(draft, request, recipes) {
 
         const label = cleanText(rawItem?.label, 240);
         if (!label) throw new Error("provider_missing_item_label");
-        const item = { key, type, label };
+        const item: MenuItem = { key, type, label };
         normalizeQuantity(item, rawItem?.quantity, rawItem?.unit);
         const note = cleanText(rawItem?.note, 2000);
         if (note) item.note = note;
@@ -324,7 +347,7 @@ function normalizeDraft(draft, request, recipes) {
         for (const rawIngredient of Array.isArray(rawItem?.ingredients) ? rawItem.ingredients : []) {
           const name = cleanText(rawIngredient?.name, 240);
           if (!name) continue;
-          const ingredient = { name };
+          const ingredient: Quantity & { name: string } = { name };
           normalizeQuantity(ingredient, rawIngredient?.quantity, rawIngredient?.unit);
           ingredients.push(ingredient);
         }
@@ -336,7 +359,7 @@ function normalizeDraft(draft, request, recipes) {
         return item;
       });
 
-      const meal = { key: mealKey, slot, servings, items };
+      const meal: MenuMeal = { key: mealKey, slot, servings, items };
       if (time) meal.time = time;
       const note = cleanText(rawMeal?.note, 1000);
       if (note) meal.note = note;
@@ -391,8 +414,9 @@ Regole:
 Deno.serve(async request => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(request) });
   if (request.method !== "POST") return json(request, 405, { error: "method_not_allowed", message: "Usa una richiesta POST." });
-  if (!request.headers.get("authorization")) {
-    return json(request, 401, { error: "authentication_required", message: "Accedi a Cucina Hub prima di usare Planner AI." });
+  const access = await requireAdministrator(request);
+  if (!access.authorized) {
+    return json(request, access.status, { error: access.error, message: access.message });
   }
 
   let body;
