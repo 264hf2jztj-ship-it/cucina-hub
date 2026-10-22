@@ -1,3 +1,4 @@
+import { requireAdministrator } from "../_shared/require-administrator.ts";
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-5.6-terra";
 const MAX_PROMPT_LENGTH = 800;
@@ -391,8 +392,9 @@ Regole:
 Deno.serve(async request => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(request) });
   if (request.method !== "POST") return json(request, 405, { error: "method_not_allowed", message: "Usa una richiesta POST." });
-  if (!request.headers.get("authorization")) {
-    return json(request, 401, { error: "authentication_required", message: "Accedi a Cucina Hub prima di usare Planner AI." });
+  const access = await requireAdministrator(request);
+  if (!access.authorized) {
+    return json(request, access.status, { error: access.error, message: access.message });
   }
 
   let body;

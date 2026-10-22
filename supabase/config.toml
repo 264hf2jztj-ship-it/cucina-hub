@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.planner-menu-preview]
 verify_jwt = true
+
+[functions.planner-assistant]
+verify_jwt = true

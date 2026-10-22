@@ -1,3 +1,4 @@
+import { requireAdministrator } from "../_shared/require-administrator.ts";
 import { RESPONSE_SCHEMA } from "./response-schema.ts";
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
@@ -93,8 +94,9 @@ Deno.serve(async (request: Request) => {
   if (request.method !== "POST") {
     return json(request, 405, { error: "method_not_allowed", message: "Usa una richiesta POST." });
   }
-  if (!request.headers.get("authorization")) {
-    return json(request, 401, { error: "authentication_required", message: "Accedi a Cucina Hub prima di usare l’assistente." });
+  const access = await requireAdministrator(request);
+  if (!access.authorized) {
+    return json(request, access.status, { error: access.error, message: access.message });
   }
 
   const openAiKey = Deno.env.get("OPENAI_API_KEY");

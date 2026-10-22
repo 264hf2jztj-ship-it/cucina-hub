@@ -26,7 +26,7 @@ test("assistant page exposes provider and local response validation", () => {
 test("edge function keeps the API key server-side and responses in preview", () => {
   assert.match(edge, /Deno\.env\.get\("OPENAI_API_KEY"\)/);
   assert.match(edge, /store:\s*false/);
-  assert.match(edge, /request\.headers\.get\("authorization"\)/);
+  assert.match(edge, /await requireAdministrator\(request\)/);
   assert.match(edge, /MAX_PACKET_BYTES/);
   assert.match(edge, /automatic_writes:\s*false/);
   assert.match(edge, /requires_user_confirmation:\s*true/);
