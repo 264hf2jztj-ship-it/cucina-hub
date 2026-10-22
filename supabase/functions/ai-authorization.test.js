@@ -69,6 +69,7 @@ function providerOutput(slug) {
 function harness(slug, settings = {}) {
   const state = { profileRole: "admin", providerConfigured: true, ...settings };
   const calls = [];
+  const failedResponses = [];
   const logs = [];
   let handler;
   const env = {
@@ -80,7 +81,11 @@ function harness(slug, settings = {}) {
     const url = new URL(String(input));
     const headers = new Headers(options.headers);
     calls.push({ url, headers, method: options.method || "GET", body: options.body });
-    const json = (body, status = 200) => new Response(JSON.stringify(body), { status });
+    const json = (body, status = 200) => {
+      const response = new Response(JSON.stringify(body), { status });
+      if (status >= 400) failedResponses.push(response);
+      return response;
+    };
     if (url.origin === base) {
       assert.equal(headers.get("apikey"), env.SUPABASE_ANON_KEY);
       if (url.pathname === "/auth/v1/user") {
@@ -111,7 +116,7 @@ function harness(slug, settings = {}) {
     if (url.href === "https://api.openai.com/v1/responses") {
       assert.equal(headers.get("authorization"), "Bearer synthetic-provider-key");
       assert.equal(JSON.parse(options.body).store, false);
-      return json({ output_text: JSON.stringify(providerOutput(slug)), model: "synthetic-model" });
+      return json({ output_text: JSON.stringify(state.providerOutput ?? providerOutput(slug)), model: "synthetic-model" });
     }
     throw new Error(`Unexpected outbound request: ${url.pathname}`);
   }
@@ -143,7 +148,7 @@ function harness(slug, settings = {}) {
   load(path.join(__dirname, slug, "main.ts"));
   assert.equal(typeof handler, "function");
   return {
-    state, calls, logs,
+    state, calls, logs, failedResponses,
     async invoke(authorization, route = "health", overrides = {}) {
       const headers = { "content-type": "application/json", apikey: "synthetic-publishable-key", ...overrides.headers };
       if (authorization !== undefined) headers.authorization = authorization;
@@ -165,6 +170,9 @@ async function assertDenied(h, response, expectedStatus) {
   assert.doesNotMatch(text, /configured|model|synthetic-|SENSITIVE_UPSTREAM_DETAIL|admin.*@|00000000-/);
   assert.equal(personalCalls(h).length, 0, "No personal retrieval, staging or provider on a denial");
   assert.equal(h.logs.length, 0, "Authorization failures do not log upstream payloads or credentials");
+  for (const failure of h.failedResponses) {
+    assert.equal(failure.bodyUsed, true, "Auth/PostgREST error bodies must be consumed or cancelled (Deno resource safety)");
+  }
 }
 
 const denials = [
@@ -189,15 +197,19 @@ for (const slug of functions) {
         await assertDenied(h, await h.invoke(value === undefined ? undefined : bearer(value), route), status);
       });
     }
-    for (const [label, settings] of [
+    for (const [label, settings, expectedStatus = 503] of [
       ["Auth outage", { authStatus: 503 }], ["Auth network failure", { authThrows: true }],
       ["invalid Auth JSON", { badAuthJson: true }], ["profile outage", { profileStatus: 500 }],
       ["profile network failure", { profileThrows: true }], ["invalid profile JSON", { badProfileJson: true }],
-      ["invalid profile shape", { badProfileShape: true }], ["missing Supabase config", { env: { SUPABASE_URL: undefined } }]
+      ["invalid profile shape", { badProfileShape: true }],
+      ["missing Supabase URL", { env: { SUPABASE_URL: undefined } }],
+      ["missing Supabase anon key", { env: { SUPABASE_ANON_KEY: undefined } }],
+      ["JWT expires before profile lookup", { profileStatus: 401 }, 401],
+      ["PostgREST denies profile lookup", { profileStatus: 403 }, 403]
     ]) {
       test(`${slug}: ${route} fails closed on ${label}`, async () => {
         const h = harness(slug, settings);
-        await assertDenied(h, await h.invoke(bearer(adminToken), route), 503);
+        await assertDenied(h, await h.invoke(bearer(adminToken), route), expectedStatus);
       });
     }
   }
@@ -267,4 +279,38 @@ test("verify_jwt is explicitly enabled for each AI function", () => {
     assert.ok(section, `${slug} must have an explicit config section`);
     assert.match(section[1], /verify_jwt\s*=\s*true/);
   }
+});
+
+
+test("Planner AI preserves optional food/preparation fields after Deno type annotations", async () => {
+  const h = harness("planner-assistant", { providerOutput: {
+    title: "Menu sintetico", days: [{ date: "2026-10-22", meals: [{
+      slot: "lunch", time: "12:30", servings: 2, note: "Nota pasto", items: [
+        { type: "recipe", recipe_code: "SYNTHETIC-RECIPE", label: "Ricetta etichettata" },
+        { type: "food", label: "Mela", quantity: 1, unit: "piece", note: "Nota alimento" },
+        { type: "preparation", label: "Insalata", note: "Nota preparazione",
+          ingredients: [{ name: "Lattuga", quantity: 100, unit: "g" }],
+          procedure: ["Lavare e asciugare."] }
+      ]
+    }] }]
+  } });
+  const response = await h.invoke(bearer(adminToken), "generate");
+  assert.equal(response.status, 200);
+  const meal = (await response.json()).packet.days[0].meals[0];
+  assert.equal(meal.time, "12:30");
+  assert.equal(meal.note, "Nota pasto");
+  assert.equal(meal.items[0].label, "Ricetta etichettata");
+  assert.equal(meal.items[1].quantity, 1);
+  assert.equal(meal.items[1].note, "Nota alimento");
+  assert.deepEqual(meal.items[2].ingredients, [{ name: "Lattuga", quantity: 100, unit: "g" }]);
+  assert.deepEqual(meal.items[2].procedure, ["Lavare e asciugare."]);
+});
+
+test("Planner AI rejects invalid admin generation input before context/provider", async () => {
+  const h = harness("planner-assistant");
+  const response = await h.invoke(bearer(adminToken), "generate", { body: JSON.stringify({ prompt: "x" }) });
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, "invalid_request");
+  assert.equal(h.calls.length, 2);
+  assert.equal(personalCalls(h).length, 0);
 });
