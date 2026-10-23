@@ -112,7 +112,17 @@ Su Safari iPhone e iPad, dopo eventuale pubblicazione autorizzata del frontend (
 
 Non configurare OpenAI per eseguire questi test. Non modificare account o ruoli reali. Il confine di sicurezza server resta S01: nascondere il frontend non sostituisce l'autorizzazione Edge.
 
-### Rischi e punto di arresto
+### Preparazione preview privata Safari — 23 ottobre 2026
+
+Aggiunto un harness separato in [`release/s02-preview`](../release/s02-preview/README.md), a partire dal commit PR `adbef719af9bd8f363978abe3dd674dba37385e7`. Usa Node senza dipendenze aggiuntive e legge gli asset applicativi originali dal commit Git servito; modifica solo il trasporto del SDK nell'HTML della preview e aggiunge mock sintetici. Il codice applicativo S02 non viene modificato.
+
+Il server limita gli asset, sostituisce la configurazione Supabase, impedisce connessioni applicative con CSP/trasporti bloccati e verifica la porta Codespaces PRIVATE tramite GitHub CLI. L'interfaccia touch distingue PASS, FAIL e NOT TESTED; tutti i casi partono NOT TESTED. Identità, profili, retrieval e risposte provider sono simulati, inclusa la comunicazione Auth fra schede del harness. I risultati restano in memoria e vengono copiati manualmente dal proprietario.
+
+**Verifica di preparazione:** suite completa **444/444 test superati**, zero fallimenti e zero saltati (436 precedenti + 8 HTTP/Node del server/mock), sintassi degli script controllata; nessun test browser attribuito a queste prove. Codespace non creato né avviato; quota residua, accesso `gh`, URL privato e integrazione del tunnel da verificare dopo autorizzazione. La cache Safari v57 dopo distribuzione, Menu Package/Piano Alimentare completi e la propagazione del SDK Auth reale restano fuori dalle evidenze di questo harness.
+
+**S02 rimane NOT READY FOR MERGE**, non distribuita, in attesa del collaudo Safari eseguito dal proprietario e del relativo report. Invariate tutte le evidenze S01 sopra: PARTIALLY VERIFIED, collaudo iPhone live 3 health 200/3 generazioni 503 del 23 ottobre, due test negativi backend runtime isolati ancora mancanti.
+
+### Rischi e punto di arresto (confermati)
 
 **Raccomandazione pre-merge: NOT READY**, in attesa almeno di uno smoke test delle pagine effettive in un browser reale su branch/preview isolata. I test Node/VM sono superati, ma non sostituiscono una verifica DOM e del ciclo di vita browser. La PR viene aperta come bozza per rendere revisionabili codice, test ed evidenze; nessun merge automatico.
 
