@@ -45,8 +45,8 @@
     } else if (path.endsWith("/fermentation/fermentation-learning.html")) {
       modulePaths.push("./assistant-link.js?v=2");
     } else if (path.endsWith("/fermentation/fermentation-assistant.html")) {
-      modulePaths.push("./assistant-response-ui.js?v=2");
-      modulePaths.push("./assistant-provider-ui.js?v=1");
+      modulePaths.push("./assistant-response-ui.js?v=3");
+      modulePaths.push("./assistant-provider-ui.js?v=3");
     }
 
     function loadPageModules() {

@@ -24,7 +24,7 @@ test("AI Hub mantiene espliciti i confini di sicurezza", () => {
 });
 
 test("AI Hub richiede una sessione prima di mostrare il workspace", () => {
-  assert.match(js, /client\.auth\.getSession\(\)/);
-  assert.match(js, /if \(!data\.session\?\.user\)/);
-  assert.match(js, /workspace\.hidden = false/);
+  assert.match(js, /CucinaHubAuthGuard\.watchAdministrator\(client/);
+  assert.match(html, /auth-guard\.js\?v=2/);
+  assert.match(js, /workspace\.hidden = !access\.authorized/);
 });

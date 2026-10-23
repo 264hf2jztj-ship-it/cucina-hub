@@ -5,7 +5,8 @@
   const core = window.CucinaHubPlannerAiCore;
   const client = window.cucinaHubSupabase;
   const $ = selector => document.querySelector(selector);
-  const state = { packet: null, generation: null, busy: false, staging: false };
+  const state = { packet: null, generation: null, busy: false, staging: false, allowed: false };
+  let session;
 
   const elements = {
     status: $("#plannerAiStatus"),
@@ -35,11 +36,11 @@
 
   function setBusy(busy) {
     state.busy = busy;
-    elements.generate.disabled = busy || state.staging;
-    elements.stage.disabled = busy || state.staging || !state.packet;
-    elements.reset.disabled = busy || state.staging;
+    elements.generate.disabled = !state.allowed || busy || state.staging;
+    elements.stage.disabled = !state.allowed || busy || state.staging || !state.packet;
+    elements.reset.disabled = !state.allowed || busy || state.staging;
     for (const input of [elements.prompt,elements.start,elements.end,elements.servings]) {
-      input.disabled = busy || state.staging;
+      input.disabled = !state.allowed || busy || state.staging;
     }
   }
 
@@ -98,16 +99,20 @@
     elements.stage.disabled = false;
   }
 
-  async function generateMenu(request) {
+  async function generateMenu(request, ticket) {
     const { data, error } = await client.functions.invoke(GENERATE_FUNCTION, { body: request });
+    session.reject(error, ticket);
+    if (!await session.confirm(ticket)) return null;
     if (error) throw new Error(await functionErrorMessage(error, "Generazione Planner AI non riuscita."));
     const safety = core.validateGeneratedResponse(data);
     if (!safety.valid) throw new Error(safety.message);
     return data;
   }
 
-  async function stagePreview(packet) {
+  async function stagePreview(packet, ticket) {
     const { data, error } = await client.functions.invoke(STAGE_FUNCTION, { body: { packet } });
+    session.reject(error, ticket);
+    if (!await session.confirm(ticket)) return null;
     if (error) throw new Error(await functionErrorMessage(error, "Invio all’anteprima Planner non riuscito."));
     if (data?.automatic_writes !== false || data?.preview_only !== true || data?.requires_user_confirmation !== true) {
       throw new Error("L’endpoint di staging non ha confermato i guardrail richiesti.");
@@ -137,26 +142,34 @@
       setStatus(window.cucinaHubSupabaseError?.message || "Supabase non inizializzato.", "error");
       return;
     }
-    const { data, error } = await client.auth.getSession();
-    if (error) {
-      setStatus(error.message, "error");
-      return;
-    }
-    if (!data.session?.user) {
-      elements.authGate.hidden = false;
-      setStatus("Accedi a Cucina Hub prima di usare Planner AI.", "error");
-      return;
-    }
-
-    const period = core.defaultPeriod();
-    elements.start.value = period.period_start;
-    elements.end.value = period.period_end;
-    elements.workspace.hidden = false;
-    resetGeneration();
+    session = window.CucinaHubAuthGuard.watchAdministrator(client, access => {
+      state.allowed = access.authorized;
+      elements.workspace.hidden = !access.authorized;
+      elements.authGate.hidden = access.authorized;
+      if (!access.authorized) {
+        state.packet = null;
+        state.generation = null;
+        state.staging = false;
+        elements.result.innerHTML = "";
+        elements.stage.hidden = true;
+        for (const input of [elements.prompt, elements.start, elements.end, elements.servings]) input.value = "";
+        setBusy(false);
+        setStatus("Accesso amministratore richiesto. Accedi dalla Dashboard.", "error");
+      } else {
+        const period = core.defaultPeriod();
+        elements.start.value = period.period_start;
+        elements.end.value = period.period_end;
+        elements.servings.value = "2";
+        resetGeneration();
+      }
+    });
 
     elements.form.addEventListener("submit", async event => {
       event.preventDefault();
       if (state.busy || state.staging) return;
+      setBusy(true);
+      const ticket = await session.authorize();
+      if (!ticket) return;
       const validation = core.validateRequest({
         prompt: elements.prompt.value,
         period_start: elements.start.value,
@@ -165,6 +178,7 @@
       });
       if (!validation.valid) {
         setStatus(validation.errors[0], "warning");
+        setBusy(false);
         return;
       }
       state.packet = null;
@@ -172,16 +186,19 @@
       setBusy(true);
       setStatus("Consulto Biblioteca e contesto privato, poi preparo la proposta…", "working");
       try {
-        const generation = await generateMenu(validation.normalized);
+        const generation = await generateMenu(validation.normalized, ticket);
+        if (!generation || !session.isCurrent(ticket)) return;
         state.packet = generation.packet;
         state.generation = generation;
         renderGeneration(generation);
         setStatus("Proposta pronta. Nessun dato salvato: puoi inviarla all’anteprima del Planner.", "ok");
       } catch (error) {
+        session.reject(error, ticket);
+        if (!session.isCurrent(ticket)) return;
         elements.result.innerHTML = `<div class="planner-ai-empty error"><strong>Generazione non completata.</strong><span>${esc(error.message)}</span></div>`;
         setStatus(error.message, "error");
       } finally {
-        setBusy(false);
+        if (session.isCurrent(ticket)) setBusy(false);
       }
     });
 
@@ -189,20 +206,26 @@
       if (!state.packet || state.busy || state.staging) return;
       state.staging = true;
       setBusy(true);
+      const ticket = await session.authorize();
+      if (!ticket || !state.packet) return;
       setStatus("Creo soltanto la richiesta di anteprima personale…", "working");
       try {
-        await stagePreview(state.packet);
+        const result = await stagePreview(state.packet, ticket);
+        if (!result || !session.isCurrent(ticket)) return;
         setStatus("Anteprima ricevuta. Apro il Menu Package per il controllo finale.", "ok");
         window.location.href = "workspace.html?v=14&section=menu-package";
       } catch (error) {
-        setStatus(error.message, "error");
+        session.reject(error, ticket);
+        if (session.isCurrent(ticket)) setStatus(error.message, "error");
       } finally {
-        state.staging = false;
-        setBusy(false);
+        if (session.isCurrent(ticket)) { state.staging = false; setBusy(false); }
       }
     });
 
-    elements.reset.addEventListener("click", resetGeneration);
+    elements.reset.addEventListener("click", async () => {
+      if (await session.authorize()) resetGeneration();
+    });
+    await session.start();
   }
 
   void initialize();
