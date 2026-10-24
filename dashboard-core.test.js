@@ -60,3 +60,15 @@ test("planner links route directly to the selected module and date", () => {
     "planner/workspace.html?v=14&section=meal-plan&week=2026-08-26&date=2026-08-27"
   );
 });
+
+test("agenda e prossimo pasto seguono la giornata anche senza orario e con input disordinato", () => {
+  const slots = ["dinner", "post_workout", "morning_snack", "breakfast", "afternoon_snack", "lunch", "pre_workout"];
+  const meals = slots.map(slot => ({ id: slot, meal_slot: slot, planned_date: "2026-10-24", planned_time: null }));
+  const now = new Date("2026-10-24T06:00:00");
+  const ordered = core.agendaItems({ meals, now, limit: 20 });
+  assert.deepEqual(ordered.map(item => item.id), ["breakfast", "morning_snack", "lunch", "pre_workout", "post_workout", "afternoon_snack", "dinner"].map(slot => `meal:${slot}`));
+  assert.equal(core.summary({ meals, now }).nextMeal.id, "breakfast");
+  assert.equal(ordered.find(item => item.id === "meal:post_workout").label, "Post-workout");
+  assert.deepEqual(core.agendaItems({ meals, now, limit: 3 }).map(item => item.id), ["meal:breakfast", "meal:morning_snack", "meal:lunch"]);
+  assert.deepEqual(meals.map(meal => meal.meal_slot), slots);
+});
