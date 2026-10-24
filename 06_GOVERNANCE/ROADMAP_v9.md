@@ -1,5 +1,11 @@
 # ROADMAP v9
 
+## Addendum operativo — 23 ottobre 2026
+
+- **S01 PARTIALLY VERIFIED:** PR #196 unita; correzione distribuita dal commit `76de8766689708995b4752a9a1138d21ba747330` (Fermentation v3, Chef v2, Planner v2). Test anonimi live superati; il collaudo amministrativo iPhone/Safari/Comandi Rapidi del 23 ottobre ha verificato 3 health 200 con `configured=false` e 3 generazioni 503 `provider_not_configured`. Restano non verificati nel runtime isolato non admin e admin con ruolo revocato, stesso JWT.
+- **S02:** protezioni frontend implementate e validate sul branch dedicato; suite completa 436/436, inclusi 35 nuovi test simulati. Review/merge e collaudo Safari iPhone/iPad ancora da eseguire; nessun rilascio frontend implicito.
+- Release 1.0 ancora aperta. Evidenze, limiti e checklist: [registro sicurezza](RELEASE_1_0_SECURITY_VERIFICATION.md). Le sezioni del 29 agosto sotto restano una baseline storica, non una certificazione dello stato live attuale.
+
 ## Stato consolidato al 29 agosto 2026
 
 Cucina Hub ha completato i blocchi funzionali previsti per le Release 0.8 e 0.9. Il repository `main` include le migration fino alla `054_rag_natural_language_search.sql`, l'AI Hub e il Planner AI.
@@ -70,7 +76,7 @@ Cucina Hub ha completato i blocchi funzionali previsti per le Release 0.8 e 0.9.
 
 ## Release 1.0 — Gate finale 🟡
 
-### Prossimo task operativo
+### Prossimo task operativo (indicazione storica del 29 agosto)
 Integrazione diretta ChatGPT → Cucina Hub, mantenendo gli stessi guardrail del contratto `cucina-hub.menu-plan` v1:
 
 1. endpoint autenticato;
@@ -88,7 +94,8 @@ Integrazione diretta ChatGPT → Cucina Hub, mantenendo gli stessi guardrail del
 
 ---
 
-**Aggiornato:** 29 agosto 2026  
-**Stato corrente:** Release 0.8 e 0.9 implementate; Release 1.0 in fase di integrazione e collaudo finale.  
-**Ultimo step completato:** quality gate della suite automatica, 137/137 test superati (PR #172).  
-**Prossimo task operativo:** endpoint autenticato ChatGPT → staging Planner, senza commit automatico.
+**Aggiornato:** 23 ottobre 2026 (addendum S01/S02; baseline funzionale del 29 agosto conservata).
+
+**Stato corrente:** Release 1.0 non chiusa; S01 parzialmente verificata, S02 validata automaticamente sul branch.
+
+**Prossimo passo:** review PR S02 e collaudo manuale autorizzato; nessun merge, deploy o intervento successivo automatico.

@@ -12,8 +12,8 @@ const schema = fs.readFileSync("supabase/functions/fermentation-assistant/respon
 const sw = fs.readFileSync("sw.js", "utf8");
 
 test("assistant page exposes provider and local response validation", () => {
-  assert.match(page, /assistant-response-ui\.js\?v=2/);
-  assert.match(page, /assistant-provider-ui\.js\?v=2/);
+  assert.match(page, /assistant-response-ui\.js\?v=3/);
+  assert.match(page, /assistant-provider-ui\.js\?v=3/);
   assert.match(page, /href="\.\/index\.html\?v=2"/);
   assert.match(page, /knowledge\/rag\.html\?v=1/);
   assert.match(page, /rpc\('search_rag_sources'/);

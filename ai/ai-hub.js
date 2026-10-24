@@ -17,23 +17,21 @@
       return;
     }
 
-    const { data, error } = await client.auth.getSession();
-    if (error) {
-      setStatus(error.message || "Non è stato possibile verificare la sessione.", "error");
-      return;
-    }
-
-    if (!data.session?.user) {
-      authGate.hidden = false;
-      setStatus("Accesso richiesto per usare gli assistenti personali.", "error");
-      return;
-    }
-
-    workspace.hidden = false;
-    setStatus(
-      "Assistente AI pronto come hub. Scegli il modulo adatto; la generazione reale resta soggetta alla configurazione del provider.",
-      "ok",
-    );
+    const session = window.CucinaHubAuthGuard.watchAdministrator(client, access => {
+      workspace.hidden = !access.authorized;
+      authGate.hidden = access.authorized;
+      workspace.inert = !access.authorized;
+      setStatus(access.authorized
+        ? "Assistente AI pronto come hub. Scegli il modulo adatto; la generazione reale resta soggetta alla configurazione del provider."
+        : "Accesso amministratore richiesto. Accedi dalla Dashboard.", access.authorized ? "ok" : "error");
+    });
+    workspace.addEventListener("click", async event => {
+      const link = event.target.closest("a");
+      if (!link) return;
+      event.preventDefault();
+      if (await session.authorize()) window.location.href = link.href;
+    });
+    await session.start();
   }
 
   void initialize();

@@ -99,7 +99,8 @@
     const output = section.querySelector("#assistantResponseValidation");
     const engine = window.CucinaHubFermentationAssistantResponseEngine;
 
-    section.querySelector("#loadTechnicalExample").addEventListener("click", () => {
+    section.querySelector("#loadTechnicalExample").addEventListener("click", async () => {
+      if (!await window.cucinaHubAiSession.authorize()) return;
       try {
         const example = engine.buildTechnicalExample(requestPacket());
         input.value = JSON.stringify(example, null, 2);
@@ -111,7 +112,8 @@
       }
     });
 
-    section.querySelector("#validateAssistantResponse").addEventListener("click", () => {
+    section.querySelector("#validateAssistantResponse").addEventListener("click", async () => {
+      if (!await window.cucinaHubAiSession.authorize()) return;
       try {
         const packet = requestPacket();
         const response = engine.parse(input.value);

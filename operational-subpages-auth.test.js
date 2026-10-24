@@ -30,8 +30,8 @@ const protectedEnhancements = [
 test("le sottopagine operative verificano il ruolo amministratore", () => {
   for (const page of protectedPages) {
     const html = fs.readFileSync(page, "utf8");
-    assert.match(html, /<script src="\.\.\/auth-guard\.js\?v=1"><\/script>/, `${page} deve caricare il guard condiviso`);
-    assert.match(html, /CucinaHubAuthGuard\.requireAdministrator\([^)]+\)/, `${page} deve verificare il ruolo amministratore`);
+    assert.match(html, /<script src="\.\.\/auth-guard\.js\?v=\d+"><\/script>/, `${page} deve caricare il guard condiviso`);
+    assert.match(html, /CucinaHubAuthGuard\.(?:requireAdministrator|watchAdministrator)\([^)]+\)/, `${page} deve verificare il ruolo amministratore`);
     assert.doesNotMatch(html, /\.auth\.getSession\(\)/, `${page} non deve sostituire il guard con una lettura diretta della sessione`);
   }
 });

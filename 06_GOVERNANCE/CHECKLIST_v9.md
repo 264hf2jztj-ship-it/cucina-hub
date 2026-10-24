@@ -1,5 +1,22 @@
 # CHECKLIST v9
 
+## Verifiche sicurezza — aggiornamento 23 ottobre 2026
+
+Registro autorevole per evidenze e limiti: [Release 1.0 — verifiche S01/S02](RELEASE_1_0_SECURITY_VERIFICATION.md).
+
+- [x] S01: PR #196 unita, Edge distribuite (Fermentation v3, Chef v2, Planner v2), `verify_jwt=true`.
+- [x] S01: richieste anonime/chiavi pubbliche/JWT invalido respinte live; CORS OPTIONS 200 (22 ottobre).
+- [x] S01: collaudo amministrativo reale iPhone/Safari/Comandi Rapidi (23 ottobre): 3/3 health 200, provider assente, 3/3 generazioni 503 `provider_not_configured`.
+- [ ] S01: non amministratore sintetico → 403 nel runtime isolato.
+- [ ] S01: ruolo admin sintetico revocato, stesso JWT → 403 nel runtime isolato.
+- [x] S02: implementazione sul branch dedicato e test automatici locali 436/436, inclusi 35 nuovi test simulati.
+- [ ] S02: review e merge autorizzato.
+- [ ] S02: collaudo manuale Safari iPhone/iPad, logout tra schede, scadenza, cambio account, risposte tardive e cache.
+- [ ] S01 CLOSED.
+- [ ] S02 completata in produzione.
+
+Release 1.0 non chiusa. Le spunte storiche sotto descrivono l'implementazione funzionale, non sostituiscono questi test. Il collaudo S01 senza provider non certifica generazioni reali OpenAI o retrieval con due identità.
+
 ## Stato consolidato al 29 agosto 2026
 
 ## Milestone A — Knowledge Base ✅
@@ -157,7 +174,7 @@
 - [ ] Merge
 
 ### Gate Release 1.0
-- [x] Suite automatica completa: 139/139
+- [x] Suite automatica: baseline S01 401/401; branch S02 436/436 (23 ottobre 2026), senza attribuire i mock a test runtime.
 - [ ] Smoke test autenticazione
 - [ ] Smoke test navigazione principale e Dashboard
 - [ ] Smoke test Planner completo
@@ -171,7 +188,8 @@
 
 ---
 
-**Aggiornato:** 29 agosto 2026  
-**Stato corrente:** Release 0.8 e 0.9 implementate; Release 1.0 in fase di integrazione e collaudo.  
-**Ultimo step completato:** stabilizzazione della suite PWA, 137/137 test superati (PR #172).  
-**Prossimo task operativo:** endpoint autenticato ChatGPT → staging Planner, con conferma finale obbligatoria nell'app.
+**Aggiornato:** 23 ottobre 2026 (evidenze S01/S02; baseline funzionale del 29 agosto conservata).
+
+**Stato corrente:** S01 PARTIALLY VERIFIED; S02 validata automaticamente sul branch, collaudo manuale pendente. Release 1.0 aperta.
+
+**Prossimo passo:** review PR S02 e successivi collaudi autorizzati, senza merge/deploy automatico.

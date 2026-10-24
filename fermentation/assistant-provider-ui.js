@@ -77,11 +77,13 @@
     node.textContent = message;
   }
 
-  async function health(status, meta) {
+  async function health(status, meta, ticket) {
     const client = window.cucinaHubSupabase;
     if (!client) throw new Error("Supabase non inizializzato.");
     setStatus(status, "Verifica della Edge Function…", "working");
     const { data, error } = await client.functions.invoke(FUNCTION_NAME, { body: { action: "health" } });
+    window.cucinaHubAiSession.reject(error, ticket);
+    if (!await window.cucinaHubAiSession.confirm(ticket)) return;
     if (error) throw new Error(await functionErrorMessage(error));
     meta.hidden = false;
     meta.querySelector("[data-provider]").textContent = data?.provider || "—";
@@ -91,7 +93,7 @@
     setStatus(status, "Provider configurato. La generazione reale è disponibile.", "ok");
   }
 
-  async function generate(button, status, meta) {
+  async function generate(button, status, meta, ticket) {
     const client = window.cucinaHubSupabase;
     if (!client) throw new Error("Supabase non inizializzato.");
     const requestPacket = packet();
@@ -99,6 +101,8 @@
     setStatus(status, "Generazione della proposta AI in corso… può richiedere fino a circa un minuto.", "working");
     try {
       const { data, error } = await client.functions.invoke(FUNCTION_NAME, { body: { packet: requestPacket } });
+      window.cucinaHubAiSession.reject(error, ticket);
+      if (!await window.cucinaHubAiSession.confirm(ticket)) return;
       if (error) throw new Error(await functionErrorMessage(error));
       if (!data?.response) throw new Error("La Edge Function non ha restituito una proposta.");
       if (data?.guardrails?.automatic_writes !== false || data?.guardrails?.requires_user_confirmation !== true) {
@@ -117,7 +121,7 @@
       setStatus(status, "Proposta ricevuta. Il validatore la controlla ora; nessun dato è stato salvato.", "ok");
       validateButton.click();
     } finally {
-      button.disabled = false;
+      if (window.cucinaHubAiSession.isCurrent(ticket)) button.disabled = false;
     }
   }
 
@@ -157,13 +161,19 @@
     const generateButton = section.querySelector("#generateAssistantProposal");
 
     section.querySelector("#checkAssistantProvider").addEventListener("click", async () => {
-      try { await health(status, meta); }
-      catch (error) { setStatus(status, error.message, "error"); }
+      const session = window.cucinaHubAiSession;
+      const ticket = await session.authorize();
+      if (!ticket) return;
+      try { await health(status, meta, ticket); }
+      catch (error) { session.reject(error, ticket); if (session.isCurrent(ticket)) setStatus(status, error.message, "error"); }
     });
 
     generateButton.addEventListener("click", async () => {
-      try { await generate(generateButton, status, meta); }
-      catch (error) { setStatus(status, error.message, "error"); generateButton.disabled = false; }
+      const session = window.cucinaHubAiSession;
+      const ticket = await session.authorize();
+      if (!ticket) return;
+      try { await generate(generateButton, status, meta, ticket); }
+      catch (error) { session.reject(error, ticket); if (session.isCurrent(ticket)) { setStatus(status, error.message, "error"); generateButton.disabled = false; } }
     });
     return true;
   }
