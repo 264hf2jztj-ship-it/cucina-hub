@@ -1,6 +1,6 @@
 # Release 1.0 — Registro verifiche sicurezza S01 / S02
 
-**Aggiornato:** 23 ottobre 2026. **Release 1.0 non chiusa.**
+**Aggiornato:** 24 ottobre 2026. **Release 1.0 non chiusa.**
 
 Questo addendum operativo distingue implementazione, test simulati e collaudo live. Il report iniziale `CUCINA_HUB_RELEASE_1.0_SECURITY_QUALITY_AUDIT.md` del 22 ottobre 2026 è un deliverable esterno al repository: non è presente nella baseline Git esaminata. Questo registro non presume che quel report sia versionato e non ne riscrive retroattivamente le conclusioni.
 
@@ -122,7 +122,28 @@ Il server limita gli asset, sostituisce la configurazione Supabase, impedisce co
 
 **S02 rimane NOT READY FOR MERGE**, non distribuita, in attesa del collaudo Safari eseguito dal proprietario e del relativo report. Invariate tutte le evidenze S01 sopra: PARTIALLY VERIFIED, collaudo iPhone live 3 health 200/3 generazioni 503 del 23 ottobre, due test negativi backend runtime isolati ancora mancanti.
 
-### Rischi e punto di arresto (confermati)
+### Primo collaudo Safari iPad e correzione harness — 24 ottobre 2026
+
+Il proprietario ha creato personalmente il Codespace sul branch S02 e aperto la porta HTTPS 8787 PRIVATE in Safari iPad. Le schermate mostrano Node 24.21.0, GitHub CLI 2.100.0 e il server attivo; la richiesta loopback alla preview ha restituito HTTP 200. Nessun account applicativo reale impiegato. Queste evidenze aggiornano lo stato storico della sola preparazione del 23 ottobre; non attestano la quota residua dell'account né un deploy applicativo.
+
+Report JSON ricevuto nella chat, schema `cucina-hub.s02-safari-preview` v1, generato il 24 ottobre alle 19:00:54 UTC (21:00:54 Europe/Rome), commit `3db2151fbc34cb25132a42b9a4520fcf7dd96b23`, baseline applicativa `adbef719af9bd8f363978abe3dd674dba37385e7`. Esecuzione `USER_BROWSER`, servizi `SIMULATED`, contatore `runtimeErrorsObserved: 0` (telemetria del harness, non ispezione completa della console Safari).
+
+| Modulo | Esiti riportati dal primo giro | Limite |
+|---|---|---|
+| AI Hub | 11 PASS, 0 FAIL | Tre casi risposta/provider non applicabili; ulteriori cinque casi NOT TESTED |
+| Chef AI | 13 PASS, 1 FAIL | FAIL nel caso aggregato 401/403 e pulizia: timeout DOM; ulteriori cinque casi NOT TESTED |
+| Planner AI | 19 NOT TESTED | Non avviato nel report ricevuto |
+| Fermentation Assistant | 19 NOT TESTED | Non avviato nel report ricevuto |
+
+**Esiti preliminari da ripetere, non gate superato.** L'analisi ha individuato una corsa in `release/s02-preview/control.js`: dopo l'assegnazione di `iframe.src`, il controllo della sola pathname e di `readyState=complete` poteva accettare il documento precedente durante un ricaricamento della stessa pagina. Ciò può alterare sia gli esiti positivi sia la prova 401/403. Il report non identifica il singolo status fallito; non si attribuisce ancora il FAIL applicativo a questa causa con certezza.
+
+Correzione limitata al harness nel commit `19072f40067cb03c350151f021b204121011cda7`: attendere un documento diverso, la specifica query `s02Run`, il completamento del caricamento e il nuovo bootstrap mock prima di operare sul DOM. Gli errori 401/403 indicano ora status e fase della prova. Script applicativi, mock di Auth/provider, backend e configurazione di produzione invariati.
+
+Un nuovo test Node/VM sulla funzione originale `open` riproduce la lettura prematura del documento precedente: fallisce prima della correzione e passa dopo. Suite completa successiva: **445 superati, 0 fallimenti, 0 saltati**; test preview **9/9**. Sintassi e `git diff --check` superati. Queste verifiche non costituiscono un nuovo test browser.
+
+Ripetere tutti e quattro i moduli in Safari sul nuovo commit del branch, conservando il primo FAIL come evidenza storica. Se il caso 401/403 fallisce ancora, analizzare la nuova fase/status prima di modificare l'app. Seconda scheda, background, cronologia, cache v57 dopo distribuzione e flussi completi Menu Package/Piano Alimentare restano NON VERIFICATI. **PR #197 ancora in bozza, NOT READY FOR MERGE; S02 non distribuita. S01 PARTIALLY VERIFIED e le sue evidenze live del 23 ottobre restano invariate.**
+
+### Rischi e punto di arresto (stato attuale)
 
 **Raccomandazione pre-merge: NOT READY**, in attesa almeno di uno smoke test delle pagine effettive in un browser reale su branch/preview isolata. I test Node/VM sono superati, ma non sostituiscono una verifica DOM e del ciclo di vita browser. La PR viene aperta come bozza per rendere revisionabili codice, test ed evidenze; nessun merge automatico.
 
