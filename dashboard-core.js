@@ -9,10 +9,23 @@
     breakfast: "Colazione",
     morning_snack: "Spuntino mattina",
     lunch: "Pranzo",
+    pre_workout: "Pre-workout",
+    post_workout: "Post-workout",
     afternoon_snack: "Spuntino pomeriggio",
     dinner: "Cena",
     other: "Pasto"
   });
+
+  const SLOT_ORDER = ["breakfast", "morning_snack", "lunch", "pre_workout", "post_workout", "afternoon_snack", "dinner", "other"];
+  function slotRank(slot) {
+    const rank = SLOT_ORDER.indexOf(slot);
+    return rank < 0 ? SLOT_ORDER.length : rank;
+  }
+  function compareMeals(left, right) {
+    return left.planned_date.localeCompare(right.planned_date)
+      || slotRank(left.meal_slot) - slotRank(right.meal_slot)
+      || eventTimestamp(left.planned_date, left.planned_time) - eventTimestamp(right.planned_date, right.planned_time);
+  }
 
   function dateValue(date = new Date()) {
     const year = date.getFullYear();
@@ -76,6 +89,7 @@
         title: mealTitle(meal, recipesById),
         date: meal.planned_date,
         time: meal.planned_time || null,
+        slot: meal.meal_slot,
         overdue: false,
         href: plannerHref("meal-plan", meal.planned_date, meal.planned_date, meal.id)
       }));
@@ -93,7 +107,10 @@
         href: plannerHref("meal-prep", task.scheduled_date)
       }));
     return [...mealItems, ...taskItems]
-      .sort((left, right) => eventTimestamp(left.date, left.time) - eventTimestamp(right.date, right.time))
+      .sort((left, right) => left.date.localeCompare(right.date)
+        || (left.kind !== right.kind ? (left.kind === "prep" ? -1 : 1) : 0)
+        || (left.kind === "meal" ? slotRank(left.slot) - slotRank(right.slot) : 0)
+        || eventTimestamp(left.date, left.time) - eventTimestamp(right.date, right.time))
       .slice(0, limit);
   }
 
@@ -104,7 +121,7 @@
       .filter(meal => meal.planned_date >= today)
       .filter(meal => !meal.planned_time || eventTimestamp(meal.planned_date, meal.planned_time) >= now.getTime())
       .slice()
-      .sort((left, right) => eventTimestamp(left.planned_date, left.planned_time) - eventTimestamp(right.planned_date, right.planned_time));
+      .sort(compareMeals);
     const unfinishedTasks = tasks.filter(task => task.status !== "done");
     return {
       today,
