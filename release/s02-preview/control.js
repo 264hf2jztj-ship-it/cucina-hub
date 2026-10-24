@@ -72,10 +72,17 @@
   function allowed() { return element(modules[selectedModule].workspace)?.hidden === false; }
   function assert(value, note) { if (!value) throw new Error(note); }
   async function open(state = window.__S02PreviewState) {
+    const previousDocument = doc();
+    const runId = String(++sequence);
     setState(state, null);
     frame.hidden = false;
-    frame.src = `/app/${modules[selectedModule].path}?s02Run=${++sequence}`;
-    await until(() => api() && doc().readyState === "complete" && frame.contentWindow.location.pathname === `/app/${modules[selectedModule].path}`);
+    frame.src = `/app/${modules[selectedModule].path}?s02Run=${runId}`;
+    // A same-page navigation initially still exposes the previous complete DOM.
+    // Do not submit or inspect results until this specific new document is ready.
+    await until(() => doc() !== previousDocument &&
+      frame.contentWindow.location.pathname === `/app/${modules[selectedModule].path}` &&
+      new URLSearchParams(frame.contentWindow.location.search).get("s02Run") === runId &&
+      doc()?.readyState === "complete" && !!api());
     await until(() => stateAllowed(state) ? allowed() : denied());
     if (selectedModule === "fermentation" && state.account && state.role === "admin") await until(() => element("status").textContent.includes("Dati personali caricati"));
   }
@@ -170,8 +177,12 @@
         });
         await scenario("denied", async () => {
           for (const status of [401, 403]) {
-            await open(baseState()); await generate(); api().denyNext(status);
-            await generate({ waitForResult: false }); await until(denied);
+            let step = "caricamento";
+            try {
+              await open(baseState()); step = "risposta autorizzata";
+              await generate(); api().denyNext(status); step = "rifiuto e pulizia";
+              await generate({ waitForResult: false }); await until(denied);
+            } catch (error) { throw new Error(`HTTP ${status}, ${step}: ${error.message}`); }
           }
         });
       }

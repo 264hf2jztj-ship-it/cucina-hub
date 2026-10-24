@@ -117,3 +117,34 @@ test("preview scripts parse and keep cache/backend validation explicitly NOT TES
   assert.match(control, /cache Safari dopo distribuzione NOT TESTED/);
   assert.doesNotMatch(control, /localStorage|sessionStorage|indexedDB/);
 });
+
+test("control waits for the new iframe document before inspecting a same-page reload", async () => {
+  const source = fs.readFileSync(path.join(__dirname, "control.js"), "utf8");
+  const openSource = source.slice(source.indexOf("  async function open("), source.indexOf("  function submit()"));
+  const oldDocument = { readyState: "complete" };
+  let currentDocument = oldDocument, currentApi = {}, checks = 0, assigned;
+  const location = { pathname: "/app/chef/index.html", search: "?s02Run=previous" };
+  const frame = { hidden: true, contentWindow: { location } };
+  Object.defineProperty(frame, "src", { set(value) { assigned = value; } });
+  const context = vm.createContext({ frame, window: {}, modules: { chef: { path: "chef/index.html" } },
+    selectedModule: "chef", sequence: 0, setState() {}, doc: () => currentDocument, api: () => currentApi,
+    stateAllowed: () => true, allowed: () => true, denied: () => false, URLSearchParams,
+    until: async predicate => {
+      if (++checks !== 1) { assert.equal(predicate(), true); return; }
+      // Setting src does not synchronously replace a same-origin iframe's DOM.
+      assert.equal(assigned, "/app/chef/index.html?s02Run=1");
+      assert.equal(predicate(), false, "must not inspect the previous complete document");
+      currentDocument = { readyState: "complete" };
+      assert.equal(predicate(), false, "must not accept a document for another navigation");
+      location.search = "?s02Run=1";
+      currentDocument.readyState = "loading";
+      assert.equal(predicate(), false, "must wait for page scripts to finish loading");
+      currentDocument.readyState = "complete"; currentApi = undefined;
+      assert.equal(!!predicate(), false, "must wait for the new mock bootstrap");
+      currentApi = {};
+      assert.equal(predicate(), true);
+    }
+  });
+  await vm.runInContext(`(${openSource})( { account: 'A', role: 'admin' } )`, context);
+  assert.equal(checks, 2);
+});
