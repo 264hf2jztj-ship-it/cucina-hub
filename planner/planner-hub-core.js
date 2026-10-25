@@ -16,6 +16,9 @@
     other: "Altro"
   });
 
+  const SLOT_ORDER = ["breakfast", "morning_snack", "lunch", "pre_workout", "post_workout", "afternoon_snack", "dinner", "other"];
+  const slotRank = slot => { const rank = SLOT_ORDER.indexOf(slot); return rank < 0 ? SLOT_ORDER.length : rank; };
+
   function mealLabel(meal = {}, recipes = new Map()) {
     const recipe = recipes.get(meal.recipe_id);
     if (recipe) return [recipe.code, recipe.title].filter(Boolean).join(" — ") || "Ricetta";
@@ -39,7 +42,7 @@
       rows.sort((left, right) => {
         const leftKey = `${left.planned_time || "99:99"}|${left.meal_slot || "other"}`;
         const rightKey = `${right.planned_time || "99:99"}|${right.meal_slot || "other"}`;
-        return leftKey.localeCompare(rightKey);
+        return slotRank(left.meal_slot) - slotRank(right.meal_slot) || leftKey.localeCompare(rightKey);
       });
     }
     return grouped;
