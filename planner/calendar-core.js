@@ -9,10 +9,15 @@
     breakfast: "Colazione",
     morning_snack: "Spuntino mattina",
     lunch: "Pranzo",
+    pre_workout: "Pre-workout",
+    post_workout: "Post-workout",
     afternoon_snack: "Spuntino pomeriggio",
     dinner: "Cena",
     other: "Altro"
   });
+
+  const SLOT_ORDER = ["breakfast", "morning_snack", "lunch", "pre_workout", "post_workout", "afternoon_snack", "dinner", "other"];
+  const slotRank = slot => { const rank = SLOT_ORDER.indexOf(slot); return rank < 0 ? SLOT_ORDER.length : rank; };
 
   function dateAtNoon(value) {
     if (value instanceof Date) {
@@ -100,7 +105,9 @@
       events.sort((left, right) => {
         const leftTime = left.time || (left.type === "meal" ? "23:00" : "22:00");
         const rightTime = right.time || (right.type === "meal" ? "23:00" : "22:00");
-        return leftTime.localeCompare(rightTime) || left.type.localeCompare(right.type);
+        return (left.type !== right.type ? (left.type === "prep" ? -1 : 1) : 0)
+          || (left.type === "meal" ? slotRank(left.slot) - slotRank(right.slot) : 0)
+          || leftTime.localeCompare(rightTime);
       });
     }
     return grouped;

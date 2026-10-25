@@ -143,24 +143,24 @@ test("la home offline include tutti i cataloghi statici necessari all'avvio", ()
   }
 });
 
-test("installazione e attivazione preparano v57 e rimuovono soltanto le cache precedenti", async () => {
+test("installazione e attivazione preparano v58 e rimuovono soltanto le cache precedenti", async () => {
   const harness = createWorkerHarness({ cached: { "cucina-hub-v48": {} } });
   await dispatchWaitable(harness.listeners.get("install"));
 
-  const current = harness.stores.get("cucina-hub-v57");
+  const current = harness.stores.get("cucina-hub-v58");
   assert.ok(current);
   for (const asset of appShellAssets()) assert.ok(current.has(asset), `Asset non precached: ${asset}`);
 
   await dispatchWaitable(harness.listeners.get("activate"));
   assert.deepEqual(harness.deletedCaches, ["cucina-hub-v48"]);
-  assert.ok(harness.stores.has("cucina-hub-v57"));
+  assert.ok(harness.stores.has("cucina-hub-v58"));
 });
 
 test("offline restituisce la pagina richiesta dalla cache e usa la home solo come fallback", async () => {
   const harness = createWorkerHarness({
     offline: true,
     cached: {
-      "cucina-hub-v57": {
+      "cucina-hub-v58": {
         "/cucina-hub/planner/index.html": new Response("planner-offline"),
         "./index.html": new Response("home-offline")
       }
